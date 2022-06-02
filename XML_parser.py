@@ -75,24 +75,30 @@ def convertXML(xmlInFile, xmlOutFile, atpMap):
 
 
             #Format newly populated function_parameters with proper indents and next lines
-            ET.indent(oldFunctionParams, space=''*4)
-
             print(f'''
-{teststep.get('desc')}
-{oldFunctionLibrary.text}
-{oldFunctionName.text}
-{[f"{param.get('name')}={param.text}" for param in oldFunctionParams]}
+                {teststep.get('desc')}
+                {oldFunctionLibrary.text}
+                {oldFunctionName.text}
+                {[f"{param.get('name')}={param.text}" for param in oldFunctionParams]}
             ''')
+            
     tree.write(xmlOutFile)
 
 
 def main():
-    xlsxFile = 'mapping.xlsx'
-    xmlFile = 'input.xml'
+    xlsxFile = './testdata/mapping.xlsx'
+    xmlFile = './testdata/input.xml'
 
     atpMap = handleXlsx(xlsxFile)
-    convertXML(xmlFile, 'output.xml', atpMap)
+    convertXML(xmlFile, './testdata/output.xml', atpMap)
 
+def test():
+    xlsxFile = './testdata/mapping.xlsx'
+    xmlFile = './testdata/input.xml'
+    
+    atpMap = handleXlsx(xlsxFile)
+    print(atpMap['[CAN] Check TMU Mute Signal'])
+    
 if __name__ == '__main__':
-    main()
+    test()
 

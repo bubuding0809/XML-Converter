@@ -14,7 +14,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(794, 240)
+        MainWindow.resize(744, 225)
         palette = QtGui.QPalette()
         brush = QtGui.QBrush(QtGui.QColor(0, 0, 0))
         brush.setStyle(QtCore.Qt.SolidPattern)
@@ -209,11 +209,11 @@ class Ui_MainWindow(object):
         self.xml_outfiledialogue_button.setGeometry(QtCore.QRect(20, 76, 110, 30))
         self.xml_outfiledialogue_button.setObjectName("xml_outfiledialogue_button")
         self.xml_convert_button = QtWidgets.QPushButton(self.centralwidget)
-        self.xml_convert_button.setGeometry(QtCore.QRect(20, 130, 111, 32))
+        self.xml_convert_button.setGeometry(QtCore.QRect(20, 120, 111, 32))
         self.xml_convert_button.setObjectName("xml_convert_button")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 794, 24))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 744, 24))
         self.menubar.setObjectName("menubar")
         self.menuXML_Converter = QtWidgets.QMenu(self.menubar)
         self.menuXML_Converter.setObjectName("menuXML_Converter")

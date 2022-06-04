@@ -44,7 +44,6 @@ class CollapsibleBox(QtWidgets.QWidget):
             QtCore.QPropertyAnimation(self.content_area, b"maximumHeight")
         )
         
-
     @QtCore.pyqtSlot()
     def on_pressed(self):
         checked = self.toggle_button.isChecked()

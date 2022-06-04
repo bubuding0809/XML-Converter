@@ -1,5 +1,5 @@
 import xml.etree.ElementTree as ET
-from utils import ExcelDictReader
+from utils import *
 from openpyxl import load_workbook
 
 def handleXlsx(xlsxFile):
@@ -34,19 +34,54 @@ def handleXlsx(xlsxFile):
 
     return atpMap
 
+    
+def getTestStepData(xmlInFile, atpMap):
+    tree = ET.parse(xmlInFile)
+    root = tree.getroot()
+    childParentMap = {c: p for p in root.iter() for c in p}
+    allTestSteps = root.iter('teststep')
+    
+    xmlData = []
+    idCounter = 0
+    
+    for teststep in allTestSteps:
+        
+        #Initialize counter to create id for each test step
+        
+        # Get teststep description attribute from teststep
+        teststepDesc = teststep.get('desc')
+        
+        if teststepDesc in atpMap:
+            idCounter += 1
+            testStepData = {
+                'id': idCounter,
+                'parentId': childParentMap[teststep].get('id'),
+                'description': teststepDesc,
+                'function_library': teststep.find('function_library').text,
+                'function_name': teststep.find('function_name').text,
+                'function_parameters': [{
+                    'name': param.get('name'),
+                    'text': param.text.strip('\n ')
+                    } for param in teststep.find('function_parameters').iter('param')]
+            }
+            
+            xmlData.append(testStepData)
+        
+    return xmlData
+
+
 def convertXML(xmlInFile, xmlOutFile, atpMap):
     tree = ET.parse(xmlInFile)
     root = tree.getroot()
-    teststeps = root.iter('teststep')
+    allTestSteps = root.iter('teststep')
 
-    for teststep in teststeps:
+    for teststep in allTestSteps:
        
         # Get teststep description attribute from teststep
-        testDesc = teststep.attrib['desc']
+        oldtestStepDescription = teststep.attrib['desc']
 
         # IF teststep description finds match in atpMap - convert to new version
-        if testDesc in atpMap:
-            oldtestStepDescription = teststep.attrib.get('desc')
+        if oldtestStepDescription in atpMap:
             matchPairs = atpMap[oldtestStepDescription]
 
             #Change old teststep description to new description
@@ -85,20 +120,30 @@ def convertXML(xmlInFile, xmlOutFile, atpMap):
     tree.write(xmlOutFile)
 
 
-def main():
-    xlsxFile = './testdata/mapping.xlsx'
-    xmlFile = './testdata/input.xml'
-
-    atpMap = handleXlsx(xlsxFile)
-    convertXML(xmlFile, './testdata/output.xml', atpMap)
-
-def test():
+def testHandleXlsx():
     xlsxFile = './testdata/mapping.xlsx'
     xmlFile = './testdata/input.xml'
     
     atpMap = handleXlsx(xlsxFile)
     print(atpMap['[CAN] Check TMU Mute Signal'])
+
+def testHandleConvertXML():
+    xlsxFile = './testdata/mapping.xlsx'
+    xmlFile = './testdata/input.xml'
+
+    atpMap = handleXlsx(xlsxFile)
+    convertXML(xmlFile, './testdata/output.xml', atpMap)
+    
+def testHandleGetTestStepData():
+    xlsxFile = './testdata/mapping.xlsx'
+    xmlFile = './testdata/input.xml'
+    
+    atpMap = handleXlsx(xlsxFile)
+    
+    for item in getTestStepData(xmlFile, atpMap):
+        print(item)
+        break
+    
     
 if __name__ == '__main__':
-    test()
-
+    testHandleGetTestStepData()

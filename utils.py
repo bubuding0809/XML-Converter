@@ -1,3 +1,5 @@
+import xml.etree.ElementTree as ET
+
 def ExcelDictReader(sheet):
     reader = []
 
@@ -11,3 +13,9 @@ def ExcelDictReader(sheet):
         reader.append(dictReader)
 
     return reader
+
+def getAllTestSteps(xmlInfile):
+    tree = ET.parse(xmlInfile)
+    root = tree.getroot()
+    
+    return root.iter('teststep')

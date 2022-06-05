@@ -42,7 +42,7 @@ class MainWindow(qtw.QMainWindow):
         
         
         
-    #************************* Event Handler methods ****************************#
+    # ************************* Event Handler methods **************************** #
     def handleXLSXInput(self):
         file = qtw.QFileDialog.getOpenFileName(self, 'Input config XLSX file', directory='', filter='Xlsx files (*.xlsx)')
         if file:
@@ -164,25 +164,15 @@ class MainWindow(qtw.QMainWindow):
             box.on_pressed()
             box.toggle_button.setChecked(not isChecked) 
             
+            
     def handleSelectAllCheckBox(self):
         for teststepBoxList in self.testCaseBoxList.values():
             for teststep in teststepBoxList:
                 checkBox = teststep.hLayout_teststepBox.itemAt(3).widget()
                 checkBox.setChecked(False if self.ui.selectAll_checkBox.isChecked() else True)
 
-
-            
-        
-            
-            
             
     #*************************** Utility functions ******************************* #             
-    def testLoadData(self):
-        for i in range(20):
-            testStepBox = TestStepGroupBox(title=f'teststep {i}')
-            self.ui.verticalLayout_3.insertWidget(0, testStepBox)
-    
-    
     def clearTestStepScrollArea(self):
         # Empty global list of testcaseBoxes
         self.testCaseBoxList.clear()
@@ -202,8 +192,7 @@ class MainWindow(qtw.QMainWindow):
             if item.widget():
                 item.widget().deleteLater()
 
-        
-            
+              
 if __name__ == '__main__':
     app = qtw.QApplication(sys.argv)
     mainWindow = MainWindow()

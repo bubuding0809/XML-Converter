@@ -106,7 +106,7 @@ def convertXML(xmlInFile, xmlOutFile, atpMap):
             matchPairs = atpMap[oldtestStepDescription]
 
             #Change old teststep description to new description
-            teststep.set('desc', matchPairs['test_step.desc'])
+            teststep.set('desc', matchPairs['description'])
 
             #Change old function_library text to new function_library text
             oldFunctionLibrary = teststep.find('function_library')

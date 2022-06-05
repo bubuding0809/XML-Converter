@@ -20,7 +20,7 @@ class TestStepGroupBox(qtw.QGroupBox):
         sizePolicy.setHeightForWidth(self.sizePolicy().hasHeightForWidth())
         self.setSizePolicy(sizePolicy)
         self.setMinimumSize(qtc.QSize(0, 100))
-        self.setMaximumSize(qtc.QSize(16777215, 150))
+        self.setMaximumSize(qtc.QSize(16777215, 120))
         self.setTitle(str(data['old']['id']))
         self.setAlignment(qtc.Qt.AlignLeading|qtc.Qt.AlignLeft|qtc.Qt.AlignVCenter)
         self.setFlat(False)
@@ -29,33 +29,33 @@ class TestStepGroupBox(qtw.QGroupBox):
         self.setObjectName("self")
         
         # Create horizontal layout to contain data tables inside teststep_box
-        horizontalLayout_9 = qtw.QHBoxLayout(self)
-        horizontalLayout_9.setContentsMargins(0, 0, 0, 0)
-        horizontalLayout_9.setObjectName("horizontalLayout_9")
+        self.hLayout_teststepBox = qtw.QHBoxLayout(self)
+        self.hLayout_teststepBox.setContentsMargins(0, 0, 0, 0)
+        self.hLayout_teststepBox.setObjectName("hLayout_teststepBox")
         
-        ############################################################################################# Old data box ##############################################
-        old_1_box = qtw.QGroupBox(self)
-        old_1_box.setMinimumSize(qtc.QSize(600, 0))
-        old_1_box.setTitle("")
-        old_1_box.setObjectName("old_1_box")
-        horizontalLayout_2 = qtw.QHBoxLayout(old_1_box)
-        horizontalLayout_2.setContentsMargins(0, 0, 0, 0)
-        horizontalLayout_2.setObjectName("horizontalLayout_2")
+        ############################################################################################# oldDataBox ##############################################
+        oldDataBox = qtw.QGroupBox(self)
+        oldDataBox.setMinimumSize(qtc.QSize(500, 0))
+        oldDataBox.setTitle("")
+        oldDataBox.setObjectName("oldDataBox")
+        hLayout_oldDataBox = qtw.QHBoxLayout(oldDataBox)
+        hLayout_oldDataBox.setContentsMargins(0, 0, 0, 0)
+        hLayout_oldDataBox.setObjectName("hLayout_oldDataBox")
         
-        ########################################## Table 1 ########################################
-        tableWidget = qtw.QTableWidget(old_1_box)
-        tableWidget.setMinimumSize(qtc.QSize(377, 0))
+        ########################################## oldDataTableWidget_1 ########################################
+        oldDataTableWidget_1 = qtw.QTableWidget(oldDataBox)
+        oldDataTableWidget_1.setMinimumSize(qtc.QSize(377, 0))
         font = qtg.QFont()
         font.setPointSize(10)
-        tableWidget.setFont(font)
-        tableWidget.setGridStyle(qtc.Qt.SolidLine)
-        tableWidget.setWordWrap(True)
-        tableWidget.setCornerButtonEnabled(True)
-        tableWidget.setObjectName("tableWidget")
-        tableWidget.setColumnCount(3)
-        tableWidget.setRowCount(1)
+        oldDataTableWidget_1.setFont(font)
+        oldDataTableWidget_1.setGridStyle(qtc.Qt.SolidLine)
+        oldDataTableWidget_1.setWordWrap(True)
+        oldDataTableWidget_1.setCornerButtonEnabled(True)
+        oldDataTableWidget_1.setObjectName("oldDataTableWidget_1")
+        oldDataTableWidget_1.setColumnCount(3)
+        oldDataTableWidget_1.setRowCount(1)
         item = qtw.QTableWidgetItem()
-        tableWidget.setVerticalHeaderItem(0, item)
+        oldDataTableWidget_1.setVerticalHeaderItem(0, item)
         
         # Set table header 0
         item = qtw.QTableWidgetItem()
@@ -64,7 +64,7 @@ class TestStepGroupBox(qtw.QGroupBox):
         font.setBold(True)
         font.setWeight(75)
         item.setFont(font)
-        tableWidget.setHorizontalHeaderItem(0, item)
+        oldDataTableWidget_1.setHorizontalHeaderItem(0, item)
         
         # Set table header 1
         item = qtw.QTableWidgetItem()
@@ -73,7 +73,7 @@ class TestStepGroupBox(qtw.QGroupBox):
         font.setBold(True)
         font.setWeight(75)
         item.setFont(font)
-        tableWidget.setHorizontalHeaderItem(1, item)
+        oldDataTableWidget_1.setHorizontalHeaderItem(1, item)
         
         # Set table header 2
         item = qtw.QTableWidgetItem()
@@ -82,104 +82,123 @@ class TestStepGroupBox(qtw.QGroupBox):
         font.setBold(True)
         font.setWeight(75)
         item.setFont(font)
-        tableWidget.setHorizontalHeaderItem(2, item)
+        oldDataTableWidget_1.setHorizontalHeaderItem(2, item)
         
         # Set table data
         item = qtw.QTableWidgetItem()
         item.setText(data['old']['description'])
         item.setTextAlignment(qtc.Qt.AlignCenter)
-        tableWidget.setItem(0, 0, item)
+        oldDataTableWidget_1.setItem(0, 0, item)
         
         item = qtw.QTableWidgetItem()
         item.setText(data['old']['function_library'])
         item.setTextAlignment(qtc.Qt.AlignCenter)
-        tableWidget.setItem(0, 1, item)
+        oldDataTableWidget_1.setItem(0, 1, item)
         
         item = qtw.QTableWidgetItem()
         item.setText(data['old']['function_name'])
         item.setTextAlignment(qtc.Qt.AlignCenter)
-        tableWidget.setItem(0, 2, item)
+        oldDataTableWidget_1.setItem(0, 2, item)
         
-        tableWidget.horizontalHeader().setCascadingSectionResizes(False)
-        tableWidget.horizontalHeader().setStretchLastSection(True)
-        tableWidget.verticalHeader().setVisible(False)
-        tableWidget.verticalHeader().setStretchLastSection(True)
-        horizontalLayout_2.addWidget(tableWidget)
+        oldDataTableWidget_1.horizontalHeader().setCascadingSectionResizes(False)
+        oldDataTableWidget_1.horizontalHeader().setStretchLastSection(True)
+        oldDataTableWidget_1.verticalHeader().setVisible(False)
+        oldDataTableWidget_1.verticalHeader().setStretchLastSection(True)
+        hLayout_oldDataBox.addWidget(oldDataTableWidget_1)
         
-        ############################################## Table 3 ########################################
-        tableWidget_3 = qtw.QTableWidget(old_1_box)
+        ############################################## oldDataTableWidget_2 ########################################
+        # oldDataTableWidget_2 = qtw.QTableWidget(oldDataBox)
+        # font = qtg.QFont()
+        # font.setPointSize(10)
+        # oldDataTableWidget_2.setFont(font)
+        # oldDataTableWidget_2.setFrameShadow(qtw.QFrame.Sunken)
+        # oldDataTableWidget_2.setDragDropMode(qtw.QAbstractItemView.DragOnly)
+        # oldDataTableWidget_2.setCornerButtonEnabled(True)
+        # oldDataTableWidget_2.setObjectName("oldDataTableWidget_2")
+        # oldDataTableWidget_2.setColumnCount(1)
+        # oldDataTableWidget_2.setRowCount(len(data['old']['function_parameters']))
+        # item = qtw.QTableWidgetItem()
+        # oldDataTableWidget_2.setVerticalHeaderItem(0, item)
+        # item = qtw.QTableWidgetItem()
+        # oldDataTableWidget_2.setVerticalHeaderItem(1, item)
+        # item = qtw.QTableWidgetItem()
+        # oldDataTableWidget_2.setVerticalHeaderItem(2, item)
+        # item = qtw.QTableWidgetItem()
+        # oldDataTableWidget_2.setVerticalHeaderItem(3, item)
+        
+        # # Set table header 0
+        # item = qtw.QTableWidgetItem()
+        # item.setText('Function parameters')
+        # font = qtg.QFont()
+        # font.setBold(True)
+        # font.setWeight(75)
+        # item.setFont(font)
+        # oldDataTableWidget_2.setHorizontalHeaderItem(0, item)
+        
+        # # Set table data
+        # for i, param in enumerate(data['old']['function_parameters']):
+        #     item = qtw.QTableWidgetItem()
+        #     item.setText(f"{param['name']}={param['text']}")
+        #     item.setTextAlignment(qtc.Qt.AlignCenter)
+        #     oldDataTableWidget_2.setItem(0, i, item)
+        
+        # oldDataTableWidget_2.horizontalHeader().setVisible(True)
+        # oldDataTableWidget_2.horizontalHeader().setCascadingSectionResizes(False)
+        # oldDataTableWidget_2.horizontalHeader().setStretchLastSection(True)
+        # oldDataTableWidget_2.verticalHeader().setVisible(False)
+        # hLayout_oldDataBox.addWidget(oldDataTableWidget_2)
+        
+        ############################################## oldDataListWidget_1 ########################################
+        oldDataListWidget_1 = qtw.QListWidget(oldDataBox)
+        oldDataListWidget_1.setMinimumSize(qtc.QSize(0, 0))
+        oldDataListWidget_1.setMaximumSize(qtc.QSize(300,10000))
         font = qtg.QFont()
         font.setPointSize(10)
-        tableWidget_3.setFont(font)
-        tableWidget_3.setFrameShadow(qtw.QFrame.Sunken)
-        tableWidget_3.setDragDropMode(qtw.QAbstractItemView.DragOnly)
-        tableWidget_3.setCornerButtonEnabled(True)
-        tableWidget_3.setObjectName("tableWidget_3")
-        tableWidget_3.setColumnCount(1)
-        tableWidget_3.setRowCount(len(data['old']['function_parameters']))
-        item = qtw.QTableWidgetItem()
-        tableWidget_3.setVerticalHeaderItem(0, item)
-        item = qtw.QTableWidgetItem()
-        tableWidget_3.setVerticalHeaderItem(1, item)
-        item = qtw.QTableWidgetItem()
-        tableWidget_3.setVerticalHeaderItem(2, item)
-        item = qtw.QTableWidgetItem()
-        tableWidget_3.setVerticalHeaderItem(3, item)
+        oldDataListWidget_1.setFont(font)
+        oldDataListWidget_1.setObjectName("oldDataListWidget_1")
         
-        # Set table header 0
-        item = qtw.QTableWidgetItem()
-        item.setText('Function parameters')
-        font = qtg.QFont()
-        font.setBold(True)
-        font.setWeight(75)
-        item.setFont(font)
-        tableWidget_3.setHorizontalHeaderItem(0, item)
-        
-        # Set table data
-        for i, param in enumerate(data['old']['function_parameters']):
-            item = qtw.QTableWidgetItem()
+        for param in data['old']['function_parameters']:
+            item = qtw.QListWidgetItem()
             item.setText(f"{param['name']}={param['text']}")
-            item.setTextAlignment(qtc.Qt.AlignCenter)
-            tableWidget_3.setItem(0, i, item)
+            oldDataListWidget_1.addItem(item)
         
-        tableWidget_3.horizontalHeader().setVisible(True)
-        tableWidget_3.horizontalHeader().setCascadingSectionResizes(False)
-        tableWidget_3.horizontalHeader().setStretchLastSection(True)
-        tableWidget_3.verticalHeader().setVisible(False)
-        horizontalLayout_2.addWidget(tableWidget_3)
-        horizontalLayout_9.addWidget(old_1_box)
+        # Add Function parameter list to old data box
+        hLayout_oldDataBox.addWidget(oldDataListWidget_1)
         
-        # Line divider
+        # Add completed oldDataBox to teststep horizontal layout
+        self.hLayout_teststepBox.addWidget(oldDataBox)
+        
+        ###################################################### Line divider ##############################################
         line = qtw.QFrame(self)
         line.setFrameShape(qtw.QFrame.VLine)
         line.setFrameShadow(qtw.QFrame.Sunken)
         line.setObjectName("line")
-        horizontalLayout_9.addWidget(line)
+        self.hLayout_teststepBox.addWidget(line)
         
         ###################################################### New data box ###############################################
-        new_1_box = qtw.QGroupBox(self)
-        new_1_box.setMinimumSize(qtc.QSize(600, 0))
-        new_1_box.setTitle("")
-        new_1_box.setObjectName("new_1_box")
-        horizontalLayout_4 = qtw.QHBoxLayout(new_1_box)
-        horizontalLayout_4.setContentsMargins(0, 0, 0, 0)
-        horizontalLayout_4.setObjectName("horizontalLayout_4")
+        newDataBox = qtw.QGroupBox(self)
+        newDataBox.setMinimumSize(qtc.QSize(500, 0))
+        newDataBox.setTitle("")
+        newDataBox.setObjectName("newDataBox")
+        hLayout_newDataBox = qtw.QHBoxLayout(newDataBox)
+        hLayout_newDataBox.setContentsMargins(0, 0, 0, 0)
+        hLayout_newDataBox.setObjectName("hLayout_newDataBox")
         
-        ############################################## Table 2 #####################################
-        tableWidget_2 = qtw.QTableWidget(new_1_box)
-        tableWidget_2.setMinimumSize(qtc.QSize(377, 0))
+        ############################################## newDataTableWidget_1 #####################################
+        newDataTableWidget_1 = qtw.QTableWidget(newDataBox)
+        newDataTableWidget_1.setMinimumSize(qtc.QSize(377, 0))
         font = qtg.QFont()
         font.setPointSize(10)
-        tableWidget_2.setFont(font)
-        tableWidget_2.setGridStyle(qtc.Qt.SolidLine)
-        tableWidget_2.setWordWrap(True)
-        tableWidget_2.setCornerButtonEnabled(True)
-        tableWidget_2.setObjectName("tableWidget_2")
-        tableWidget_2.setColumnCount(3)
-        tableWidget_2.setRowCount(1)
+        newDataTableWidget_1.setFont(font)
+        newDataTableWidget_1.setGridStyle(qtc.Qt.SolidLine)
+        newDataTableWidget_1.setWordWrap(True)
+        newDataTableWidget_1.setCornerButtonEnabled(True)
+        newDataTableWidget_1.setObjectName("newDataTableWidget_1")
+        newDataTableWidget_1.setColumnCount(3)
+        newDataTableWidget_1.setRowCount(1)
         
         item = qtw.QTableWidgetItem()
-        tableWidget_2.setVerticalHeaderItem(0, item)
+        newDataTableWidget_1.setVerticalHeaderItem(0, item)
         
         item = qtw.QTableWidgetItem()
         item.setText("Description")
@@ -187,7 +206,7 @@ class TestStepGroupBox(qtw.QGroupBox):
         font.setBold(True)
         font.setWeight(75)
         item.setFont(font)
-        tableWidget_2.setHorizontalHeaderItem(0, item)
+        newDataTableWidget_1.setHorizontalHeaderItem(0, item)
         
         item = qtw.QTableWidgetItem()
         item.setText("Function Name")
@@ -195,7 +214,7 @@ class TestStepGroupBox(qtw.QGroupBox):
         font.setBold(True)
         font.setWeight(75)
         item.setFont(font)
-        tableWidget_2.setHorizontalHeaderItem(1, item)
+        newDataTableWidget_1.setHorizontalHeaderItem(1, item)
         
         item = qtw.QTableWidgetItem()
         item.setText("Function library")
@@ -203,53 +222,54 @@ class TestStepGroupBox(qtw.QGroupBox):
         font.setBold(True)
         font.setWeight(75)
         item.setFont(font)
-        tableWidget_2.setHorizontalHeaderItem(2, item)
+        newDataTableWidget_1.setHorizontalHeaderItem(2, item)
         
         # Set Table data
         item = qtw.QTableWidgetItem()
         item.setText(data['new']['description'])
         item.setTextAlignment(qtc.Qt.AlignCenter)
-        tableWidget_2.setItem(0, 0, item)
+        newDataTableWidget_1.setItem(0, 0, item)
         
         item = qtw.QTableWidgetItem()
         item.setText(data['new']['function_library'])
         item.setTextAlignment(qtc.Qt.AlignCenter)
-        tableWidget_2.setItem(0, 1, item)
+        newDataTableWidget_1.setItem(0, 1, item)
         
         item = qtw.QTableWidgetItem()
         item.setText(data['new']['function_name'])
         item.setTextAlignment(qtc.Qt.AlignCenter)
-        tableWidget_2.setItem(0, 2, item)
+        newDataTableWidget_1.setItem(0, 2, item)
         
-        tableWidget_2.horizontalHeader().setCascadingSectionResizes(False)
-        tableWidget_2.horizontalHeader().setStretchLastSection(True)
-        tableWidget_2.verticalHeader().setVisible(False)
-        tableWidget_2.verticalHeader().setStretchLastSection(True)
-        horizontalLayout_4.addWidget(tableWidget_2)
+        newDataTableWidget_1.horizontalHeader().setCascadingSectionResizes(False)
+        newDataTableWidget_1.horizontalHeader().setStretchLastSection(True)
+        newDataTableWidget_1.verticalHeader().setVisible(False)
+        newDataTableWidget_1.verticalHeader().setStretchLastSection(True)
+        hLayout_newDataBox.addWidget(newDataTableWidget_1)
         
         # Create list widget to contain new function parameter data 
-        listWidget_2 = qtw.QListWidget(new_1_box)
-        listWidget_2.setMinimumSize(qtc.QSize(0, 0))
+        newDataListWidget_1 = qtw.QListWidget(newDataBox)
+        newDataListWidget_1.setMinimumSize(qtc.QSize(0, 0))
+        newDataListWidget_1.setMaximumSize(qtc.QSize(300, 10000))
         font = qtg.QFont()
         font.setPointSize(10)
-        listWidget_2.setFont(font)
-        listWidget_2.setObjectName("listWidget_2")
+        newDataListWidget_1.setFont(font)
+        newDataListWidget_1.setObjectName("newDataListWidget_1")
         
         for param in data['new']['function_parameters']:
             item = qtw.QListWidgetItem()
             item.setText(f"{param['name']}={param['text']}")
-            listWidget_2.addItem(item)
+            newDataListWidget_1.addItem(item)
         
         # Add Function parameter list to new data box
-        horizontalLayout_4.addWidget(listWidget_2)
+        hLayout_newDataBox.addWidget(newDataListWidget_1)
         
         # Add new data box to test_step box
-        horizontalLayout_9.addWidget(new_1_box)
+        self.hLayout_teststepBox.addWidget(newDataBox)
         
         #Create radio button for testcase selection
         radioButton = qtw.QRadioButton(self)
         radioButton.setText("")
         radioButton.setObjectName("radioButton")
         radioButton.setChecked(True)
-        horizontalLayout_9.addWidget(radioButton)
+        self.hLayout_teststepBox.addWidget(radioButton)
         

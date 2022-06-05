@@ -25,8 +25,9 @@ class MainWindow(qtw.QMainWindow):
         self.ui.fileLocation_input_btn.clicked.connect(self.handleXMLOutput)
         self.ui.xml_convert_btn.clicked.connect(self.handleXMLConvert)
         self.ui.xml_loadData_btn.clicked.connect(self.handleXMLLoad)
-        self.ui.toggle_dropdown_btn.pressed.connect(self.HandleToggleAllDropDownBtn)
+        self.ui.toggle_dropdown_btn.pressed.connect(self.handleToggleAllDropDownBtn)
         self.ui.xml_clearTeststeps_btn.clicked.connect(self.clearTestStepScrollArea)
+        self.ui.selectAll_checkBox.pressed.connect(self.handleSelectAllCheckBox)
         
         #Global variables
         self.xlsxInFile = '/Users/dingruoqian/Desktop/code/XML-Converter/testdata/config.xlsx'
@@ -34,7 +35,7 @@ class MainWindow(qtw.QMainWindow):
         self.xmlOutFile = '/Users/dingruoqian/Desktop/code/XML-Converter/testdata/output.xml'
 
         #Global flags
-        self.testCaseBoxList = []
+        self.testCaseBoxList = {}
         self.ui.xlsxConfig_input_label.setText(self.xmlInFile)
         self.ui.xml_input_label.setText(self.xmlInFile)
         self.ui.fileLocation_input_label.setText(self.xmlOutFile)
@@ -96,13 +97,17 @@ class MainWindow(qtw.QMainWindow):
         
         
     def handleXMLLoad(self):
-        #Clear data grid of and old data
+        # Clear data grid of and old data
         self.clearTestStepScrollArea()
         
-        #Enable toggle drop down button and set it to unchecked
+        # Enable toggle drop down button and set it to unchecked
         self.ui.toggle_dropdown_btn.setEnabled(True)
         self.ui.toggle_dropdown_btn.setChecked(False)
         self.ui.toggle_dropdown_btn.setText('Show all')
+        
+        # Enable select all checkbox and set it to checked
+        self.ui.selectAll_checkBox.setEnabled(True)
+        self.ui.selectAll_checkBox.setChecked(True)
         
         atpMap = XML_parser.handleXlsx(self.xlsxInFile)
         dataList = XML_parser.getTestStepData(self.xmlInFile, atpMap)
@@ -121,10 +126,6 @@ class MainWindow(qtw.QMainWindow):
                     'old': dataPair['old'],
                     'new': dataPair['new']
                 })
-
-        # for testcase, teststeps in testCaseList.items():
-        #     print(testcase, teststeps)
-        #     break
             
         
         for index, (testcase, teststeps) in enumerate(testCaseList.items()):
@@ -135,16 +136,23 @@ class MainWindow(qtw.QMainWindow):
             # Create vertical layout for each collapsible box
             vlayout = qtw.QVBoxLayout()
             
+            testStepBoxList = []
             for teststep in teststeps:
                 testStepBox = TestStepGroupBox(data=teststep)
                 vlayout.addWidget(testStepBox)
+                testStepBoxList.append(testStepBox)
 
             box.setContentLayout(vlayout)
-            self.testCaseBoxList.append(box)
+            self.testCaseBoxList[box] = testStepBoxList
         
         self.ui.verticalLayout_3.addStretch()
+        
+        
+        for testCaseBox, testStepBoxList in self.testCaseBoxList.items():
+            print(testCaseBox)
        
-    def HandleToggleAllDropDownBtn(self):
+       
+    def handleToggleAllDropDownBtn(self):
         eventSender = self.sender()
         isChecked = eventSender.isChecked()
         
@@ -155,6 +163,16 @@ class MainWindow(qtw.QMainWindow):
             box.toggle_button.setChecked(isChecked)
             box.on_pressed()
             box.toggle_button.setChecked(not isChecked) 
+            
+    def handleSelectAllCheckBox(self):
+        for teststepBoxList in self.testCaseBoxList.values():
+            for teststep in teststepBoxList:
+                checkBox = teststep.hLayout_teststepBox.itemAt(3).widget()
+                checkBox.setChecked(False if self.ui.selectAll_checkBox.isChecked() else True)
+
+
+            
+        
             
             
             
@@ -174,11 +192,13 @@ class MainWindow(qtw.QMainWindow):
         self.ui.toggle_dropdown_btn.setChecked(False)
         self.ui.toggle_dropdown_btn.setText('Show all')
         
+        # Disable select all checkbox and set it to checked
+        self.ui.selectAll_checkBox.setEnabled(False)
+        self.ui.selectAll_checkBox.setChecked(True)
         
         while self.ui.verticalLayout_3.count():
             item = self.ui.verticalLayout_3.takeAt(0)
             
-            print(item.widget())
             if item.widget():
                 item.widget().deleteLater()
 

@@ -135,4 +135,4 @@ testdata/
 tempCodeRunnerFile.py
 
 #pyqtuic stuff
-.qt_for_python/
+.qt_for_python

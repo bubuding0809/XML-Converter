@@ -129,7 +129,7 @@ dmypy.json
 .pyre/
 
 # Files
-testdata/
+testdata
 
 #Tempcoderunner stuff
 tempCodeRunnerFile.py

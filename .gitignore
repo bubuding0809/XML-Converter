@@ -129,4 +129,10 @@ dmypy.json
 .pyre/
 
 # Files
-testdata
+testdata/
+
+#Tempcoderunner stuff
+tempCodeRunnerFile.py
+
+#pyqtuic stuff
+.qt_for_python/

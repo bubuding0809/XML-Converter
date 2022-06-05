@@ -10,7 +10,7 @@ import subprocess
 import random
 
 class TestStepGroupBox(qtw.QGroupBox):
-    def __init__(self, title="", parent=None):
+    def __init__(self, title="", parent=None, data=None):
         super(TestStepGroupBox, self).__init__(parent)
         
         # Create teststep_box widget
@@ -19,9 +19,9 @@ class TestStepGroupBox(qtw.QGroupBox):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.sizePolicy().hasHeightForWidth())
         self.setSizePolicy(sizePolicy)
-        self.setMinimumSize(qtc.QSize(0, 150))
-        self.setMaximumSize(qtc.QSize(16777215, 16777215))
-        #self.setTitle(str(data['id']))
+        self.setMinimumSize(qtc.QSize(0, 100))
+        self.setMaximumSize(qtc.QSize(16777215, 150))
+        self.setTitle(str(data['old']['id']))
         self.setAlignment(qtc.Qt.AlignLeading|qtc.Qt.AlignLeft|qtc.Qt.AlignVCenter)
         self.setFlat(False)
         self.setCheckable(False)
@@ -86,17 +86,17 @@ class TestStepGroupBox(qtw.QGroupBox):
         
         # Set table data
         item = qtw.QTableWidgetItem()
-        #item.setText(data['description'])
+        item.setText(data['old']['description'])
         item.setTextAlignment(qtc.Qt.AlignCenter)
         tableWidget.setItem(0, 0, item)
         
         item = qtw.QTableWidgetItem()
-        #item.setText(data['function_library'])
+        item.setText(data['old']['function_library'])
         item.setTextAlignment(qtc.Qt.AlignCenter)
         tableWidget.setItem(0, 1, item)
         
         item = qtw.QTableWidgetItem()
-        #item.setText(data['function_name'])
+        item.setText(data['old']['function_name'])
         item.setTextAlignment(qtc.Qt.AlignCenter)
         tableWidget.setItem(0, 2, item)
         
@@ -116,7 +116,7 @@ class TestStepGroupBox(qtw.QGroupBox):
         tableWidget_3.setCornerButtonEnabled(True)
         tableWidget_3.setObjectName("tableWidget_3")
         tableWidget_3.setColumnCount(1)
-        tableWidget_3.setRowCount(4)
+        tableWidget_3.setRowCount(len(data['old']['function_parameters']))
         item = qtw.QTableWidgetItem()
         tableWidget_3.setVerticalHeaderItem(0, item)
         item = qtw.QTableWidgetItem()
@@ -136,11 +136,11 @@ class TestStepGroupBox(qtw.QGroupBox):
         tableWidget_3.setHorizontalHeaderItem(0, item)
         
         # Set table data
-        # for i, param in enumerate(data['function_parameters']):
-        #     item = qtw.QTableWidgetItem()
-        #     item.setText(f"{param['name']}={param['text']}")
-        #     item.setTextAlignment(qtc.Qt.AlignCenter)
-        #     tableWidget_3.setItem(0, i, item)
+        for i, param in enumerate(data['old']['function_parameters']):
+            item = qtw.QTableWidgetItem()
+            item.setText(f"{param['name']}={param['text']}")
+            item.setTextAlignment(qtc.Qt.AlignCenter)
+            tableWidget_3.setItem(0, i, item)
         
         tableWidget_3.horizontalHeader().setVisible(True)
         tableWidget_3.horizontalHeader().setCascadingSectionResizes(False)
@@ -164,6 +164,8 @@ class TestStepGroupBox(qtw.QGroupBox):
         horizontalLayout_4 = qtw.QHBoxLayout(new_1_box)
         horizontalLayout_4.setContentsMargins(0, 0, 0, 0)
         horizontalLayout_4.setObjectName("horizontalLayout_4")
+        
+        ############################################## Table 2 #####################################
         tableWidget_2 = qtw.QTableWidget(new_1_box)
         tableWidget_2.setMinimumSize(qtc.QSize(377, 0))
         font = qtg.QFont()
@@ -175,35 +177,50 @@ class TestStepGroupBox(qtw.QGroupBox):
         tableWidget_2.setObjectName("tableWidget_2")
         tableWidget_2.setColumnCount(3)
         tableWidget_2.setRowCount(1)
+        
         item = qtw.QTableWidgetItem()
         tableWidget_2.setVerticalHeaderItem(0, item)
+        
         item = qtw.QTableWidgetItem()
+        item.setText("Description")
         font = qtg.QFont()
         font.setBold(True)
         font.setWeight(75)
         item.setFont(font)
         tableWidget_2.setHorizontalHeaderItem(0, item)
+        
         item = qtw.QTableWidgetItem()
+        item.setText("Function Name")
         font = qtg.QFont()
         font.setBold(True)
         font.setWeight(75)
         item.setFont(font)
         tableWidget_2.setHorizontalHeaderItem(1, item)
+        
         item = qtw.QTableWidgetItem()
+        item.setText("Function library")
         font = qtg.QFont()
         font.setBold(True)
         font.setWeight(75)
         item.setFont(font)
         tableWidget_2.setHorizontalHeaderItem(2, item)
+        
+        # Set Table data
         item = qtw.QTableWidgetItem()
+        item.setText(data['new']['description'])
         item.setTextAlignment(qtc.Qt.AlignCenter)
         tableWidget_2.setItem(0, 0, item)
+        
         item = qtw.QTableWidgetItem()
+        item.setText(data['new']['function_library'])
         item.setTextAlignment(qtc.Qt.AlignCenter)
         tableWidget_2.setItem(0, 1, item)
+        
         item = qtw.QTableWidgetItem()
+        item.setText(data['new']['function_name'])
         item.setTextAlignment(qtc.Qt.AlignCenter)
         tableWidget_2.setItem(0, 2, item)
+        
         tableWidget_2.horizontalHeader().setCascadingSectionResizes(False)
         tableWidget_2.horizontalHeader().setStretchLastSection(True)
         tableWidget_2.verticalHeader().setVisible(False)
@@ -217,14 +234,13 @@ class TestStepGroupBox(qtw.QGroupBox):
         font.setPointSize(10)
         listWidget_2.setFont(font)
         listWidget_2.setObjectName("listWidget_2")
-        item = qtw.QListWidgetItem()
-        listWidget_2.addItem(item)
-        item = qtw.QListWidgetItem()
-        listWidget_2.addItem(item)
-        item = qtw.QListWidgetItem()
-        listWidget_2.addItem(item)
-        item = qtw.QListWidgetItem()
-        listWidget_2.addItem(item)
+        
+        for param in data['new']['function_parameters']:
+            item = qtw.QListWidgetItem()
+            item.setText(f"{param['name']}={param['text']}")
+            listWidget_2.addItem(item)
+        
+        # Add Function parameter list to new data box
         horizontalLayout_4.addWidget(listWidget_2)
         
         # Add new data box to test_step box
@@ -234,5 +250,6 @@ class TestStepGroupBox(qtw.QGroupBox):
         radioButton = qtw.QRadioButton(self)
         radioButton.setText("")
         radioButton.setObjectName("radioButton")
+        radioButton.setChecked(True)
         horizontalLayout_9.addWidget(radioButton)
         

@@ -1,17 +1,14 @@
-from UiMainWindow import Ui_MainWindow
-from components.testStepGroupBox import TestStepGroupBox
-from components.collapseableWidget import CollapsibleBox
-
+from components.UiMainWindow import Ui_MainWindow
+from components.TestStepGroupBox import TestStepGroupBox
+from components.CollapseableWidget import CollapsibleBox
 from PyQt5 import (
     QtWidgets as qtw,
     QtCore as qtc,
     QtGui as qtg
 )
-
 import sys
 import XML_parser
 import subprocess
-import random
 
 
 class MainWindow(qtw.QMainWindow):
@@ -28,16 +25,21 @@ class MainWindow(qtw.QMainWindow):
         self.ui.fileLocation_input_btn.clicked.connect(self.handleXMLOutput)
         self.ui.xml_convert_btn.clicked.connect(self.handleXMLConvert)
         self.ui.xml_loadData_btn.clicked.connect(self.handleXMLLoad)
+        self.ui.toggle_dropdown_btn.pressed.connect(self.HandleToggleAllDropDownBtn)
+        self.ui.xml_clearTeststeps_btn.clicked.connect(self.clearTestStepScrollArea)
         
         #Global variables
         self.xlsxInFile = '/Users/dingruoqian/Desktop/code/XML-Converter/testdata/config.xlsx'
         self.xmlInFile = '/Users/dingruoqian/Desktop/code/XML-Converter/testdata/input.xml'
         self.xmlOutFile = '/Users/dingruoqian/Desktop/code/XML-Converter/testdata/output.xml'
 
-        
+        #Global flags
+        self.testCaseBoxList = []
         self.ui.xlsxConfig_input_label.setText(self.xmlInFile)
         self.ui.xml_input_label.setText(self.xmlInFile)
         self.ui.fileLocation_input_label.setText(self.xmlOutFile)
+        
+        
         
     #************************* Event Handler methods ****************************#
     def handleXLSXInput(self):
@@ -94,28 +96,93 @@ class MainWindow(qtw.QMainWindow):
         
         
     def handleXMLLoad(self):
-        for i in range(10):
-            self.createCollapseableBox()
-    
-            
-    def createCollapseableBox(self):
-        box = CollapsibleBox(title='testcase')
-        self.ui.verticalLayout_3.insertWidget(0, box)
+        #Clear data grid of and old data
+        self.clearTestStepScrollArea()
         
-        # Create vertical layout for each collapsible box
-        vlayout = qtw.QVBoxLayout()
+        #Enable toggle drop down button and set it to unchecked
+        self.ui.toggle_dropdown_btn.setEnabled(True)
+        self.ui.toggle_dropdown_btn.setChecked(False)
+        self.ui.toggle_dropdown_btn.setText('Show all')
         
-        for i in range(10):
-            testStepBox = TestStepGroupBox(title='test step')
-            vlayout.addWidget(testStepBox)
+        atpMap = XML_parser.handleXlsx(self.xlsxInFile)
+        dataList = XML_parser.getTestStepData(self.xmlInFile, atpMap)
 
-        box.setContentLayout(vlayout)
+        # Filter teststeps into their respective testcases
+        testCaseList = {}
+        for dataPair in dataList:
+            if dataPair['parentId'] not in testCaseList:
+                testCaseList[dataPair['parentId']] = [{
+                    'parentName': dataPair['parentName'],
+                    'old': dataPair['old'],
+                    'new': dataPair['new']
+                }]
+            else:
+                testCaseList[dataPair['parentId']].append({
+                    'old': dataPair['old'],
+                    'new': dataPair['new']
+                })
+
+        # for testcase, teststeps in testCaseList.items():
+        #     print(testcase, teststeps)
+        #     break
+            
         
-    
+        for index, (testcase, teststeps) in enumerate(testCaseList.items()):
+            # Create collapsible box for test case
+            box = CollapsibleBox(title=f"name: {teststeps[0]['parentName']}\nid: {testcase}")
+            self.ui.verticalLayout_3.insertWidget(index, box)
+            
+            # Create vertical layout for each collapsible box
+            vlayout = qtw.QVBoxLayout()
+            
+            for teststep in teststeps:
+                testStepBox = TestStepGroupBox(data=teststep)
+                vlayout.addWidget(testStepBox)
+
+            box.setContentLayout(vlayout)
+            self.testCaseBoxList.append(box)
+        
+        self.ui.verticalLayout_3.addStretch()
+       
+    def HandleToggleAllDropDownBtn(self):
+        eventSender = self.sender()
+        isChecked = eventSender.isChecked()
+        
+        eventSender.setText('Hide all' if not isChecked else 'Show all')
+        
+        
+        for box in self.testCaseBoxList:
+            box.toggle_button.setChecked(isChecked)
+            box.on_pressed()
+            box.toggle_button.setChecked(not isChecked) 
+            
+            
+            
+    #*************************** Utility functions ******************************* #             
     def testLoadData(self):
         for i in range(20):
             testStepBox = TestStepGroupBox(title=f'teststep {i}')
             self.ui.verticalLayout_3.insertWidget(0, testStepBox)
+    
+    
+    def clearTestStepScrollArea(self):
+        # Empty global list of testcaseBoxes
+        self.testCaseBoxList.clear()
+        
+        # Disable toggle dropdown button and set it to unchecked
+        self.ui.toggle_dropdown_btn.setEnabled(False)
+        self.ui.toggle_dropdown_btn.setChecked(False)
+        self.ui.toggle_dropdown_btn.setText('Show all')
+        
+        
+        while self.ui.verticalLayout_3.count():
+            item = self.ui.verticalLayout_3.takeAt(0)
+            
+            print(item.widget())
+            if item.widget():
+                item.widget().deleteLater()
+
+        
             
 if __name__ == '__main__':
     app = qtw.QApplication(sys.argv)

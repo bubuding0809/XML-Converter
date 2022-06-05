@@ -11,6 +11,7 @@ class CollapsibleBox(QtWidgets.QWidget):
         self.toggle_button = QtWidgets.QToolButton(
             text=title, checkable=True, checked=False
         )
+        self.toggle_button.setFont(QtGui.QFont('Arial', 15))
         self.toggle_button.setStyleSheet("QToolButton { border: none; }")
         self.toggle_button.setToolButtonStyle(
             QtCore.Qt.ToolButtonTextBesideIcon
@@ -82,8 +83,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.initUi()
-
-            
+       
     def initUi(self):
         centralWidget = QtWidgets.QWidget(self)
         

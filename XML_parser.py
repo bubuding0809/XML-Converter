@@ -26,7 +26,7 @@ def handleXlsx(xlsxFile):
             newfuncParamsPair.append(paramNameText)
 
         atpMap[row['teststep.desc old']] = {
-            'test_step.desc': row['test_step.desc new'],
+            'description': row['test_step.desc new'],
             'function_library': row['function_library'],
             'function_name': row['function_name'],
             'function_parameters': newfuncParamsPair,
@@ -41,31 +41,52 @@ def getTestStepData(xmlInFile, atpMap):
     childParentMap = {c: p for p in root.iter() for c in p}
     allTestSteps = root.iter('teststep')
     
+    # Initialize xmlData list
     xmlData = []
+    
+    # Initialize counter to create id for each test step
     idCounter = 0
     
     for teststep in allTestSteps:
         
-        #Initialize counter to create id for each test step
         
         # Get teststep description attribute from teststep
-        teststepDesc = teststep.get('desc')
+        oldDesciption = teststep.get('desc')
         
-        if teststepDesc in atpMap:
+        if oldDesciption in atpMap:
             idCounter += 1
-            testStepData = {
+            oldFunctionLibrary = teststep.find('function_library').text
+            oldFunctionName = teststep.find('function_name').text
+            oldFunctionParams = teststep.find('function_parameters').iter('param')
+            
+            oldTestStepData = {
                 'id': idCounter,
-                'parentId': childParentMap[teststep].get('id'),
-                'description': teststepDesc,
-                'function_library': teststep.find('function_library').text,
-                'function_name': teststep.find('function_name').text,
+                'description': oldDesciption,
+                'function_library': oldFunctionLibrary,
+                'function_name': oldFunctionName,
                 'function_parameters': [{
                     'name': param.get('name'),
                     'text': param.text.strip('\n ')
-                    } for param in teststep.find('function_parameters').iter('param')]
+                    } for param in oldFunctionParams]
             }
             
-            xmlData.append(testStepData)
+            newTestStepData = {
+                'id': idCounter,
+                'description': atpMap[oldDesciption]['description'],
+                'function_library': atpMap[oldDesciption]['function_library'],
+                'function_name': atpMap[oldDesciption]['function_name'],
+                'function_parameters': [{
+                    'name': param['name'].strip(),
+                    'text': param['text'].strip('\n ')
+                    } for param in atpMap[oldDesciption]['function_parameters']]
+            }
+            
+            xmlData.append({
+                'parentId': childParentMap[teststep].get('id'),
+                'parentName': childParentMap[teststep].get('name'),
+                'old': oldTestStepData,
+                'new': newTestStepData,
+            })
         
     return xmlData
 
@@ -122,10 +143,15 @@ def convertXML(xmlInFile, xmlOutFile, atpMap):
 
 def testHandleXlsx():
     xlsxFile = './testdata/mapping.xlsx'
-    xmlFile = './testdata/input.xml'
     
     atpMap = handleXlsx(xlsxFile)
-    print(atpMap['[CAN] Check TMU Mute Signal'])
+    for key, value in atpMap.items():
+        print(key)
+        for key, value in value.items():
+            print(f'{key}: {value}')
+            print()
+            
+        break
 
 def testHandleConvertXML():
     xlsxFile = './testdata/mapping.xlsx'
@@ -142,6 +168,9 @@ def testHandleGetTestStepData():
     
     for item in getTestStepData(xmlFile, atpMap):
         print(item)
+        for key, value in item.items():
+            print(f'{key}: {value}')
+            print()
         break
     
     

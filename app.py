@@ -1,3 +1,4 @@
+
 from components.UiMainWindow import Ui_MainWindow
 from components.TestStepGroupBox import TestStepGroupBox
 from components.CollapseableWidget import CollapsibleBox
@@ -37,6 +38,7 @@ class MainWindow(qtw.QMainWindow):
 
         #Global flags
         self.testCaseBoxList = {}
+        self.isDataLoaded = False
         self.ui.xlsxConfig_input_label.setText(self.xlsxInFile)
         self.ui.xml_input_label.setText(self.xmlInFile)
         self.ui.fileLocation_input_label.setText(self.xmlOutFile)
@@ -48,8 +50,12 @@ class MainWindow(qtw.QMainWindow):
         file = qtw.QFileDialog.getOpenFileName(self, 'Input config XLSX file', directory='', filter='Xlsx files (*.xlsx)')
         if file:
             self.xlsxInFile = file[0]
-            
             self.ui.xlsxConfig_input_label.setText(file[0])
+            
+        if len(self.xlsxInFile) and len(self.xmlInFile):
+            self.ui.xml_loadData_btn.setEnabled(True)
+        else:
+            self.ui.xml_loadData_btn.setEnabled(False)
             
         
     def handleXMLInput(self):
@@ -57,8 +63,14 @@ class MainWindow(qtw.QMainWindow):
         
         if file:
             self.xmlInFile = file[0]
-            
             self.ui.xml_input_label.setText(file[0])
+            
+        # Enable load data button if both xlsx and xml inputs exists
+        if len(self.xlsxInFile) and len(self.xmlInFile):
+            self.ui.xml_loadData_btn.setEnabled(True)
+        else:
+            self.ui.xml_loadData_btn.setEnabled(False)
+            
 
             
     def handleXMLOutput(self):
@@ -71,12 +83,6 @@ class MainWindow(qtw.QMainWindow):
             
             
     def handleXMLConvert(self):
-        if not self.xlsxInFile or not self.xmlInFile or not self.xmlOutFile:
-            
-            #Create error message box
-            qtw.QMessageBox.critical(self, 'Error', 'Ensure all required fields are filled')
-            return print('Ensure all required fields are filled')
-
         #Execute XML conversion
         atpMap = XML_parser.handleXlsx(self.xlsxInFile)
         XML_parser.convertXML(self.xmlInFile, self.xmlOutFile, atpMap)
@@ -104,31 +110,39 @@ class MainWindow(qtw.QMainWindow):
         # Clear data grid of and old data
         self.clearTestStepScrollArea()
         
-        # Enable toggle drop down button and set it to unchecked
-        self.ui.showAll_btn.setEnabled(True)
-        self.ui.hideAll_btn.setEnabled(True)
-        
-        # Enable select all checkbox and set it to checked
-        self.ui.selectAll_checkBox.setEnabled(True)
-        self.ui.selectAll_checkBox.setChecked(True)
-        
-        atpMap = XML_parser.handleXlsx(self.xlsxInFile)
-        dataList = XML_parser.getTestStepData(self.xmlInFile, atpMap)
+        try:
+            
+            # Catch errors thrown from xml processing
+            atpMap = XML_parser.handleXlsx(self.xlsxInFile)
+            dataList = XML_parser.getTestStepData(self.xmlInFile, atpMap)
+            
+        except Exception as ex:
+            
+            #Catch exceptions and handle them 
+            exception = f"An exception of type {type(ex)} occurred."
+            arguments = f"Arguments:{ex.args}"
+            
+            msgBox = qtw.QMessageBox.critical(self, 'Error', exception)
+            
+            print(f'{exception}\n{arguments}')
+            return
+            
 
         # Filter teststeps into their respective testcases
         testCaseList = {}
-        for dataPair in dataList:
-            if dataPair['parentId'] not in testCaseList:
-                testCaseList[dataPair['parentId']] = [{
-                    'parentName': dataPair['parentName'],
-                    'old': dataPair['old'],
-                    'new': dataPair['new']
-                }]
-            else:
-                testCaseList[dataPair['parentId']].append({
-                    'old': dataPair['old'],
-                    'new': dataPair['new']
-                })
+        if dataList:
+            for dataPair in dataList:
+                if dataPair['parentId'] not in testCaseList:
+                    testCaseList[dataPair['parentId']] = [{
+                        'parentName': dataPair['parentName'],
+                        'old': dataPair['old'],
+                        'new': dataPair['new']
+                    }]
+                else:
+                    testCaseList[dataPair['parentId']].append({
+                        'old': dataPair['old'],
+                        'new': dataPair['new']
+                    })
             
         
         for index, (testcase, teststeps) in enumerate(testCaseList.items()):
@@ -150,9 +164,16 @@ class MainWindow(qtw.QMainWindow):
         
         self.ui.verticalLayout_3.addStretch()
         
+        # Enable convert button
+        self.ui.xml_convert_btn.setEnabled(True)
         
-        for testCaseBox, testStepBoxList in self.testCaseBoxList.items():
-            print(testCaseBox)
+        # Enable toggle drop down button and set it to unchecked
+        self.ui.showAll_btn.setEnabled(True)
+        self.ui.hideAll_btn.setEnabled(True)
+        
+        # Enable select all checkbox and set it to checked
+        self.ui.selectAll_checkBox.setEnabled(True)
+        self.ui.selectAll_checkBox.setChecked(True)
        
        
     def handleToggleAllDropDownBtn(self):
@@ -171,7 +192,6 @@ class MainWindow(qtw.QMainWindow):
                 box.toggle_button.setChecked(False) 
         
 
-            
             
     def handleSelectAllCheckBox(self):
         for teststepBoxList in self.testCaseBoxList.values():
@@ -199,6 +219,9 @@ class MainWindow(qtw.QMainWindow):
             
             if item.widget():
                 item.widget().deleteLater()
+        
+        self.ui.xml_convert_btn.setEnabled(False)
+        
 
               
 if __name__ == '__main__':

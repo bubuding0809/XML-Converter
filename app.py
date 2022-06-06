@@ -25,7 +25,8 @@ class MainWindow(qtw.QMainWindow):
         self.ui.fileLocation_input_btn.clicked.connect(self.handleXMLOutput)
         self.ui.xml_convert_btn.clicked.connect(self.handleXMLConvert)
         self.ui.xml_loadData_btn.clicked.connect(self.handleXMLLoad)
-        self.ui.toggle_dropdown_btn.pressed.connect(self.handleToggleAllDropDownBtn)
+        self.ui.showAll_btn.pressed.connect(self.handleToggleAllDropDownBtn)
+        self.ui.hideAll_btn.pressed.connect(self.handleToggleAllDropDownBtn)
         self.ui.xml_clearTeststeps_btn.clicked.connect(self.clearTestStepScrollArea)
         self.ui.selectAll_checkBox.pressed.connect(self.handleSelectAllCheckBox)
         
@@ -104,9 +105,8 @@ class MainWindow(qtw.QMainWindow):
         self.clearTestStepScrollArea()
         
         # Enable toggle drop down button and set it to unchecked
-        self.ui.toggle_dropdown_btn.setEnabled(True)
-        self.ui.toggle_dropdown_btn.setChecked(False)
-        self.ui.toggle_dropdown_btn.setText('Show all')
+        self.ui.showAll_btn.setEnabled(True)
+        self.ui.hideAll_btn.setEnabled(True)
         
         # Enable select all checkbox and set it to checked
         self.ui.selectAll_checkBox.setEnabled(True)
@@ -157,15 +157,20 @@ class MainWindow(qtw.QMainWindow):
        
     def handleToggleAllDropDownBtn(self):
         eventSender = self.sender()
-        isChecked = eventSender.isChecked()
+        if eventSender == self.ui.showAll_btn:
+            #Show all testcases
+            for box in self.testCaseBoxList:
+                box.toggle_button.setChecked(False)
+                box.on_pressed()
+                box.toggle_button.setChecked(True) 
+        else:
+            #Hide all testcases
+            for box in self.testCaseBoxList:
+                box.toggle_button.setChecked(True)
+                box.on_pressed()
+                box.toggle_button.setChecked(False) 
         
-        eventSender.setText('Hide all' if not isChecked else 'Show all')
-        
-        
-        for box in self.testCaseBoxList:
-            box.toggle_button.setChecked(isChecked)
-            box.on_pressed()
-            box.toggle_button.setChecked(not isChecked) 
+
             
             
     def handleSelectAllCheckBox(self):
@@ -181,9 +186,9 @@ class MainWindow(qtw.QMainWindow):
         self.testCaseBoxList.clear()
         
         # Disable toggle dropdown button and set it to unchecked
-        self.ui.toggle_dropdown_btn.setEnabled(False)
-        self.ui.toggle_dropdown_btn.setChecked(False)
-        self.ui.toggle_dropdown_btn.setText('Show all')
+        self.ui.showAll_btn.setEnabled(False)
+        self.ui.hideAll_btn.setEnabled(False)
+
         
         # Disable select all checkbox and set it to checked
         self.ui.selectAll_checkBox.setEnabled(False)

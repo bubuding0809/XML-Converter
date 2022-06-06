@@ -93,7 +93,11 @@ class MainWindow(qtw.QMainWindow):
         ret = msgBox.exec_()
         
         if checkbox.isChecked():
-            subprocess.call(["open", "-R", self.xmlOutFile])
+            if sys.platform == 'win32':
+                self.xmlOutFile = self.xmlOutFile.replace('/', '\\')
+                subprocess.Popen(f'explorer /select,{self.xmlOutFile}')
+            elif sys.platform == 'darwin':
+                subprocess.call('open', '-R', self.xmlOutFile)
         
         
     def handleXMLLoad(self):

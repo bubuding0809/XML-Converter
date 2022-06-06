@@ -36,7 +36,7 @@ class MainWindow(qtw.QMainWindow):
 
         #Global flags
         self.testCaseBoxList = {}
-        self.ui.xlsxConfig_input_label.setText(self.xmlInFile)
+        self.ui.xlsxConfig_input_label.setText(self.xlsxInFile)
         self.ui.xml_input_label.setText(self.xmlInFile)
         self.ui.fileLocation_input_label.setText(self.xmlOutFile)
         
@@ -66,7 +66,6 @@ class MainWindow(qtw.QMainWindow):
         
         if len(filePath):
             self.xmlOutFile = filePath + '.xml'
-            
             self.ui.fileLocation_input_label.setText(filePath + '.xml')
             
             

@@ -1,56 +1,56 @@
 import random
 import sys
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5 import (
+    QtCore as qtc,
+    QtGui as qtg,
+    QtWidgets as qtw
+)
 
 
-class CollapsibleBox(QtWidgets.QWidget):
+class CollapsibleBox(qtw.QWidget):
     def __init__(self, title="", parent=None):
         super(CollapsibleBox, self).__init__(parent)
         self.title = title
-        #Toggle button
-        self.toggle_button = QtWidgets.QToolButton(
-            text=title, checkable=True, checked=False
-        )
-        self.toggle_button.setFont(QtGui.QFont('Arial', 15))
+        
+        # Toggle button
+        self.toggle_button = qtw.QToolButton(text=title, checkable=True, checked=False)
+        self.toggle_button.setFont(qtg.QFont('Arial', 12))
         self.toggle_button.setStyleSheet("QToolButton { border: none; }")
-        self.toggle_button.setToolButtonStyle(
-            QtCore.Qt.ToolButtonTextBesideIcon
-        )
-        self.toggle_button.setArrowType(QtCore.Qt.RightArrow)
+        self.toggle_button.setCursor(qtg.QCursor(qtc.Qt.PointingHandCursor))
+        self.toggle_button.setIconSize(qtc.QSize(10, 10))
+        self.toggle_button.setToolButtonStyle(qtc.Qt.ToolButtonTextBesideIcon)
+        self.toggle_button.setArrowType(qtc.Qt.RightArrow)
         self.toggle_button.pressed.connect(self.on_pressed)
 
-        self.toggle_animation = QtCore.QParallelAnimationGroup(self)
+        self.content_area = qtw.QScrollArea(maximumHeight=0, minimumHeight=0)
+        self.content_area.setSizePolicy(qtw.QSizePolicy.Expanding, qtw.QSizePolicy.Fixed)
+        self.content_area.setFrameShape(qtw.QFrame.Box | qtw.QFrame.Raised)
 
-        self.content_area = QtWidgets.QScrollArea(
-            maximumHeight=0, minimumHeight=0
-        )
-        self.content_area.setSizePolicy(
-            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed
-        )
-        self.content_area.setFrameShape(QtWidgets.QFrame.NoFrame)
-
-        lay = QtWidgets.QVBoxLayout(self)
+        # Vertical layout for content collapseable box
+        lay = qtw.QVBoxLayout(self)
         lay.setSpacing(0)
         lay.setContentsMargins(0, 0, 0, 0)
         lay.addWidget(self.toggle_button)
         lay.addWidget(self.content_area)
 
+        # Toggle animation for content area
+        self.toggle_animation = qtc.QParallelAnimationGroup(self)
         self.toggle_animation.addAnimation(
-            QtCore.QPropertyAnimation(self, b"minimumHeight")
+            qtc.QPropertyAnimation(self, b"minimumHeight")
         )
         self.toggle_animation.addAnimation(
-            QtCore.QPropertyAnimation(self, b"maximumHeight")
+            qtc.QPropertyAnimation(self, b"maximumHeight")
         )
         self.toggle_animation.addAnimation(
-            QtCore.QPropertyAnimation(self.content_area, b"maximumHeight")
+            qtc.QPropertyAnimation(self.content_area, b"maximumHeight")
         )
         
-    @QtCore.pyqtSlot()
+    @qtc.pyqtSlot()
     def on_pressed(self):
         checked = self.toggle_button.isChecked()
         
-        self.toggle_button.setArrowType(QtCore.Qt.DownArrow if not checked else QtCore.Qt.RightArrow)
-        self.toggle_animation.setDirection(QtCore.QAbstractAnimation.Forward if not checked else QtCore.QAbstractAnimation.Backward)
+        self.toggle_button.setArrowType(qtc.Qt.DownArrow if not checked else qtc.Qt.RightArrow)
+        self.toggle_animation.setDirection(qtc.QAbstractAnimation.Forward if not checked else qtc.QAbstractAnimation.Backward)
         
         self.toggle_animation.start()
         
@@ -64,51 +64,51 @@ class CollapsibleBox(QtWidgets.QWidget):
         content_height = layout.sizeHint().height()
         for i in range(self.toggle_animation.animationCount()):
             animation = self.toggle_animation.animationAt(i)
-            animation.setDuration(500)
+            animation.setDuration(50)
             animation.setStartValue(collapsed_height)
             animation.setEndValue(collapsed_height + content_height)
 
         content_animation = self.toggle_animation.animationAt(
             self.toggle_animation.animationCount() - 1
         )
-        content_animation.setDuration(500)
+        content_animation.setDuration(50)
         content_animation.setStartValue(0)
         content_animation.setEndValue(content_height)
 
     def __str__(self):
         return self.title
         
-class MainWindow(QtWidgets.QMainWindow):
+class MainWindow(qtw.QMainWindow):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.initUi()
        
     def initUi(self):
-        centralWidget = QtWidgets.QWidget(self)
+        centralWidget = qtw.QWidget(self)
         
         # Create vertical layout for central widget
-        self.verticalLayout = QtWidgets.QVBoxLayout(centralWidget)
+        self.verticalLayout = qtw.QVBoxLayout(centralWidget)
         
         # Set main window's central widget to central wdiget
         self.setCentralWidget(centralWidget)
         
         # Create scroll area to contain data
-        scroll = QtWidgets.QScrollArea()
+        scroll = qtw.QScrollArea()
         
         # Add scroll area to the central widget's vertical layout
         self.verticalLayout.addWidget(scroll)
         
         # Create contentwidget for scroll area
-        scrollContentWidget = QtWidgets.QWidget()
+        scrollContentWidget = qtw.QWidget()
         
-        scroll.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
+        scroll.setVerticalScrollBarPolicy(qtc.Qt.ScrollBarAlwaysOn)
 
         scroll.setWidget(scrollContentWidget)
         scroll.setWidgetResizable(True)
         
         # Create vertical layout for scroll area
-        self.vlay = QtWidgets.QVBoxLayout(scrollContentWidget)
+        self.vlay = qtw.QVBoxLayout(scrollContentWidget)
         
         boxList = []
         # Create 10 CollapsibleBox
@@ -117,16 +117,16 @@ class MainWindow(QtWidgets.QMainWindow):
             self.vlay.addWidget(box)
             
             # Create vertical layout for each collapsible box
-            lay = QtWidgets.QVBoxLayout()
+            lay = qtw.QVBoxLayout(self)
             
             # Create x label with random color for each collapseable box
             for j in range(20):
                 
                 #Create lable widget and apply a random color to it
-                label = QtWidgets.QLabel("{}".format(j))
-                color = QtGui.QColor(*[random.randint(0, 255) for _ in range(3)])
+                label = qtw.QLabel("{}".format(j))
+                color = qtg.QColor(*[random.randint(0, 255) for _ in range(3)])
                 label.setStyleSheet("background-color: {}; color : white;".format(color.name()))
-                label.setAlignment(QtCore.Qt.AlignCenter)
+                label.setAlignment(qtc.Qt.AlignCenter)
                 lay.addWidget(label)
 
             box.setContentLayout(lay)
@@ -134,10 +134,10 @@ class MainWindow(QtWidgets.QMainWindow):
             
         self.vlay.addStretch()
         
-        toggle_allDropDow_btn = QtWidgets.QPushButton(parent=self, text='Show all')
+        toggle_allDropDow_btn = qtw.QPushButton(parent=self, text='Show all')
         toggle_allDropDow_btn.setCheckable(True)
         
-        delete_btn = QtWidgets.QPushButton(parent=self, text='Delete all boxes')
+        delete_btn = qtw.QPushButton(parent=self, text='Delete all boxes')
         
         self.verticalLayout.insertWidget(0, toggle_allDropDow_btn)
         self.verticalLayout.insertWidget(0, delete_btn)
@@ -167,7 +167,7 @@ class MainWindow(QtWidgets.QMainWindow):
         
 if __name__ == "__main__":
 
-    app = QtWidgets.QApplication(sys.argv)
+    app = qtw.QApplication(sys.argv)
 
     # Create main window and show
     mainWindow = MainWindow()

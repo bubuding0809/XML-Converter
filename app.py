@@ -97,7 +97,7 @@ class MainWindow(qtw.QMainWindow):
                 self.xmlOutFile = self.xmlOutFile.replace('/', '\\')
                 subprocess.Popen(f'explorer /select,{self.xmlOutFile}')
             elif sys.platform == 'darwin':
-                subprocess.call('open', '-R', self.xmlOutFile)
+                subprocess.call(['open', '-R', self.xmlOutFile])
         
         
     def handleXMLLoad(self):

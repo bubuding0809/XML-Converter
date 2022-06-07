@@ -138,12 +138,14 @@ class MainWindow(qtw.QMainWindow):
                 testStepBox = TestStepGroupBox(title=teststep['old']['description'], data=teststep, parent=self)
                 vlayout.addWidget(testStepBox)
                 testStepBoxList.append(testStepBox)
-
+                
+            vlayout.addStretch()
             box.setContentLayout(vlayout)
             self.testCaseBoxList[box] = testStepBoxList
         self.ui.verticalLayout_3.addStretch()
         
         self.searchBar = qtw.QLineEdit()
+        self.searchBar.setPlaceholderText('Search for teststeps')
         self.ui.verticalLayout_3.insertWidget(0, self.searchBar)
         self.searchBar.textChanged.connect(self.handleSearchBar)
         

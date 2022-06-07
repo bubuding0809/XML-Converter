@@ -7,7 +7,7 @@ from PyQt5 import (
     QtGui as qtg
 )
 import sys
-import XML_parser
+import parser
 import subprocess
 
 
@@ -84,13 +84,13 @@ class MainWindow(qtw.QMainWindow):
         
         
     def handleXMLLoad(self):
-        #* Clear data grid of and old data
+        # Clear data grid of and old data
         self.clearTestStepScrollArea()
         
         try:
             # Catch errors thrown from xml processing
-            conversionMap = XML_parser.handleXlsx(self.xlsxInFile)
-            xmlData = XML_parser.getTestStepData(self.xmlInFile, conversionMap)
+            conversionMap = parser.handleXlsx(self.xlsxInFile)
+            xmlData = parser.getTestStepData(self.xmlInFile, conversionMap)
             
         except Exception as ex:
             #Catch exceptions and handle them 
@@ -123,6 +123,7 @@ class MainWindow(qtw.QMainWindow):
                         'new': teststep['new']
                     })
         
+
         #* Create filtered data boxes and insert into the vertical scroll layout area 
         for index, (testcase, teststeps) in enumerate(testCaseList.items()):
             # Create collapsible box for test case
@@ -134,13 +135,22 @@ class MainWindow(qtw.QMainWindow):
             
             testStepBoxList = []
             for teststep in teststeps:
-                testStepBox = TestStepGroupBox(data=teststep, id=teststep['id'])
+                testStepBox = TestStepGroupBox(title=teststep['old']['description'], data=teststep, parent=self)
                 vlayout.addWidget(testStepBox)
                 testStepBoxList.append(testStepBox)
 
             box.setContentLayout(vlayout)
             self.testCaseBoxList[box] = testStepBoxList
         self.ui.verticalLayout_3.addStretch()
+        
+        self.searchBar = qtw.QLineEdit()
+        self.ui.verticalLayout_3.insertWidget(0, self.searchBar)
+        self.searchBar.textChanged.connect(self.handleSearchBar)
+        
+        self.autoCompleter = qtw.QCompleter(list({teststep.title for teststepBoxList in self.testCaseBoxList.values() for teststep in teststepBoxList}))
+        self.autoCompleter.setCaseSensitivity(qtc.Qt.CaseInsensitive)
+        self.searchBar.setCompleter(self.autoCompleter)
+        
         
         #* Enable convert button
         self.ui.xml_convert_btn.setEnabled(True)
@@ -188,6 +198,15 @@ class MainWindow(qtw.QMainWindow):
 
     
     
+    def handleSearchBar(self, text):
+        for teststep in [teststep for teststepBoxList in self.testCaseBoxList.values() for teststep in teststepBoxList]:
+             if text.lower() in teststep.title.lower():
+                 teststep.show()
+             else:
+                 teststep.hide()
+                
+                
+                    
     def handleXMLConvert(self):
         # Create a filtered set of teststeps ids based on the selected radio box.
         filteredIds = set()
@@ -203,10 +222,10 @@ class MainWindow(qtw.QMainWindow):
         # Try to execute Execute XML conversion
         try:
             # Create conversion map based on xlsx config file
-            conversionMap = XML_parser.handleXlsx(self.xlsxInFile)
+            conversionMap = parser.handleXlsx(self.xlsxInFile)
             
             # To be used in XML_parser to selectively convert old teststeps to new
-            XML_parser.convertXML(filteredIds ,self.xmlInFile, self.xmlOutFile, conversionMap)
+            parser.convertXML(filteredIds ,self.xmlInFile, self.xmlOutFile, conversionMap)
         except Exception as ex:
             # Catch exceptions and handle them 
             exception = f"An exception of type {type(ex)} occurred."
@@ -262,7 +281,7 @@ class MainWindow(qtw.QMainWindow):
         self.ui.xml_convert_btn.setEnabled(False)
         self.ui.xml_clearTeststeps_btn.setEnabled(False)
 
-              
+
 if __name__ == '__main__':
     app = qtw.QApplication(sys.argv)
     mainWindow = MainWindow()

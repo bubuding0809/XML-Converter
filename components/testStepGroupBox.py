@@ -5,11 +5,12 @@ from PyQt5 import (
 )
 
 class TestStepGroupBox(qtw.QGroupBox):
-    def __init__(self, title="", parent=None, data=None, id=None):
+    def __init__(self, title="", parent=None, data=None):
         super(TestStepGroupBox, self).__init__(parent)
         
         # Global attributes
-        self.id = id
+        self.id = data['id']
+        self.title = title
         
         # Create teststep_box widget
         sizePolicy = qtw.QSizePolicy(qtw.QSizePolicy.Preferred, qtw.QSizePolicy.Preferred)
@@ -19,7 +20,7 @@ class TestStepGroupBox(qtw.QGroupBox):
         self.setSizePolicy(sizePolicy)
         self.setMinimumSize(qtc.QSize(0, 100))
         self.setMaximumSize(qtc.QSize(16777215, 120))
-        self.setTitle(str(data['id']))
+        self.setTitle(self.title)
         self.setAlignment(qtc.Qt.AlignLeading|qtc.Qt.AlignLeft|qtc.Qt.AlignVCenter)
         self.setFlat(False)
         self.setCheckable(False)

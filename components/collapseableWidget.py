@@ -70,10 +70,10 @@ class CollapsibleBox(qtw.QWidget):
         content_animation.setDuration(50)
         content_animation.setStartValue(0)
         content_animation.setEndValue(content_height)
-
+        
     def __str__(self):
         return self.title
-        
+    
 class MainWindow(qtw.QMainWindow):
 
     def __init__(self, *args, **kwargs):

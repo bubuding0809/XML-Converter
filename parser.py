@@ -162,7 +162,7 @@ def testHandleXlsx():
 
 
 def testHandleConvertXML():
-    xlsxFile = './testdata/mapping.xlsx'
+    xlsxFile = './testdata/config.xlsx'
     xmlFile = './testdata/input.xml'
 
     conversionMap = handleXlsx(xlsxFile)
@@ -170,7 +170,7 @@ def testHandleConvertXML():
     
     
 def testHandleGetTestStepData():
-    xlsxFile = './testdata/mapping.xlsx'
+    xlsxFile = './testdata/config.xlsx'
     xmlFile = './testdata/input.xml'
     
     conversionMap = handleXlsx(xlsxFile)

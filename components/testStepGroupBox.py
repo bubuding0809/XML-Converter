@@ -4,14 +4,12 @@ from PyQt5 import (
     QtGui as qtg
 )
 
-import sys
-import XML_parser
-import subprocess
-import random
-
 class TestStepGroupBox(qtw.QGroupBox):
-    def __init__(self, title="", parent=None, data=None):
+    def __init__(self, title="", parent=None, data=None, id=None):
         super(TestStepGroupBox, self).__init__(parent)
+        
+        # Global attributes
+        self.id = id
         
         # Create teststep_box widget
         sizePolicy = qtw.QSizePolicy(qtw.QSizePolicy.Preferred, qtw.QSizePolicy.Preferred)
@@ -21,7 +19,7 @@ class TestStepGroupBox(qtw.QGroupBox):
         self.setSizePolicy(sizePolicy)
         self.setMinimumSize(qtc.QSize(0, 100))
         self.setMaximumSize(qtc.QSize(16777215, 120))
-        self.setTitle(str(data['old']['id']))
+        self.setTitle(str(data['id']))
         self.setAlignment(qtc.Qt.AlignLeading|qtc.Qt.AlignLeft|qtc.Qt.AlignVCenter)
         self.setFlat(False)
         self.setCheckable(False)

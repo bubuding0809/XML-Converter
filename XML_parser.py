@@ -2,6 +2,7 @@ import xml.etree.ElementTree as ET
 from utils import *
 from openpyxl import load_workbook
 
+#********************************************************* Application functions ********************************************************#
 def handleXlsx(xlsxFile):
     #Load excel file with openpyxl load_workbook
     workbook = load_workbook(filename=xlsxFile)
@@ -10,8 +11,8 @@ def handleXlsx(xlsxFile):
     #Convert excel sheet into a list of dictionary with header:value pairs
     reader = ExcelDictReader(sheet)
 
-    #Convert dictionary list into atpMap
-    atpMap = {}
+    #Convert dictionary list into conversionMap
+    conversionMap = {}
     for row in reader:
 
         funcParams = row['function_parameters'].split('\n')
@@ -25,42 +26,37 @@ def handleXlsx(xlsxFile):
             }
             newfuncParamsPair.append(paramNameText)
 
-        atpMap[row['teststep.desc old']] = {
+        conversionMap[row['teststep.desc old']] = {
             'description': row['test_step.desc new'],
             'function_library': row['function_library'],
             'function_name': row['function_name'],
             'function_parameters': newfuncParamsPair,
         }
 
-    return atpMap
+    return conversionMap
 
     
-def getTestStepData(xmlInFile, atpMap):
+def getTestStepData(xmlInFile, conversionMap):
     tree = ET.parse(xmlInFile)
     root = tree.getroot()
-    childParentMap = {c: p for p in root.iter() for c in p}
+    childParentMap = {child: parent for parent in root.iter() for child in parent}
     allTestSteps = root.iter('teststep')
     
     # Initialize xmlData list
     xmlData = []
     
-    # Initialize counter to create id for each test step
-    idCounter = 0
-    
-    for teststep in allTestSteps:
-        
+    for index, teststep in enumerate(allTestSteps):
         
         # Get teststep description attribute from teststep
         oldDesciption = teststep.get('desc')
         
-        if oldDesciption in atpMap:
-            idCounter += 1
+        if oldDesciption in conversionMap:
             oldFunctionLibrary = teststep.find('function_library').text
             oldFunctionName = teststep.find('function_name').text
             oldFunctionParams = teststep.find('function_parameters').iter('param')
             
+            # Create old data object
             oldTestStepData = {
-                'id': idCounter,
                 'description': oldDesciption,
                 'function_library': oldFunctionLibrary,
                 'function_name': oldFunctionName,
@@ -70,18 +66,20 @@ def getTestStepData(xmlInFile, atpMap):
                     } for param in oldFunctionParams]
             }
             
+            # Create new data object
             newTestStepData = {
-                'id': idCounter,
-                'description': atpMap[oldDesciption]['description'],
-                'function_library': atpMap[oldDesciption]['function_library'],
-                'function_name': atpMap[oldDesciption]['function_name'],
+                'description': conversionMap[oldDesciption]['description'],
+                'function_library': conversionMap[oldDesciption]['function_library'],
+                'function_name': conversionMap[oldDesciption]['function_name'],
                 'function_parameters': [{
                     'name': param['name'].strip(),
                     'text': param['text'].strip('\n ')
-                    } for param in atpMap[oldDesciption]['function_parameters']]
+                    } for param in conversionMap[oldDesciption]['function_parameters']]
             }
             
+            # Append to teststep data list
             xmlData.append({
+                'id': index + 1,
                 'parentId': childParentMap[teststep].get('id'),
                 'parentName': childParentMap[teststep].get('name'),
                 'old': oldTestStepData,
@@ -91,61 +89,70 @@ def getTestStepData(xmlInFile, atpMap):
     return xmlData
 
 
-def convertXML(xmlInFile, xmlOutFile, atpMap):
+def convertXML(filteredIds, xmlInFile, xmlOutFile, conversionMap):
     tree = ET.parse(xmlInFile)
     root = tree.getroot()
-    allTestSteps = root.iter('teststep')
+    counter = 0
+    
+    # Create a teststep object for every teststep in the xml 
+    allTestSteps = [{'id': index + 1, 'teststep': teststep} 
+                    for index, teststep in enumerate(root.iter('teststep'))]
 
     for teststep in allTestSteps:
        
         # Get teststep description attribute from teststep
-        oldtestStepDescription = teststep.attrib['desc']
+        oldtestStepDescription = teststep['teststep'].get('desc')
 
-        # IF teststep description finds match in atpMap - convert to new version
-        if oldtestStepDescription in atpMap:
-            matchPairs = atpMap[oldtestStepDescription]
+        # If teststep description finds match in conversionMap - convert to new version
+        if oldtestStepDescription in conversionMap and teststep['id'] in filteredIds:
+            counter += 1
+            matchedConfig = conversionMap[oldtestStepDescription]
 
             #Change old teststep description to new description
-            teststep.set('desc', matchPairs['description'])
+            teststep['teststep'].set('desc', matchedConfig['description'])
 
             #Change old function_library text to new function_library text
-            oldFunctionLibrary = teststep.find('function_library')
-            oldFunctionLibrary.text = matchPairs['function_library']
+            oldFunctionLibrary = teststep['teststep'].find('function_library')
+            oldFunctionLibrary.text = matchedConfig['function_library']
 
             #Change old function_name text to new function_name text
-            oldFunctionName = teststep.find('function_name')
-            oldFunctionName.text = matchPairs['function_name']
+            oldFunctionName = teststep['teststep'].find('function_name')
+            oldFunctionName.text = matchedConfig['function_name']
 
-            #Delete old function parameters and replace with new ones from atpMap
-            oldFunctionParams = teststep.find('function_parameters')
+            #Delete old function parameters and replace with new ones from conversionMap
+            oldFunctionParams = teststep['teststep'].find('function_parameters')
 
             #remove existing param elements from function_parameters
             for param in list(oldFunctionParams.iter('param')):
                 oldFunctionParams.remove(param)
                
             #create new param elements and append to function_parameters
-            for param in matchPairs['function_parameters']:
+            for param in matchedConfig['function_parameters']:
                 newParam = ET.SubElement(oldFunctionParams, 'param')
                 newParam.set('name', param['name'])
                 newParam.text = param['text']
 
-
-            #Format newly populated function_parameters with proper indents and next lines
+            # Debug print
+            print(f"Converted teststeps: {counter}_______________________________________________________________________________________________________________________________")
             print(f'''
-                {teststep.get('desc')}
-                {oldFunctionLibrary.text}
-                {oldFunctionName.text}
-                {[f"{param.get('name')}={param.text}" for param in oldFunctionParams]}
+id: {teststep['id']}
+{teststep['teststep'].get('desc')}
+{oldFunctionLibrary.text}
+{oldFunctionName.text}
+{[f"{param.get('name')}={param.text}" for param in oldFunctionParams]}
             ''')
-            
+    
+    # Write modified xml file to specificed file location
     tree.write(xmlOutFile)
 
 
+
+#********************************************************* Test functions ********************************************************#
 def testHandleXlsx():
     xlsxFile = './testdata/mapping.xlsx'
     
-    atpMap = handleXlsx(xlsxFile)
-    for key, value in atpMap.items():
+    conversionMap = handleXlsx(xlsxFile)
+    for key, value in conversionMap.items():
         print(key)
         for key, value in value.items():
             print(f'{key}: {value}')
@@ -153,25 +160,27 @@ def testHandleXlsx():
             
         break
 
+
 def testHandleConvertXML():
     xlsxFile = './testdata/mapping.xlsx'
     xmlFile = './testdata/input.xml'
 
-    atpMap = handleXlsx(xlsxFile)
-    convertXML(xmlFile, './testdata/output.xml', atpMap)
+    conversionMap = handleXlsx(xlsxFile)
+    convertXML(xmlFile, './testdata/output.xml', conversionMap)
+    
     
 def testHandleGetTestStepData():
     xlsxFile = './testdata/mapping.xlsx'
     xmlFile = './testdata/input.xml'
     
-    atpMap = handleXlsx(xlsxFile)
+    conversionMap = handleXlsx(xlsxFile)
     
-    for item in getTestStepData(xmlFile, atpMap):
-        print(item)
+    for item in getTestStepData(xmlFile, conversionMap):
         for key, value in item.items():
             print(f'{key}: {value}')
             print()
-        break
+        print('___________________________________________________________________________________________')
+    
     
     
 if __name__ == '__main__':

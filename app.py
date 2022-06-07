@@ -1,4 +1,3 @@
-
 from components.UiMainWindow import Ui_MainWindow
 from components.TestStepGroupBox import TestStepGroupBox
 from components.CollapseableWidget import CollapsibleBox
@@ -38,7 +37,6 @@ class MainWindow(qtw.QMainWindow):
 
         #Global flags
         self.testCaseBoxList = {}
-        self.isDataLoaded = False
         self.ui.xlsxConfig_input_label.setText(self.xlsxInFile)
         self.ui.xml_input_label.setText(self.xmlInFile)
         self.ui.fileLocation_input_label.setText(self.xmlOutFile)
@@ -75,51 +73,26 @@ class MainWindow(qtw.QMainWindow):
         self.ui.xml_convert_btn.setEnabled(False)
             
 
-            
+
     def handleXMLOutput(self):
         file = qtw.QFileDialog.getSaveFileName(self, 'Save converted ATP XML file', directory='', filter='XML files (*.xml)')
         
         if file:
             self.xmlOutFile = file[0]
             self.ui.fileLocation_input_label.setText(file[0])
-            
         
-    def handleXMLConvert(self):
-        #Execute XML conversion
-        atpMap = XML_parser.handleXlsx(self.xlsxInFile)
-        XML_parser.convertXML(self.xmlInFile, self.xmlOutFile, atpMap)
-        
-        #Create success message box
-        msgBox = qtw.QMessageBox()
-        msgBox.setWindowTitle("Success")
-        msgBox.setText("Successfully converted ATP XML file")
-        msgBox.setIcon(qtw.QMessageBox.Information)
-        checkbox = qtw.QCheckBox('Show file in explorer', msgBox)
-        checkbox.setChecked(True)
-        msgBox.setCheckBox(checkbox)
-        
-        ret = msgBox.exec_()
-        
-        if checkbox.isChecked():
-            if sys.platform == 'win32':
-                self.xmlOutFile = self.xmlOutFile.replace('/', '\\')
-                subprocess.Popen(f'explorer /select,{self.xmlOutFile}')
-            elif sys.platform == 'darwin':
-                subprocess.call(['open', '-R', self.xmlOutFile])
         
         
     def handleXMLLoad(self):
-        # Clear data grid of and old data
+        #* Clear data grid of and old data
         self.clearTestStepScrollArea()
         
         try:
-            
             # Catch errors thrown from xml processing
-            atpMap = XML_parser.handleXlsx(self.xlsxInFile)
-            dataList = XML_parser.getTestStepData(self.xmlInFile, atpMap)
+            conversionMap = XML_parser.handleXlsx(self.xlsxInFile)
+            xmlData = XML_parser.getTestStepData(self.xmlInFile, conversionMap)
             
         except Exception as ex:
-            
             #Catch exceptions and handle them 
             exception = f"An exception of type {type(ex)} occurred."
             arguments = f"Arguments:{ex.args}"
@@ -129,24 +102,28 @@ class MainWindow(qtw.QMainWindow):
             print(f'{exception}\n{arguments}')
             return
             
-
-        # Filter teststeps into their respective testcases
+        #* Filter teststeps into their respective testcases
         testCaseList = {}
-        if dataList:
-            for dataPair in dataList:
-                if dataPair['parentId'] not in testCaseList:
-                    testCaseList[dataPair['parentId']] = [{
-                        'parentName': dataPair['parentName'],
-                        'old': dataPair['old'],
-                        'new': dataPair['new']
+        if xmlData:
+            
+            # Filter each teststep into their respect testcases
+            for teststep in xmlData:
+                if teststep['parentId'] not in testCaseList:
+                    testCaseList[teststep['parentId']] = [{
+                        'id': teststep['id'],
+                        'parentName': teststep['parentName'],
+                        'old': teststep['old'],
+                        'new': teststep['new']
                     }]
                 else:
-                    testCaseList[dataPair['parentId']].append({
-                        'old': dataPair['old'],
-                        'new': dataPair['new']
+                    testCaseList[teststep['parentId']].append({
+                        'id': teststep['id'],
+                        'parentName': teststep['parentName'],
+                        'old': teststep['old'],
+                        'new': teststep['new']
                     })
-            
         
+        #* Create filtered data boxes and insert into the vertical scroll layout area 
         for index, (testcase, teststeps) in enumerate(testCaseList.items()):
             # Create collapsible box for test case
             box = CollapsibleBox(title=f"name: {teststeps[0]['parentName']}\nid: {testcase}")
@@ -157,13 +134,12 @@ class MainWindow(qtw.QMainWindow):
             
             testStepBoxList = []
             for teststep in teststeps:
-                testStepBox = TestStepGroupBox(data=teststep)
+                testStepBox = TestStepGroupBox(data=teststep, id=teststep['id'])
                 vlayout.addWidget(testStepBox)
                 testStepBoxList.append(testStepBox)
 
             box.setContentLayout(vlayout)
             self.testCaseBoxList[box] = testStepBoxList
-        
         self.ui.verticalLayout_3.addStretch()
         
         #* Enable convert button
@@ -181,6 +157,7 @@ class MainWindow(qtw.QMainWindow):
         self.ui.xml_clearTeststeps_btn.setEnabled(True)
        
        
+    
     def handleToggleAllDropDownBtn(self):
         eventSender = self.sender()
         if eventSender == self.ui.showAll_btn:
@@ -197,14 +174,70 @@ class MainWindow(qtw.QMainWindow):
                 box.toggle_button.setChecked(False) 
         
 
-            
+
     def handleSelectAllCheckBox(self):
+        # Iterate over every testStepBoxList
         for teststepBoxList in self.testCaseBoxList.values():
+            
+            # Iterate over every teststep in each teststepBoxList
             for teststep in teststepBoxList:
+                
+                # Get the checkbox object and toggle it
                 checkBox = teststep.hLayout_teststepBox.itemAt(3).widget()
                 checkBox.setChecked(False if self.ui.selectAll_checkBox.isChecked() else True)
 
+    
+    
+    def handleXMLConvert(self):
+        # Create a filtered set of teststeps ids based on the selected radio box.
+        filteredIds = set()
+        
+        # Iterate over every testStepBoxList
+        for teststepBoxList in self.testCaseBoxList.values():
             
+            # Iterate over every teststep in each teststepBoxList
+            for teststep in teststepBoxList:
+                checkBox = teststep.hLayout_teststepBox.itemAt(3).widget()
+                if checkBox.isChecked(): filteredIds.add(teststep.id)
+                
+        # Try to execute Execute XML conversion
+        try:
+            # Create conversion map based on xlsx config file
+            conversionMap = XML_parser.handleXlsx(self.xlsxInFile)
+            
+            # To be used in XML_parser to selectively convert old teststeps to new
+            XML_parser.convertXML(filteredIds ,self.xmlInFile, self.xmlOutFile, conversionMap)
+        except Exception as ex:
+            # Catch exceptions and handle them 
+            exception = f"An exception of type {type(ex)} occurred."
+            arguments = f"Arguments:{ex.args}"
+            
+            msgBox = qtw.QMessageBox.critical(self, 'Error', exception)
+            
+            print(f'{exception}\n{arguments}')
+            return
+        
+        #* Create success message box
+        msgBox = qtw.QMessageBox()
+        msgBox.setWindowTitle("Success")
+        msgBox.setText("Successfully converted ATP XML file")
+        msgBox.setIcon(qtw.QMessageBox.Information)
+        checkbox = qtw.QCheckBox('Show file in explorer', msgBox)
+        checkbox.setChecked(True)
+        msgBox.setCheckBox(checkbox)
+        ret = msgBox.exec_()
+        
+        #* Open file in explorer/finder if option is checked
+        if checkbox.isChecked():
+            if sys.platform == 'win32':
+                self.xmlOutFile = self.xmlOutFile.replace('/', '\\')
+                subprocess.Popen(f'explorer /select,{self.xmlOutFile}')
+                
+            elif sys.platform == 'darwin':
+                subprocess.call(['open', '-R', self.xmlOutFile])
+    
+    
+    
     #*************************** Utility functions ******************************* #             
     def clearTestStepScrollArea(self):
         # Empty global list of testcaseBoxes

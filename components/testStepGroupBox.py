@@ -35,7 +35,7 @@ class TestStepGroupBox(qtw.QGroupBox):
         
         ############################################################################################# oldDataBox ##############################################
         oldDataBox = qtw.QGroupBox(self)
-        oldDataBox.setMinimumSize(qtc.QSize(500, 0))
+        oldDataBox.setMinimumSize(qtc.QSize(0, 0))
         oldDataBox.setTitle("")
         oldDataBox.setObjectName("oldDataBox")
         hLayout_oldDataBox = qtw.QHBoxLayout(oldDataBox)
@@ -44,7 +44,7 @@ class TestStepGroupBox(qtw.QGroupBox):
         
         ########################################## oldDataTableWidget_1 ########################################
         oldDataTableWidget_1 = qtw.QTableWidget(oldDataBox)
-        oldDataTableWidget_1.setMinimumSize(qtc.QSize(377, 0))
+        oldDataTableWidget_1.setMinimumSize(qtc.QSize(0, 0))
         font = qtg.QFont()
         font.setPointSize(10)
         oldDataTableWidget_1.setFont(font)
@@ -177,7 +177,7 @@ class TestStepGroupBox(qtw.QGroupBox):
         
         ###################################################### New data box ###############################################
         newDataBox = qtw.QGroupBox(self)
-        newDataBox.setMinimumSize(qtc.QSize(500, 0))
+        newDataBox.setMinimumSize(qtc.QSize(0, 0))
         newDataBox.setTitle("")
         newDataBox.setObjectName("newDataBox")
         hLayout_newDataBox = qtw.QHBoxLayout(newDataBox)
@@ -186,7 +186,7 @@ class TestStepGroupBox(qtw.QGroupBox):
         
         ############################################## newDataTableWidget_1 #####################################
         newDataTableWidget_1 = qtw.QTableWidget(newDataBox)
-        newDataTableWidget_1.setMinimumSize(qtc.QSize(377, 0))
+        newDataTableWidget_1.setMinimumSize(qtc.QSize(0, 0))
         font = qtg.QFont()
         font.setPointSize(10)
         newDataTableWidget_1.setFont(font)

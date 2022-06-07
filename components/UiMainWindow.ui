@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1073</width>
-    <height>909</height>
+    <width>1841</width>
+    <height>1282</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -665,6 +665,9 @@
           </item>
           <item>
            <widget class="QPushButton" name="xml_clearTeststeps_btn">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
             <property name="text">
              <string>Clear data</string>
             </property>
@@ -734,8 +737,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>1046</width>
-            <height>644</height>
+            <width>1814</width>
+            <height>1017</height>
            </rect>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_3"/>
@@ -750,6 +753,9 @@
       <layout class="QGridLayout" name="gridLayout_2">
        <item row="0" column="0">
         <widget class="QPushButton" name="xml_convert_btn">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
          <property name="text">
           <string>Convert and save</string>
          </property>
@@ -778,7 +784,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1073</width>
+     <width>1841</width>
      <height>24</height>
     </rect>
    </property>

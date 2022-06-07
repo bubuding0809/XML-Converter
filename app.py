@@ -56,6 +56,8 @@ class MainWindow(qtw.QMainWindow):
             self.ui.xml_loadData_btn.setEnabled(True)
         else:
             self.ui.xml_loadData_btn.setEnabled(False)
+        self.ui.xml_convert_btn.setEnabled(False)
+            
             
         
     def handleXMLInput(self):
@@ -70,18 +72,18 @@ class MainWindow(qtw.QMainWindow):
             self.ui.xml_loadData_btn.setEnabled(True)
         else:
             self.ui.xml_loadData_btn.setEnabled(False)
+        self.ui.xml_convert_btn.setEnabled(False)
             
 
             
     def handleXMLOutput(self):
-        file = qtw.QFileDialog.getSaveFileName(self, 'Save converted ATP XML file', directory='')
-        filePath = file[0]
+        file = qtw.QFileDialog.getSaveFileName(self, 'Save converted ATP XML file', directory='', filter='XML files (*.xml)')
         
-        if len(filePath):
-            self.xmlOutFile = filePath + '.xml'
-            self.ui.fileLocation_input_label.setText(filePath + '.xml')
+        if file:
+            self.xmlOutFile = file[0]
+            self.ui.fileLocation_input_label.setText(file[0])
             
-            
+        
     def handleXMLConvert(self):
         #Execute XML conversion
         atpMap = XML_parser.handleXlsx(self.xlsxInFile)
@@ -164,16 +166,19 @@ class MainWindow(qtw.QMainWindow):
         
         self.ui.verticalLayout_3.addStretch()
         
-        # Enable convert button
+        #* Enable convert button
         self.ui.xml_convert_btn.setEnabled(True)
         
-        # Enable toggle drop down button and set it to unchecked
+        #* Enable toggle drop down button and set it to unchecked
         self.ui.showAll_btn.setEnabled(True)
         self.ui.hideAll_btn.setEnabled(True)
         
-        # Enable select all checkbox and set it to checked
+        #* Enable select all checkbox and set it to checked
         self.ui.selectAll_checkBox.setEnabled(True)
         self.ui.selectAll_checkBox.setChecked(True)
+        
+        #* Enable clear data function
+        self.ui.xml_clearTeststeps_btn.setEnabled(True)
        
        
     def handleToggleAllDropDownBtn(self):
@@ -220,8 +225,9 @@ class MainWindow(qtw.QMainWindow):
             if item.widget():
                 item.widget().deleteLater()
         
+        #* Disable convert and clear data btns
         self.ui.xml_convert_btn.setEnabled(False)
-        
+        self.ui.xml_clearTeststeps_btn.setEnabled(False)
 
               
 if __name__ == '__main__':

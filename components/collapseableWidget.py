@@ -7,6 +7,7 @@ from PyQt5 import (
 )
 
 
+
 class CollapsibleBox(qtw.QWidget):
     def __init__(self, title="", parent=None):
         super(CollapsibleBox, self).__init__(parent)
@@ -24,14 +25,15 @@ class CollapsibleBox(qtw.QWidget):
 
         self.content_area = qtw.QScrollArea(maximumHeight=0, minimumHeight=0)
         self.content_area.setSizePolicy(qtw.QSizePolicy.Expanding, qtw.QSizePolicy.Fixed)
-        self.content_area.setFrameShape(qtw.QFrame.Box | qtw.QFrame.Raised)
+        self.content_area.setFrameShape(qtw.QFrame.NoFrame | qtw.QFrame.Raised)
 
-        # Vertical layout for content collapseable box
-        lay = qtw.QVBoxLayout(self)
+        # Vertical layout for collapseable box to contain toggle button and content area
+        lay = qtw.QVBoxLayout()
         lay.setSpacing(0)
         lay.setContentsMargins(0, 0, 0, 0)
         lay.addWidget(self.toggle_button)
         lay.addWidget(self.content_area)
+        self.setLayout(lay)
 
         # Toggle animation for content area
         self.toggle_animation = qtc.QParallelAnimationGroup(self)
@@ -70,10 +72,10 @@ class CollapsibleBox(qtw.QWidget):
         content_animation.setDuration(50)
         content_animation.setStartValue(0)
         content_animation.setEndValue(content_height)
-        
+
     def __str__(self):
         return self.title
-    
+        
 class MainWindow(qtw.QMainWindow):
 
     def __init__(self, *args, **kwargs):
@@ -109,11 +111,11 @@ class MainWindow(qtw.QMainWindow):
         boxList = []
         # Create 10 CollapsibleBox
         for i in range(10):
-            box = CollapsibleBox("Collapsible Box Header-{}".format(i))
+            box = CollapsibleBox(f"Collapsible Box Header-{i}")
             self.vlay.addWidget(box)
             
             # Create vertical layout for each collapsible box
-            lay = qtw.QVBoxLayout(self)
+            lay = qtw.QVBoxLayout()
             
             # Create x label with random color for each collapseable box
             for j in range(20):

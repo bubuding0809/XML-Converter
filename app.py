@@ -7,7 +7,7 @@ from PyQt5 import (
     QtGui as qtg
 )
 import sys
-import parser
+import xmlParser
 import subprocess
 
 
@@ -29,7 +29,8 @@ class MainWindow(qtw.QMainWindow):
         self.ui.hideAll_btn.pressed.connect(self.handleToggleAllDropDownBtn)
         self.ui.xml_clearTeststeps_btn.clicked.connect(self.clearTestStepScrollArea)
         self.ui.selectAll_checkBox.pressed.connect(self.handleSelectAllCheckBox)
-        
+        self.ui.xmlData_searchBar.textChanged.connect(self.handleSearchBar)
+
         #Global variables
         self.xlsxInFile = '/Users/dingruoqian/Desktop/code/XML-Converter/testdata/config.xlsx'
         self.xmlInFile = '/Users/dingruoqian/Desktop/code/XML-Converter/testdata/input.xml'
@@ -89,8 +90,8 @@ class MainWindow(qtw.QMainWindow):
         
         try:
             # Catch errors thrown from xml processing
-            conversionMap = parser.handleXlsx(self.xlsxInFile)
-            xmlData = parser.getTestStepData(self.xmlInFile, conversionMap)
+            conversionMap = xmlParser.handleXlsx(self.xlsxInFile)
+            xmlData = xmlParser.getTestStepData(self.xmlInFile, conversionMap)
             
         except Exception as ex:
             #Catch exceptions and handle them 
@@ -111,6 +112,7 @@ class MainWindow(qtw.QMainWindow):
                 if teststep['parentId'] not in testCaseList:
                     testCaseList[teststep['parentId']] = [{
                         'id': teststep['id'],
+                        'parentType': teststep['parentType'],
                         'parentName': teststep['parentName'],
                         'old': teststep['old'],
                         'new': teststep['new']
@@ -118,6 +120,7 @@ class MainWindow(qtw.QMainWindow):
                 else:
                     testCaseList[teststep['parentId']].append({
                         'id': teststep['id'],
+                        'parentType': teststep['parentType'],
                         'parentName': teststep['parentName'],
                         'old': teststep['old'],
                         'new': teststep['new']
@@ -127,7 +130,7 @@ class MainWindow(qtw.QMainWindow):
         #* Create filtered data boxes and insert into the vertical scroll layout area 
         for index, (testcase, teststeps) in enumerate(testCaseList.items()):
             # Create collapsible box for test case
-            box = CollapsibleBox(title=f"name: {teststeps[0]['parentName']}\nid: {testcase}")
+            box = CollapsibleBox(title=f"{testcase} <{teststeps[0]['parentType']}>")
             self.ui.verticalLayout_3.insertWidget(index, box)
             
             # Create vertical layout for each collapsible box
@@ -144,15 +147,14 @@ class MainWindow(qtw.QMainWindow):
             self.testCaseBoxList[box] = testStepBoxList
         self.ui.verticalLayout_3.addStretch()
         
-        self.searchBar = qtw.QLineEdit()
-        self.searchBar.setPlaceholderText('Search for teststeps')
-        self.ui.verticalLayout_3.insertWidget(0, self.searchBar)
-        self.searchBar.textChanged.connect(self.handleSearchBar)
-        
+        # Setup autocompleter for search bar to allow for predictive searching of teststeps by description
         self.autoCompleter = qtw.QCompleter(list({teststep.title for teststepBoxList in self.testCaseBoxList.values() for teststep in teststepBoxList}))
         self.autoCompleter.setCaseSensitivity(qtc.Qt.CaseInsensitive)
-        self.searchBar.setCompleter(self.autoCompleter)
+        self.ui.xmlData_searchBar.setCompleter(self.autoCompleter)
         
+
+        #* Enable search bar 
+        self.ui.xmlData_searchBar.setEnabled(True)
         
         #* Enable convert button
         self.ui.xml_convert_btn.setEnabled(True)
@@ -224,10 +226,10 @@ class MainWindow(qtw.QMainWindow):
         # Try to execute Execute XML conversion
         try:
             # Create conversion map based on xlsx config file
-            conversionMap = parser.handleXlsx(self.xlsxInFile)
+            conversionMap = xmlParser.handleXlsx(self.xlsxInFile)
             
-            # To be used in XML_parser to selectively convert old teststeps to new
-            parser.convertXML(filteredIds ,self.xmlInFile, self.xmlOutFile, conversionMap)
+            # To be used in XML_xmlParser to selectively convert old teststeps to new
+            xmlParser.convertXML(filteredIds ,self.xmlInFile, self.xmlOutFile, conversionMap)
         except Exception as ex:
             # Catch exceptions and handle them 
             exception = f"An exception of type {type(ex)} occurred."
@@ -264,24 +266,26 @@ class MainWindow(qtw.QMainWindow):
         # Empty global list of testcaseBoxes
         self.testCaseBoxList.clear()
         
-        # Disable toggle dropdown button and set it to unchecked
-        self.ui.showAll_btn.setEnabled(False)
-        self.ui.hideAll_btn.setEnabled(False)
-
-        
-        # Disable select all checkbox and set it to checked
-        self.ui.selectAll_checkBox.setEnabled(False)
-        self.ui.selectAll_checkBox.setChecked(True)
-        
+        # Remove all widgets inside scroll area
         while self.ui.verticalLayout_3.count():
             item = self.ui.verticalLayout_3.takeAt(0)
             
             if item.widget():
                 item.widget().deleteLater()
         
-        #* Disable convert and clear data btns
+        #* Disable scroll area tool widgets
         self.ui.xml_convert_btn.setEnabled(False)
         self.ui.xml_clearTeststeps_btn.setEnabled(False)
+        self.ui.xmlData_searchBar.setEnabled(False)
+
+        #* Disable toggle dropdown button and set it to unchecked
+        self.ui.showAll_btn.setEnabled(False)
+        self.ui.hideAll_btn.setEnabled(False)
+
+        #* Disable select all checkbox and set it to checked
+        self.ui.selectAll_checkBox.setEnabled(False)
+        self.ui.selectAll_checkBox.setChecked(True)
+
 
 
 if __name__ == '__main__':

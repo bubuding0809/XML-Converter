@@ -3,8 +3,8 @@ from PyQt5 import (
     QtCore as qtc,
     QtGui as qtg
 )
-from sqlalchemy import true
 from TestStepGroupBox import TestStepGroupBox
+from CollapseableWidget import CollapsibleBox
 import sys
         
 class MainWindow(qtw.QMainWindow):
@@ -29,6 +29,7 @@ class MainWindow(qtw.QMainWindow):
             }
         }
         self.teststepList = []
+        self.collapsibleBoxList = []
         
         self.centralWidget = qtw.QWidget(self)
         self.setCentralWidget(self.centralWidget)
@@ -46,13 +47,23 @@ class MainWindow(qtw.QMainWindow):
         
         self.vLayout_central.addWidget(self.scrollArea)
         
-        for i in range(100):
-            searchItem = TestStepGroupBox(title=f'testItem_{i}', parent=self, data=self.testdata)
-            self.teststepList.append(searchItem)
-            self.vLayout_scrollArea.addWidget(searchItem)
-        
+        for i in range(10):
+            collapsibleBox = CollapsibleBox(title=str(i), parent=self)
+            vLayout_collapsibleBox = qtw.QVBoxLayout()
+
+            for i in range(10):
+                searchItem = TestStepGroupBox(title=f'testItem_{i}', parent=self, data=self.testdata)
+                vLayout_collapsibleBox.addWidget(searchItem)
+                self.teststepList.append(searchItem)
+                
+                collapsibleBox.setContentLayout(vLayout_collapsibleBox)
+
+            vLayout_collapsibleBox.addStretch()
+            self.vLayout_scrollArea.addWidget(collapsibleBox)
+            self.collapsibleBoxList.append(collapsibleBox)
+
         self.vLayout_scrollArea.addStretch()
-        
+            
         self.autoCompleter = qtw.QCompleter(list({teststep.title for teststep in self.teststepList}))
         self.autoCompleter.setCaseSensitivity(qtc.Qt.CaseInsensitive)
         self.searchBar.setCompleter(self.autoCompleter)
@@ -63,11 +74,19 @@ class MainWindow(qtw.QMainWindow):
         
     # Event handler methods
     def handleSearchBar(self, text):
+        isMatch = False
         for teststep in self.teststepList:
             if text.lower() in teststep.title.lower():
                 teststep.show()
+                isMatch = True
             else:
                 teststep.hide()
+                
+            for box in self.collapsibleBoxList:
+                box.layout().setSizeConstraint(qtw.QLayout.SetMinimumSize if isMatch else qtw.QLayout.SetDefaultConstraint)
+
+        
+
 
 if __name__ == '__main__':
     app = qtw.QApplication(sys.argv)

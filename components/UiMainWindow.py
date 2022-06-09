@@ -14,10 +14,10 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(1087, 1282)
+        MainWindow.resize(1115, 839)
         MainWindow.setStyleSheet("QPushButton {\n"
 "    border: 1px solid #8f8f91;\n"
-"    border-radius: 6px;\n"
+"    border-radius: 5px;\n"
 "    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,\n"
 "                                      stop: 0 #f6f7fa, stop: 1 #dadbde);\n"
 "    min-width: 80px;\n"
@@ -40,11 +40,19 @@ class Ui_MainWindow(object):
 "}\n"
 "\n"
 "QLineEdit {\n"
-"    border: 1px solid 8f8f91;\n"
-"    border-radius: 6px;\n"
-"    padding: 0 8px;\n"
+"    border: 1px solid #8f8f91;\n"
+"    border-radius: 5px;\n"
+"    padding: 0 6px;\n"
 "    selection-background-color: darkgray;\n"
 "    min-height: 25px;\n"
+"}\n"
+"\n"
+"QTableWidget {\n"
+"    font-size: 8;\n"
+"}\n"
+"\n"
+"QListWidget {\n"
+"    font-size 8;\n"
 "}")
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         palette = QtGui.QPalette()
@@ -202,10 +210,18 @@ class Ui_MainWindow(object):
         self.gridLayout = QtWidgets.QGridLayout(self.setup_widget)
         self.gridLayout.setContentsMargins(5, 10, 0, 20)
         self.gridLayout.setObjectName("gridLayout")
+        self.xml_input_btn = QtWidgets.QPushButton(self.setup_widget)
+        self.xml_input_btn.setObjectName("xml_input_btn")
+        self.gridLayout.addWidget(self.xml_input_btn, 1, 0, 1, 1)
         spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
-        self.gridLayout.addItem(spacerItem, 1, 3, 1, 1)
+        self.gridLayout.addItem(spacerItem, 0, 3, 1, 1)
         spacerItem1 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
-        self.gridLayout.addItem(spacerItem1, 2, 3, 1, 1)
+        self.gridLayout.addItem(spacerItem1, 1, 3, 1, 1)
+        self.fileLocation_input_btn = QtWidgets.QPushButton(self.setup_widget)
+        self.fileLocation_input_btn.setObjectName("fileLocation_input_btn")
+        self.gridLayout.addWidget(self.fileLocation_input_btn, 2, 0, 1, 1)
+        spacerItem2 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        self.gridLayout.addItem(spacerItem2, 2, 3, 1, 1)
         self.xlsxConfig_input_label = QtWidgets.QLabel(self.setup_widget)
         self.xlsxConfig_input_label.setEnabled(True)
         self.xlsxConfig_input_label.setMinimumSize(QtCore.QSize(500, 0))
@@ -214,6 +230,13 @@ class Ui_MainWindow(object):
         self.xlsxConfig_input_label.setIndent(4)
         self.xlsxConfig_input_label.setObjectName("xlsxConfig_input_label")
         self.gridLayout.addWidget(self.xlsxConfig_input_label, 0, 1, 1, 2)
+        self.fileLocation_input_label = QtWidgets.QLabel(self.setup_widget)
+        self.fileLocation_input_label.setMinimumSize(QtCore.QSize(500, 0))
+        self.fileLocation_input_label.setAcceptDrops(False)
+        self.fileLocation_input_label.setAutoFillBackground(True)
+        self.fileLocation_input_label.setIndent(4)
+        self.fileLocation_input_label.setObjectName("fileLocation_input_label")
+        self.gridLayout.addWidget(self.fileLocation_input_label, 2, 1, 1, 2)
         self.xlsxConfig_input_btn = QtWidgets.QPushButton(self.setup_widget)
         self.xlsxConfig_input_btn.setCheckable(False)
         self.xlsxConfig_input_btn.setAutoRepeat(False)
@@ -225,21 +248,6 @@ class Ui_MainWindow(object):
         self.xml_input_label.setIndent(4)
         self.xml_input_label.setObjectName("xml_input_label")
         self.gridLayout.addWidget(self.xml_input_label, 1, 1, 1, 2)
-        self.fileLocation_input_btn = QtWidgets.QPushButton(self.setup_widget)
-        self.fileLocation_input_btn.setObjectName("fileLocation_input_btn")
-        self.gridLayout.addWidget(self.fileLocation_input_btn, 2, 0, 1, 1)
-        spacerItem2 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
-        self.gridLayout.addItem(spacerItem2, 0, 3, 1, 1)
-        self.xml_input_btn = QtWidgets.QPushButton(self.setup_widget)
-        self.xml_input_btn.setObjectName("xml_input_btn")
-        self.gridLayout.addWidget(self.xml_input_btn, 1, 0, 1, 1)
-        self.fileLocation_input_label = QtWidgets.QLabel(self.setup_widget)
-        self.fileLocation_input_label.setMinimumSize(QtCore.QSize(500, 0))
-        self.fileLocation_input_label.setAcceptDrops(False)
-        self.fileLocation_input_label.setAutoFillBackground(True)
-        self.fileLocation_input_label.setIndent(4)
-        self.fileLocation_input_label.setObjectName("fileLocation_input_label")
-        self.gridLayout.addWidget(self.fileLocation_input_label, 2, 1, 1, 2)
         self.verticalLayout.addWidget(self.setup_widget)
         self.data_widget = QtWidgets.QWidget(self.centralwidget)
         self.data_widget.setObjectName("data_widget")
@@ -259,21 +267,8 @@ class Ui_MainWindow(object):
         self.scrollAreaSearchBox_widget.setSizePolicy(sizePolicy)
         self.scrollAreaSearchBox_widget.setObjectName("scrollAreaSearchBox_widget")
         self.horizontalLayout_2 = QtWidgets.QHBoxLayout(self.scrollAreaSearchBox_widget)
-        self.horizontalLayout_2.setContentsMargins(5, 0, 5, 0)
+        self.horizontalLayout_2.setContentsMargins(0, 0, 5, 0)
         self.horizontalLayout_2.setObjectName("horizontalLayout_2")
-        self.label = QtWidgets.QLabel(self.scrollAreaSearchBox_widget)
-        font = QtGui.QFont()
-        font.setFamily("MS Shell Dlg 2")
-        font.setPointSize(8)
-        font.setBold(True)
-        font.setItalic(False)
-        font.setUnderline(False)
-        font.setWeight(75)
-        font.setStrikeOut(False)
-        font.setKerning(True)
-        self.label.setFont(font)
-        self.label.setObjectName("label")
-        self.horizontalLayout_2.addWidget(self.label)
         self.xmlData_searchBar = QtWidgets.QLineEdit(self.scrollAreaSearchBox_widget)
         self.xmlData_searchBar.setEnabled(False)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
@@ -327,6 +322,11 @@ class Ui_MainWindow(object):
         self.horizontalLayout.addWidget(self.scrollAreaButtonBox_widget)
         self.verticalLayout_2.addWidget(self.scrollArea_tools)
         self.scrollArea = QtWidgets.QScrollArea(self.data_widget)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.scrollArea.sizePolicy().hasHeightForWidth())
+        self.scrollArea.setSizePolicy(sizePolicy)
         self.scrollArea.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
         self.scrollArea.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
         self.scrollArea.setSizeAdjustPolicy(QtWidgets.QAbstractScrollArea.AdjustToContents)
@@ -334,9 +334,10 @@ class Ui_MainWindow(object):
         self.scrollArea.setAlignment(QtCore.Qt.AlignLeading|QtCore.Qt.AlignLeft|QtCore.Qt.AlignTop)
         self.scrollArea.setObjectName("scrollArea")
         self.scrollAreaWidgetContents = QtWidgets.QWidget()
-        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 1054, 1007))
+        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 1082, 564))
         self.scrollAreaWidgetContents.setObjectName("scrollAreaWidgetContents")
         self.verticalLayout_3 = QtWidgets.QVBoxLayout(self.scrollAreaWidgetContents)
+        self.verticalLayout_3.setSizeConstraint(QtWidgets.QLayout.SetDefaultConstraint)
         self.verticalLayout_3.setObjectName("verticalLayout_3")
         self.scrollArea.setWidget(self.scrollAreaWidgetContents)
         self.verticalLayout_2.addWidget(self.scrollArea)
@@ -354,7 +355,7 @@ class Ui_MainWindow(object):
         self.verticalLayout.addWidget(self.convert_widget)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 1087, 26))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 1115, 26))
         self.menubar.setObjectName("menubar")
         self.menuConverter = QtWidgets.QMenu(self.menubar)
         self.menuConverter.setObjectName("menuConverter")
@@ -372,14 +373,13 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
+        self.xml_input_btn.setText(_translate("MainWindow", "XML file"))
+        self.fileLocation_input_btn.setText(_translate("MainWindow", "Save location"))
         self.xlsxConfig_input_label.setText(_translate("MainWindow", "/filepath/config.xlsx"))
+        self.fileLocation_input_label.setText(_translate("MainWindow", "/filepath/output.xml"))
         self.xlsxConfig_input_btn.setText(_translate("MainWindow", "Config file"))
         self.xml_input_label.setText(_translate("MainWindow", "/filepath/input.xml"))
-        self.fileLocation_input_btn.setText(_translate("MainWindow", "Save location"))
-        self.xml_input_btn.setText(_translate("MainWindow", "XML file"))
-        self.fileLocation_input_label.setText(_translate("MainWindow", "/filepath/output.xml"))
-        self.label.setText(_translate("MainWindow", "Search"))
-        self.xmlData_searchBar.setPlaceholderText(_translate("MainWindow", "description"))
+        self.xmlData_searchBar.setPlaceholderText(_translate("MainWindow", "Search"))
         self.xml_loadData_btn.setText(_translate("MainWindow", "Load data"))
         self.xml_clearTeststeps_btn.setText(_translate("MainWindow", "Clear data"))
         self.showAll_btn.setText(_translate("MainWindow", "Show all"))

@@ -25,7 +25,7 @@ class CollapsibleBox(qtw.QWidget):
 
         self.content_area = qtw.QScrollArea(maximumHeight=0, minimumHeight=0)
         self.content_area.setSizePolicy(qtw.QSizePolicy.Expanding, qtw.QSizePolicy.Fixed)
-        self.content_area.setFrameShape(qtw.QFrame.NoFrame | qtw.QFrame.Raised)
+        self.content_area.setFrameShape(qtw.QFrame.Panel | qtw.QFrame.Raised)
 
         # Vertical layout for collapseable box to contain toggle button and content area
         lay = qtw.QVBoxLayout()

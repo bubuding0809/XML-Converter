@@ -51,7 +51,7 @@ class MainWindow(qtw.QMainWindow):
             collapsibleBox = CollapsibleBox(title=str(i), parent=self)
             vLayout_collapsibleBox = qtw.QVBoxLayout()
 
-            for i in range(10):
+            for i in range(20):
                 searchItem = TestStepGroupBox(title=f'testItem_{i}', parent=self, data=self.testdata)
                 vLayout_collapsibleBox.addWidget(searchItem)
                 self.teststepList.append(searchItem)
@@ -74,17 +74,15 @@ class MainWindow(qtw.QMainWindow):
         
     # Event handler methods
     def handleSearchBar(self, text):
-        isMatch = False
         for teststep in self.teststepList:
             if text.lower() in teststep.title.lower():
                 teststep.show()
-                isMatch = True
             else:
                 teststep.hide()
                 
-            for box in self.collapsibleBoxList:
-                box.layout().setSizeConstraint(qtw.QLayout.SetMinimumSize if isMatch else qtw.QLayout.SetDefaultConstraint)
-
+        for index, box in enumerate(self.collapsibleBoxList):
+            print(box.layout().sizeHint(), box.layout().minimumSize())
+            print(box.content_area.geometry().height())
         
 
 

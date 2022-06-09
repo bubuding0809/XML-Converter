@@ -1,5 +1,6 @@
 import xml.etree.ElementTree as ET
 
+#* xmlParser helper functions
 def ExcelDictReader(sheet):
     reader = []
 
@@ -19,3 +20,11 @@ def getAllTestSteps(xmlInfile):
     root = tree.getroot()
     
     return root.iter('teststep')
+
+#* PyQt helper functions 
+def iterLayout(layout):
+    return [layout.itemAt(i) for i in range(layout.count())]
+
+def getLayoutWidgets(layout):
+    items = iterLayout(layout)
+    return [item.widget() for item in items if item.widget()]

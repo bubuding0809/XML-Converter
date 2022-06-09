@@ -9,6 +9,8 @@ from PyQt5 import (
 import sys
 import xmlParser
 import subprocess
+import utils as u
+from testdata import testFilePaths as testfiles
 
 
 class MainWindow(qtw.QMainWindow):
@@ -18,6 +20,9 @@ class MainWindow(qtw.QMainWindow):
         #Initialize UI to main window
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
+
+        # QShortcuts
+        self.ui.quitSc = qtw.QShortcut(qtg.QKeySequence('Ctrl+Q'), self)
         
         #Event connectors
         self.ui.xlsxConfig_input_btn.clicked.connect(self.handleXLSXInput)
@@ -30,11 +35,13 @@ class MainWindow(qtw.QMainWindow):
         self.ui.xml_clearTeststeps_btn.clicked.connect(self.clearTestStepScrollArea)
         self.ui.selectAll_checkBox.pressed.connect(self.handleSelectAllCheckBox)
         self.ui.xmlData_searchBar.textChanged.connect(self.handleSearchBar)
+        self.ui.quitSc.activated.connect(self.handleExitApp)
+
 
         #Global variables
-        self.xlsxInFile = '/Users/dingruoqian/Desktop/code/XML-Converter/testdata/config.xlsx'
-        self.xmlInFile = '/Users/dingruoqian/Desktop/code/XML-Converter/testdata/input.xml'
-        self.xmlOutFile = '/Users/dingruoqian/Desktop/code/XML-Converter/testdata/output.xml'
+        self.xlsxInFile = testfiles.CONFIG_PATH_WIN32 if sys.platform == 'win32' else testfiles.CONFIG_PATH_DARWIN
+        self.xmlInFile = testfiles.INPUT_PATH_WIN32 if sys.platform == 'win32' else testfiles.INPUT_PATH_DARWIN
+        self.xmlOutFile =  testfiles.SAVE_PATH_WIN32 if sys.platform == 'win32' else testfiles.SAVE_PATH_DARWIN
 
         #Global flags
         self.testCaseBoxList = {}
@@ -51,6 +58,7 @@ class MainWindow(qtw.QMainWindow):
             self.xlsxInFile = file[0]
             self.ui.xlsxConfig_input_label.setText(file[0])
             
+        # Enable load data button if both xlsx and xml inputs exists
         if len(self.xlsxInFile) and len(self.xmlInFile):
             self.ui.xml_loadData_btn.setEnabled(True)
         else:
@@ -82,8 +90,14 @@ class MainWindow(qtw.QMainWindow):
             self.xmlOutFile = file[0]
             self.ui.fileLocation_input_label.setText(file[0])
         
+        # disable convert button if both xlsx and xml inputs exists
+        if len(self.xmlOutFile):
+            self.ui.xml_convert_btn.setEnabled(True)
+        else:
+            self.ui.xml_convert_btn.setEnabled(False)
         
-        
+
+
     def handleXMLLoad(self):
         # Clear data grid of and old data
         self.clearTestStepScrollArea()
@@ -208,8 +222,22 @@ class MainWindow(qtw.QMainWindow):
                  teststep.show()
              else:
                  teststep.hide()
-                
-                
+
+        for testcase in self.testCaseBoxList:
+            testcase.show()
+
+            isAnyFound = False
+
+            # Get layout of collapsible test case box
+            layout = testcase.layout().itemAt(1).widget().layout()
+            
+            # Iterate through each widget instead of the layout and check if it contains any matched teststep
+            for widget in u.getLayoutWidgets(layout):
+                if widget.isVisible():
+                    isAnyFound = True
+            
+            testcase.show() if isAnyFound else testcase.hide()
+
                     
     def handleXMLConvert(self):
         # Create a filtered set of teststeps ids based on the selected radio box.
@@ -230,6 +258,7 @@ class MainWindow(qtw.QMainWindow):
             
             # To be used in XML_xmlParser to selectively convert old teststeps to new
             xmlParser.convertXML(filteredIds ,self.xmlInFile, self.xmlOutFile, conversionMap)
+
         except Exception as ex:
             # Catch exceptions and handle them 
             exception = f"An exception of type {type(ex)} occurred."
@@ -286,12 +315,40 @@ class MainWindow(qtw.QMainWindow):
         self.ui.selectAll_checkBox.setEnabled(False)
         self.ui.selectAll_checkBox.setChecked(True)
 
+    
+    def centerWindowOnScreen(self):
+        screenGeo = qtw.QDesktopWidget().screenGeometry()
+        windowGeo = self.geometry()
+
+        print(screenGeo, windowGeo)
+        xPosition = (screenGeo.width() - windowGeo.width()) / 2 
+        yPosition = (screenGeo.height() - windowGeo.height()) / 2 
+
+        self.move(int(xPosition), int(yPosition))
+
+    def handleExitApp(self):
+        msgBox = qtw.QMessageBox()
+        msgBox.setWindowTitle('Exit app')
+        msgBox.setText('Confirm with OK to exit the application now')
+        msgBox.setIcon(qtw.QMessageBox.Warning)
+        msgBox.setStandardButtons(qtw.QMessageBox.Ok | qtw.QMessageBox.Cancel)
+        msgBox.setDefaultButton(qtw.QMessageBox.Ok)
+
+        msgBox.defaultButton().clicked.connect(qtw.QApplication.instance().quit)
+
+        ret = msgBox.exec_()
+
+    def handleCopyToClipboard(self):
+        clipBoard = qtw.QApplication.clipboard()
+        clipBoard.clear(clipBoard.Clipboard)
+        clipBoard.setText()
 
 
 if __name__ == '__main__':
     app = qtw.QApplication(sys.argv)
     mainWindow = MainWindow()
-    mainWindow.resize(1980, 1080)
+    mainWindow.resize(1600, 900)
+    mainWindow.centerWindowOnScreen()
     mainWindow.show()
     
     sys.exit(app.exec_())

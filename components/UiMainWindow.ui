@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1087</width>
-    <height>1282</height>
+    <width>1115</width>
+    <height>839</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -16,7 +16,7 @@
   <property name="styleSheet">
    <string notr="true">QPushButton {
     border: 1px solid #8f8f91;
-    border-radius: 6px;
+    border-radius: 5px;
     background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
                                       stop: 0 #f6f7fa, stop: 1 #dadbde);
     min-width: 80px;
@@ -39,11 +39,19 @@ QPushButton:default {
 }
 
 QLineEdit {
-    border: 1px solid 8f8f91;
-    border-radius: 6px;
-    padding: 0 8px;
+    border: 1px solid #8f8f91;
+    border-radius: 5px;
+    padding: 0 6px;
     selection-background-color: darkgray;
 	min-height: 25px;
+}
+
+QTableWidget {
+	font-size: 8;
+}
+
+QListWidget {
+	font-size 8;
 }</string>
   </property>
   <widget class="QWidget" name="centralwidget">
@@ -517,6 +525,26 @@ QLineEdit {
        <property name="bottomMargin">
         <number>20</number>
        </property>
+       <item row="1" column="0">
+        <widget class="QPushButton" name="xml_input_btn">
+         <property name="text">
+          <string>XML file</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="3">
+        <spacer name="horizontalSpacer">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
        <item row="1" column="3">
         <spacer name="horizontalSpacer_2">
          <property name="orientation">
@@ -529,6 +557,13 @@ QLineEdit {
           </size>
          </property>
         </spacer>
+       </item>
+       <item row="2" column="0">
+        <widget class="QPushButton" name="fileLocation_input_btn">
+         <property name="text">
+          <string>Save location</string>
+         </property>
+        </widget>
        </item>
        <item row="2" column="3">
         <spacer name="horizontalSpacer_5">
@@ -571,6 +606,28 @@ QLineEdit {
          </property>
         </widget>
        </item>
+       <item row="2" column="1" colspan="2">
+        <widget class="QLabel" name="fileLocation_input_label">
+         <property name="minimumSize">
+          <size>
+           <width>500</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="acceptDrops">
+          <bool>false</bool>
+         </property>
+         <property name="autoFillBackground">
+          <bool>true</bool>
+         </property>
+         <property name="text">
+          <string>/filepath/output.xml</string>
+         </property>
+         <property name="indent">
+          <number>4</number>
+         </property>
+        </widget>
+       </item>
        <item row="0" column="0">
         <widget class="QPushButton" name="xlsxConfig_input_btn">
          <property name="text">
@@ -597,55 +654,6 @@ QLineEdit {
          </property>
          <property name="text">
           <string>/filepath/input.xml</string>
-         </property>
-         <property name="indent">
-          <number>4</number>
-         </property>
-        </widget>
-       </item>
-       <item row="2" column="0">
-        <widget class="QPushButton" name="fileLocation_input_btn">
-         <property name="text">
-          <string>Save location</string>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="3">
-        <spacer name="horizontalSpacer">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>40</width>
-           <height>20</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
-       <item row="1" column="0">
-        <widget class="QPushButton" name="xml_input_btn">
-         <property name="text">
-          <string>XML file</string>
-         </property>
-        </widget>
-       </item>
-       <item row="2" column="1" colspan="2">
-        <widget class="QLabel" name="fileLocation_input_label">
-         <property name="minimumSize">
-          <size>
-           <width>500</width>
-           <height>0</height>
-          </size>
-         </property>
-         <property name="acceptDrops">
-          <bool>false</bool>
-         </property>
-         <property name="autoFillBackground">
-          <bool>true</bool>
-         </property>
-         <property name="text">
-          <string>/filepath/output.xml</string>
          </property>
          <property name="indent">
           <number>4</number>
@@ -695,7 +703,7 @@ QLineEdit {
             </property>
             <layout class="QHBoxLayout" name="horizontalLayout_2">
              <property name="leftMargin">
-              <number>5</number>
+              <number>0</number>
              </property>
              <property name="topMargin">
               <number>0</number>
@@ -706,25 +714,6 @@ QLineEdit {
              <property name="bottomMargin">
               <number>0</number>
              </property>
-             <item>
-              <widget class="QLabel" name="label">
-               <property name="font">
-                <font>
-                 <family>MS Shell Dlg 2</family>
-                 <pointsize>8</pointsize>
-                 <weight>75</weight>
-                 <italic>false</italic>
-                 <bold>true</bold>
-                 <underline>false</underline>
-                 <strikeout>false</strikeout>
-                 <kerning>true</kerning>
-                </font>
-               </property>
-               <property name="text">
-                <string>Search</string>
-               </property>
-              </widget>
-             </item>
              <item>
               <widget class="QLineEdit" name="xmlData_searchBar">
                <property name="enabled">
@@ -770,7 +759,7 @@ QLineEdit {
                 <bool>false</bool>
                </property>
                <property name="placeholderText">
-                <string>description</string>
+                <string>Search</string>
                </property>
                <property name="cursorMoveStyle">
                 <enum>Qt::LogicalMoveStyle</enum>
@@ -869,6 +858,12 @@ QLineEdit {
        </item>
        <item>
         <widget class="QScrollArea" name="scrollArea">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="verticalScrollBarPolicy">
           <enum>Qt::ScrollBarAlwaysOn</enum>
          </property>
@@ -889,11 +884,15 @@ QLineEdit {
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>1054</width>
-            <height>1007</height>
+            <width>1082</width>
+            <height>564</height>
            </rect>
           </property>
-          <layout class="QVBoxLayout" name="verticalLayout_3"/>
+          <layout class="QVBoxLayout" name="verticalLayout_3">
+           <property name="sizeConstraint">
+            <enum>QLayout::SetDefaultConstraint</enum>
+           </property>
+          </layout>
          </widget>
         </widget>
        </item>
@@ -936,7 +935,7 @@ QLineEdit {
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1087</width>
+     <width>1115</width>
      <height>26</height>
     </rect>
    </property>

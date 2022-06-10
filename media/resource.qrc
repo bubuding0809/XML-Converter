@@ -1,8 +1,0 @@
-<RCC>
-  <qresource prefix="icons">
-    <file>icons/search.svg</file>
-    <file>icons/appIcon.svg</file>
-    <file>icons/download.svg</file>
-    <file>icons/filetype-xlsx.svg</file>
-  </qresource>
-</RCC>

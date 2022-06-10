@@ -402,8 +402,6 @@ class Ui_MainWindow(object):
         self.menuConverter.setTitle(_translate("MainWindow", "Converter"))
         self.actionsdf.setText(_translate("MainWindow", "sdf"))
 import bootstrap_rc
-import resource_rc
-
 
 if __name__ == "__main__":
     import sys

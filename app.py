@@ -381,7 +381,7 @@ if sys.platform == 'win32':
 if __name__ == '__main__':
     # Create application and set application icon
     app = qtw.QApplication(sys.argv)
-    app.setWindowIcon(qtg.QIcon(os.path.join(basedir, 'media/icons/appIcon.svg')))
+    app.setWindowIcon(qtg.QIcon(":/icons/bootstrap-icons-1.8.3/tools.svg"))
 
     # Create main window
     mainWindow = MainWindow()

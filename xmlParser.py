@@ -1,6 +1,9 @@
 import xml.etree.ElementTree as ET
 from utils import *
 from openpyxl import load_workbook
+import os
+
+dirname = os.path.dirname(__file__)
 
 #********************************************************* Application functions ********************************************************#
 def handleXlsx(xlsxFile):
@@ -15,7 +18,7 @@ def handleXlsx(xlsxFile):
     conversionMap = {}
     for row in reader:
 
-        funcParams = row['function_parameters'].split('\n')
+        funcParams = [param.strip() for param in row['function_parameters'].split('\n')]
         newfuncParamsPair = []
 
         for param in funcParams:
@@ -26,10 +29,10 @@ def handleXlsx(xlsxFile):
             }
             newfuncParamsPair.append(paramNameText)
 
-        conversionMap[row['teststep.desc old']] = {
-            'description': row['test_step.desc new'],
-            'function_library': row['function_library'],
-            'function_name': row['function_name'],
+        conversionMap[row['teststep.desc old'].strip()] = {
+            'description': row['test_step.desc new'].strip(),
+            'function_library': row['function_library'].strip(),
+            'function_name': row['function_name'].strip(),
             'function_parameters': newfuncParamsPair,
         }
 
@@ -150,7 +153,7 @@ id: {teststep['id']}
 
 #********************************************************* Test functions ********************************************************#
 def testHandleXlsx():
-    xlsxFile = './testdata/mapping.xlsx'
+    xlsxFile = os.path.join(dirname, 'testdata/config.xlsx')
     
     conversionMap = handleXlsx(xlsxFile)
     for key, value in conversionMap.items():
@@ -185,4 +188,4 @@ def testHandleGetTestStepData():
     
     
 if __name__ == '__main__':
-    testHandleGetTestStepData()
+    testHandleXlsx()

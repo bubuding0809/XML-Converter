@@ -1,16 +1,20 @@
-from components.UiMainWindow import Ui_MainWindow
+from UiMainWindow import Ui_MainWindow
 from components.TestStepGroupBox import TestStepGroupBox
 from components.CollapseableWidget import CollapsibleBox
+from components.CustomButton import ButtonWithIcon
 from PyQt5 import (
     QtWidgets as qtw,
     QtCore as qtc,
     QtGui as qtg
 )
 import sys
+import os
 import xmlParser
 import subprocess
 import utils as u
+import bootstrap_rc
 from testdata import testFilePaths as testfiles
+
 
 
 class MainWindow(qtw.QMainWindow):
@@ -21,13 +25,27 @@ class MainWindow(qtw.QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
+        # Additional UI setup
+        pixmap = qtg.QPixmap(":/icons/bootstrap-icons-1.8.3/filetype-xlsx.svg").scaled(20, 20, qtc.Qt.KeepAspectRatio, qtc.Qt.SmoothTransformation)
+        self.ui.configFile_btn = ButtonWithIcon(pixmap, 'Config file', self)
+        self.ui.configInput_widget.layout().addWidget(self.ui.configFile_btn)
+
+        pixmap = qtg.QPixmap(":/icons/bootstrap-icons-1.8.3/filetype-xml.svg").scaled(20, 20, qtc.Qt.KeepAspectRatio, qtc.Qt.SmoothTransformation)
+        self.ui.xmlFile_btn = ButtonWithIcon(pixmap , 'XML file', self)
+        self.ui.xmlInput_widget.layout().addWidget(self.ui.xmlFile_btn)
+
+        pixmap = qtg.QPixmap(":/icons/bootstrap-icons-1.8.3/folder2.svg").scaled(20, 20, qtc.Qt.KeepAspectRatio, qtc.Qt.SmoothTransformation)
+        self.ui.saveLocation_btn = ButtonWithIcon(pixmap, 'Save', self)
+        self.ui.saveLocation_widget.layout().addWidget(self.ui.saveLocation_btn)
+
+
         # QShortcuts
-        self.ui.quitSc = qtw.QShortcut(qtg.QKeySequence('Ctrl+Q'), self)
+        self.ui.quitSc = qtw.QShortcut(qtg.QKeySequence('Ctrl+W'), self)
         
         #Event connectors
-        self.ui.xlsxConfig_input_btn.clicked.connect(self.handleXLSXInput)
-        self.ui.xml_input_btn.clicked.connect(self.handleXMLInput)
-        self.ui.fileLocation_input_btn.clicked.connect(self.handleXMLOutput)
+        self.ui.configFile_btn.clicked.connect(self.handleXLSXInput)
+        self.ui.xmlFile_btn.clicked.connect(self.handleXMLInput)
+        self.ui.saveLocation_btn.clicked.connect(self.handleXMLOutput)
         self.ui.xml_convert_btn.clicked.connect(self.handleXMLConvert)
         self.ui.xml_loadData_btn.clicked.connect(self.handleXMLLoad)
         self.ui.showAll_btn.pressed.connect(self.handleToggleAllDropDownBtn)
@@ -301,7 +319,10 @@ class MainWindow(qtw.QMainWindow):
             
             if item.widget():
                 item.widget().deleteLater()
-        
+
+        #* Clear search bar
+        self.ui.xmlData_searchBar.clear()
+
         #* Disable scroll area tool widgets
         self.ui.xml_convert_btn.setEnabled(False)
         self.ui.xml_clearTeststeps_btn.setEnabled(False)
@@ -344,11 +365,37 @@ class MainWindow(qtw.QMainWindow):
         clipBoard.setText()
 
 
+#* Get base directory of application 
+basedir = os.path.dirname(__file__)
+
+#* Configure windows to identify the application as a custom application
+if sys.platform == 'win32':
+    try:
+        from ctypes import windll  # Only exists on Windows.
+        myappid = 'mycompany.myproduct.subproduct.version'
+        windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+    except ImportError:
+        pass
+
+
 if __name__ == '__main__':
+    # Create application and set application icon
     app = qtw.QApplication(sys.argv)
+    app.setWindowIcon(qtg.QIcon(os.path.join(basedir, 'media/icons/appIcon.svg')))
+
+    # Create main window
     mainWindow = MainWindow()
+
+    # Get and set the main window style sheet
+    with open(os.path.join(basedir, 'static/style.qss'), 'r') as file:
+        stylesheet = file.read()
+    mainWindow.setStyleSheet(stylesheet)
+
+    # Customize window settings
+    mainWindow.setWindowTitle('ATP XML-Converter')
     mainWindow.resize(1600, 900)
     mainWindow.centerWindowOnScreen()
     mainWindow.show()
     
+    # Execute application
     sys.exit(app.exec_())

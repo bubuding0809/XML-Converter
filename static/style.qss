@@ -1,0 +1,49 @@
+QPushButton {
+  border: 1px solid #8f8f91;
+  border-radius: 5px;
+  background-color: qlineargradient(
+    x1: 0,
+    y1: 0,
+    x2: 0,
+    y2: 1,
+    stop: 0 #f6f7fa,
+    stop: 1 #dadbde
+  );
+  min-width: 60px;
+  min-height: 25px;
+  padding-left: 3px;
+  padding-right: 3px;
+}
+
+QPushButton:pressed {
+  background-color: qlineargradient(
+    x1: 0,
+    y1: 0,
+    x2: 0,
+    y2: 1,
+    stop: 0 #dadbde,
+    stop: 1 #f6f7fa
+  );
+}
+
+QPushButton:flat {
+  border: none; /* no border for a flat push button */
+}
+
+QPushButton:default {
+  border-color: navy; /* make the default button prominent */
+}
+
+#CustomButton {
+  padding-left: 30;
+  padding-right: 0;
+  text-align: left;
+}
+
+QLineEdit {
+  border: 1px solid #8f8f91;
+  border-radius: 5px;
+  padding: 0 6px;
+  selection-background-color: darkgray;
+  min-height: 25px;
+}

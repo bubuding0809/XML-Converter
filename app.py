@@ -1,3 +1,5 @@
+import logging
+from unicodedata import name
 from UiMainWindow import Ui_MainWindow
 from components.TestStepGroupBox import TestStepGroupBox
 from components.CollapseableWidget import CollapsibleBox
@@ -7,14 +9,20 @@ from PyQt5 import (
     QtCore as qtc,
     QtGui as qtg
 )
-import sys
-import os
+import sys, os, subprocess
 import xmlParser
 import subprocess
 import utils as u
 import bootstrap_rc
 from testdata import testFilePaths as testfiles
 
+# Set up logging
+logging.basicConfig(
+    level=logging.DEBUG, 
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    filename='app.log',
+)
+logger = logging.getLogger(__name__)
 
 
 class MainWindow(qtw.QMainWindow):
@@ -117,35 +125,33 @@ class MainWindow(qtw.QMainWindow):
 
 
     def handleXMLLoad(self):
-        # Clear data grid of and old data
+        #* Clear data grid of and old data
         self.clearTestStepScrollArea()
         
         try:
             # Catch errors thrown from xml processing
             conversionMap = xmlParser.handleXlsx(self.xlsxInFile)
-            xmlData = xmlParser.getTestStepData(self.xmlInFile, conversionMap)
+            xmlData, conversionMap = xmlParser.getTestStepData(self.xmlInFile, conversionMap)
             
         except Exception as ex:
             # Catch exceptions and handle them 
             exception = f"An exception of type {type(ex)} occurred."
-            arguments = '\n'.join([args for args in list(ex.args)])
+            arguments = '\n'.join([f"{index+1}: {arg}" for index, arg in enumerate(list(ex.args))])
             
             # Create message box to display the error
             msgBox = qtw.QMessageBox()
             msgBox.setWindowTitle('Error')
             msgBox.setText(exception)
-            msgBox.setDetailedText(f"Your config did not include:\n {arguments}")
+            msgBox.setDetailedText(f"Your config did not include these headers:\n------------------------------------\n{arguments}")
             msgBox.setIcon(qtw.QMessageBox.Critical)
             ret = msgBox.exec()
-            
-            print(f'{exception}\n{arguments}')
 
             return
-            
+              
+        
         #* Filter teststeps into their respective testcases
         testCaseList = {}
         if xmlData:
-            
             # Filter each teststep into their respect testcases
             for teststep in xmlData:
                 if teststep['parentId'] not in testCaseList:
@@ -165,7 +171,7 @@ class MainWindow(qtw.QMainWindow):
                         'new': teststep['new']
                     })
         
-
+        
         #* Create filtered data boxes and insert into the vertical scroll layout area 
         for index, (testcase, teststeps) in enumerate(testCaseList.items()):
             # Create collapsible box for test case
@@ -186,7 +192,69 @@ class MainWindow(qtw.QMainWindow):
             self.testCaseBoxList[box] = testStepBoxList
         self.ui.verticalLayout_3.addStretch()
         
-        # Setup autocompleter for search bar to allow for predictive searching of teststeps by description
+        
+        emptyFieldList = []
+        for index, (key, value) in enumerate(conversionMap.items()):
+            emptyFields = []
+            
+            # Check if all fields are filled
+            for tag, text in value.items():
+                if not len(str(text)):
+                    emptyFields.append(tag)
+            
+            # If all fields are not filled, add to list
+            if emptyFields: emptyFieldList.append({'description': key, 'emptyFields': emptyFields})
+        
+        if emptyFieldList: print(emptyFieldList)
+        
+        
+        #* Alert user if there are unmatched teststeps
+        # Create list of unmatched teststeps
+        unmatchedTeststeps = [key for key, value in conversionMap.items() if value['isMatched'] == False]
+        
+        if unmatchedTeststeps:
+            # Create message box to display the warning
+            msgBox= qtw.QMessageBox()
+            msgBox.setWindowTitle('Warning')
+            msgBox.setText(f"There are unmatched teststeps descriptions in your config file")
+            
+            unmatchedTeststeps = '\n'.join(
+                [f"{index+1}: {teststep}" for index, teststep in enumerate(unmatchedTeststeps)]
+            )
+            noMatchMessage = (
+                f"The following teststeps descriptions had no match in the xml file:\
+                \n------------------------------------------------------\
+                \n{unmatchedTeststeps}"
+            )
+            
+            emptyFieldList = '\n'.join(
+                [f"{index+1}: {item['description']:}\n{item['emptyFields']}" for index, item in enumerate(emptyFieldList)]
+            )
+            emptyFieldMessage = (
+                f"The following teststeps were found to have empty fields in your config file:\
+                \n------------------------------------------------------\
+                \n{emptyFieldList}"
+            )
+            
+            msgBox.setDetailedText(noMatchMessage + ('\n\n' + emptyFieldMessage if emptyFieldList else ''))
+            
+            msgBox.setStandardButtons(qtw.QMessageBox.Ok)
+            
+            editConfig_btn = msgBox.addButton('Edit config', qtw.QMessageBox.AcceptRole)
+            msgBox.setIcon(qtw.QMessageBox.Warning)
+            
+            ret = msgBox.exec_()
+            
+            if msgBox.clickedButton() == editConfig_btn:
+                # Open config excel file
+                if sys.platform == 'darwin':       # macOS
+                    subprocess.call(('open', self.xlsxInFile))
+                elif sys.platform == 'win32':    # Windows
+                    os.startfile(filepath)
+
+        
+        
+        #* Setup autocompleter for search bar to allow for predictive searching of teststeps by description
         self.autoCompleter = qtw.QCompleter(list({teststep.title for teststepBoxList in self.testCaseBoxList.values() for teststep in teststepBoxList}))
         self.autoCompleter.setCaseSensitivity(qtc.Qt.CaseInsensitive)
         self.ui.xmlData_searchBar.setCompleter(self.autoCompleter)
@@ -263,6 +331,7 @@ class MainWindow(qtw.QMainWindow):
             
             testcase.show() if isAnyFound else testcase.hide()
 
+                   
                     
     def handleXMLConvert(self):
         # Create a filtered set of teststeps ids based on the selected radio box.
@@ -282,7 +351,7 @@ class MainWindow(qtw.QMainWindow):
             conversionMap = xmlParser.handleXlsx(self.xlsxInFile)
             
             # To be used in XML_xmlParser to selectively convert old teststeps to new
-            xmlParser.convertXML(filteredIds ,self.xmlInFile, self.xmlOutFile, conversionMap)
+            xmlParser.convertTeststepData(filteredIds ,self.xmlInFile, self.xmlOutFile, conversionMap)
 
         except Exception as ex:
             # Catch exceptions and handle them 
@@ -344,6 +413,7 @@ class MainWindow(qtw.QMainWindow):
         self.ui.selectAll_checkBox.setChecked(True)
 
     
+    
     def centerWindowOnScreen(self):
         screenGeo = qtw.QDesktopWidget().screenGeometry()
         windowGeo = self.geometry()
@@ -353,6 +423,8 @@ class MainWindow(qtw.QMainWindow):
         yPosition = (screenGeo.height() - windowGeo.height()) / 2 
 
         self.move(int(xPosition), int(yPosition))
+
+
 
     def handleExitApp(self):
         msgBox = qtw.QMessageBox()
@@ -366,14 +438,18 @@ class MainWindow(qtw.QMainWindow):
 
         ret = msgBox.exec_()
 
+
+
     def handleCopyToClipboard(self):
         clipBoard = qtw.QApplication.clipboard()
         clipBoard.clear(clipBoard.Clipboard)
         clipBoard.setText()
 
 
+
 #* Get base directory of application 
 basedir = os.path.dirname(__file__)
+
 
 #* Configure windows to identify the application as a custom application
 if sys.platform == 'win32':
@@ -383,6 +459,7 @@ if sys.platform == 'win32':
         windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
     except ImportError:
         pass
+
 
 
 if __name__ == '__main__':
@@ -403,6 +480,9 @@ if __name__ == '__main__':
     mainWindow.resize(1600, 900)
     mainWindow.centerWindowOnScreen()
     mainWindow.show()
+    logger.info('App started')
+    
     
     # Execute application
     sys.exit(app.exec_())
+    

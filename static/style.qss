@@ -43,9 +43,10 @@ QPushButton:default {
 }
 
 #CustomButton {
-  padding-left: 30;
+  min-width: 100px;
+  /* padding-left: 30;
   padding-right: 0;
-  text-align: left;
+  text-align: left; */
 }
 
 QLineEdit {

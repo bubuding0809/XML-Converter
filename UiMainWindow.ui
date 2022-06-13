@@ -14,42 +14,7 @@
    <string>MainWindow</string>
   </property>
   <property name="styleSheet">
-   <string notr="true">QPushButton {
-    border: 1px solid #8f8f91;
-    border-radius: 5px;
-    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
-                                      stop: 0 #f6f7fa, stop: 1 #dadbde);
-    min-width: 80px;
-	min-height: 25px;
-	padding-left: 2px;
-	padding-right: 2px;
-}
-
-QPushButton:pressed {
-    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
-                                      stop: 0 #dadbde, stop: 1 #f6f7fa);
-}
-
-QPushButton:flat {
-    border: none; /* no border for a flat push button */
-}
-
-QPushButton:default {
-    border-color: navy; /* make the default button prominent */
-}
-
-#CustomButton {
-	padding-left: 20;
-	text-align: left;
-}
-
-QLineEdit {
-    border: 1px solid #8f8f91;
-    border-radius: 5px;
-    padding: 0 6px;
-    selection-background-color: darkgray;
-	min-height: 25px;
-}</string>
+   <string notr="true"/>
   </property>
   <property name="iconSize">
    <size>
@@ -768,7 +733,7 @@ QLineEdit {
                <property name="minimumSize">
                 <size>
                  <width>200</width>
-                 <height>27</height>
+                 <height>0</height>
                 </size>
                </property>
                <property name="maximumSize">
@@ -928,7 +893,7 @@ QLineEdit {
             <x>0</x>
             <y>0</y>
             <width>1088</width>
-            <height>561</height>
+            <height>570</height>
            </rect>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_3">

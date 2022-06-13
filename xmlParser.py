@@ -9,7 +9,7 @@ dirname = os.path.dirname(__file__)
 def handleXlsx(xlsxFile):
     #Load excel file with openpyxl load_workbook
     workbook = load_workbook(filename=xlsxFile)
-    sheet = workbook.active
+    sheet = workbook.active 
 
     #Convert excel sheet into a list of dictionary with header:value pairs
     reader = ExcelDictReader(sheet)
@@ -17,25 +17,29 @@ def handleXlsx(xlsxFile):
     #Convert dictionary list into conversionMap
     conversionMap = {}
     for row in reader:
-
-        funcParams = [param.strip() for param in row['function_parameters'].split('\n')]
-        newfuncParamsPair = []
-
+        # Create mapping based on each row
+        old_description = row['old teststep description'].strip()
+        new_description = row['new teststep description'].strip()
+        new_function_library = row['new function_library'].strip()
+        new_function_name = row['new function_name'].strip()
+        new_function_parameters = []
+        
+        funcParams = [param.strip() for param in row['new function_parameters'].split('\n')]
         for param in funcParams:
             if len(param):
                 param = param.split('=')
-                print(param)
-                paramNameText = {
+                new_function_parameters.append({
                     'name': param[0],
                     'text': param[1]
-                }
-                newfuncParamsPair.append(paramNameText)
-        print()
-        conversionMap[row['teststep.desc old'].strip()] = {
-            'description': row['test_step.desc new'].strip(),
-            'function_library': row['function_library'].strip(),
-            'function_name': row['function_name'].strip(),
-            'function_parameters': newfuncParamsPair,
+                })
+        
+        
+        conversionMap[old_description] = {
+            'isMatched': False,
+            'description': new_description,
+            'function_library': new_function_library,
+            'function_name': new_function_name,
+            'function_parameters': new_function_parameters,
         }
 
     return conversionMap
@@ -56,6 +60,10 @@ def getTestStepData(xmlInFile, conversionMap):
         oldDesciption = teststep.get('desc')
         
         if oldDesciption in conversionMap:
+            #If teststep description finds match in conversionMap - set isMatched to True
+            conversionMap.get(oldDesciption)['isMatched'] = True
+            
+            #Get all teststep children
             oldFunctionLibrary = teststep.find('function_library').text
             oldFunctionName = teststep.find('function_name').text
             oldFunctionParams = teststep.find('function_parameters').iter('param')
@@ -92,10 +100,10 @@ def getTestStepData(xmlInFile, conversionMap):
                 'new': newTestStepData,
             })
         
-    return xmlData
+    return xmlData, conversionMap
 
 
-def convertXML(filteredIds, xmlInFile, xmlOutFile, conversionMap):
+def convertTeststepData(filteredIds, xmlInFile, xmlOutFile, conversionMap):
     tree = ET.parse(xmlInFile)
     root = tree.getroot()
     counter = 0
@@ -139,7 +147,7 @@ def convertXML(filteredIds, xmlInFile, xmlOutFile, conversionMap):
                 newParam.text = param['text']
 
             # Debug print
-            print(f"Converted teststeps: {counter}_______________________________________________________________________________________________________________________________")
+            print(f"Converted teststeps: {counter} _______________________________________________________________________________________________________________________________")
             print(f'''
 id: {teststep['id']}
 {teststep['teststep'].get('desc')}
@@ -172,7 +180,7 @@ def testHandleConvertXML():
     xmlFile = './testdata/input.xml'
 
     conversionMap = handleXlsx(xlsxFile)
-    convertXML(xmlFile, './testdata/output.xml', conversionMap)
+    convertTeststepData(xmlFile, './testdata/output.xml', conversionMap)
     
     
 def testHandleGetTestStepData():

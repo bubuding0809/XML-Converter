@@ -15,42 +15,7 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(1115, 839)
-        MainWindow.setStyleSheet("QPushButton {\n"
-"    border: 1px solid #8f8f91;\n"
-"    border-radius: 5px;\n"
-"    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,\n"
-"                                      stop: 0 #f6f7fa, stop: 1 #dadbde);\n"
-"    min-width: 80px;\n"
-"    min-height: 25px;\n"
-"    padding-left: 2px;\n"
-"    padding-right: 2px;\n"
-"}\n"
-"\n"
-"QPushButton:pressed {\n"
-"    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,\n"
-"                                      stop: 0 #dadbde, stop: 1 #f6f7fa);\n"
-"}\n"
-"\n"
-"QPushButton:flat {\n"
-"    border: none; /* no border for a flat push button */\n"
-"}\n"
-"\n"
-"QPushButton:default {\n"
-"    border-color: navy; /* make the default button prominent */\n"
-"}\n"
-"\n"
-"#CustomButton {\n"
-"    padding-left: 20;\n"
-"    text-align: left;\n"
-"}\n"
-"\n"
-"QLineEdit {\n"
-"    border: 1px solid #8f8f91;\n"
-"    border-radius: 5px;\n"
-"    padding: 0 6px;\n"
-"    selection-background-color: darkgray;\n"
-"    min-height: 25px;\n"
-"}")
+        MainWindow.setStyleSheet("")
         MainWindow.setIconSize(QtCore.QSize(40, 40))
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         palette = QtGui.QPalette()
@@ -286,7 +251,7 @@ class Ui_MainWindow(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.xmlData_searchBar.sizePolicy().hasHeightForWidth())
         self.xmlData_searchBar.setSizePolicy(sizePolicy)
-        self.xmlData_searchBar.setMinimumSize(QtCore.QSize(200, 27))
+        self.xmlData_searchBar.setMinimumSize(QtCore.QSize(200, 0))
         self.xmlData_searchBar.setMaximumSize(QtCore.QSize(400, 16777215))
         self.xmlData_searchBar.setToolTipDuration(-1)
         self.xmlData_searchBar.setLayoutDirection(QtCore.Qt.LeftToRight)
@@ -345,7 +310,7 @@ class Ui_MainWindow(object):
         self.scrollArea.setAlignment(QtCore.Qt.AlignLeading|QtCore.Qt.AlignLeft|QtCore.Qt.AlignTop)
         self.scrollArea.setObjectName("scrollArea")
         self.scrollAreaWidgetContents = QtWidgets.QWidget()
-        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 1088, 561))
+        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 1088, 570))
         self.scrollAreaWidgetContents.setObjectName("scrollAreaWidgetContents")
         self.verticalLayout_3 = QtWidgets.QVBoxLayout(self.scrollAreaWidgetContents)
         self.verticalLayout_3.setSizeConstraint(QtWidgets.QLayout.SetDefaultConstraint)

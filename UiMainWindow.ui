@@ -927,8 +927,8 @@ QLineEdit {
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>1082</width>
-            <height>585</height>
+            <width>1088</width>
+            <height>561</height>
            </rect>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -989,13 +989,17 @@ QLineEdit {
      <x>0</x>
      <y>0</y>
      <width>1115</width>
-     <height>26</height>
+     <height>24</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuConverter">
     <property name="title">
-     <string>Converter</string>
+     <string>File</string>
     </property>
+    <addaction name="actionOpen"/>
+    <addaction name="actionSave"/>
+    <addaction name="separator"/>
+    <addaction name="actionExit_3"/>
    </widget>
    <addaction name="menuConverter"/>
   </widget>
@@ -1003,6 +1007,48 @@ QLineEdit {
   <action name="actionsdf">
    <property name="text">
     <string>sdf</string>
+   </property>
+  </action>
+  <action name="actionOpen">
+   <property name="icon">
+    <iconset resource="media/bootstrap.qrc">
+     <normaloff>:/icons/bootstrap-icons-1.8.3/filetype-xml.svg</normaloff>:/icons/bootstrap-icons-1.8.3/filetype-xml.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Open</string>
+   </property>
+  </action>
+  <action name="actionSave">
+   <property name="icon">
+    <iconset resource="media/bootstrap.qrc">
+     <normaloff>:/icons/bootstrap-icons-1.8.3/save2-fill.svg</normaloff>:/icons/bootstrap-icons-1.8.3/save2-fill.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Save</string>
+   </property>
+  </action>
+  <action name="actionExit">
+   <property name="text">
+    <string>Exit</string>
+   </property>
+  </action>
+  <action name="actionExit_2">
+   <property name="text">
+    <string>Exit</string>
+   </property>
+  </action>
+  <action name="actionSomething">
+   <property name="text">
+    <string>Exit</string>
+   </property>
+  </action>
+  <action name="actionExit_3">
+   <property name="icon">
+    <iconset resource="media/bootstrap.qrc">
+     <normaloff>:/icons/bootstrap-icons-1.8.3/file-excel-fill.svg</normaloff>:/icons/bootstrap-icons-1.8.3/file-excel-fill.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Close</string>
    </property>
   </action>
  </widget>

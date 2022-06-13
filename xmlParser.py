@@ -22,13 +22,15 @@ def handleXlsx(xlsxFile):
         newfuncParamsPair = []
 
         for param in funcParams:
-            param = param.split('=')
-            paramNameText = {
-                'name': param[0],
-                'text': param[1]
-            }
-            newfuncParamsPair.append(paramNameText)
-
+            if len(param):
+                param = param.split('=')
+                print(param)
+                paramNameText = {
+                    'name': param[0],
+                    'text': param[1]
+                }
+                newfuncParamsPair.append(paramNameText)
+        print()
         conversionMap[row['teststep.desc old'].strip()] = {
             'description': row['test_step.desc new'].strip(),
             'function_library': row['function_library'].strip(),
@@ -153,7 +155,7 @@ id: {teststep['id']}
 
 #********************************************************* Test functions ********************************************************#
 def testHandleXlsx():
-    xlsxFile = os.path.join(dirname, 'testdata/config.xlsx')
+    xlsxFile = os.path.join(dirname, 'testdata/configWithError.xlsx')
     
     conversionMap = handleXlsx(xlsxFile)
     for key, value in conversionMap.items():

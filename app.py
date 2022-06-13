@@ -126,13 +126,20 @@ class MainWindow(qtw.QMainWindow):
             xmlData = xmlParser.getTestStepData(self.xmlInFile, conversionMap)
             
         except Exception as ex:
-            #Catch exceptions and handle them 
+            # Catch exceptions and handle them 
             exception = f"An exception of type {type(ex)} occurred."
-            arguments = f"Arguments:{ex.args}"
+            arguments = '\n'.join([args for args in list(ex.args)])
             
-            msgBox = qtw.QMessageBox.critical(self, 'Error', exception)
+            # Create message box to display the error
+            msgBox = qtw.QMessageBox()
+            msgBox.setWindowTitle('Error')
+            msgBox.setText(exception)
+            msgBox.setDetailedText(f"Your config did not include:\n {arguments}")
+            msgBox.setIcon(qtw.QMessageBox.Critical)
+            ret = msgBox.exec()
             
             print(f'{exception}\n{arguments}')
+
             return
             
         #* Filter teststeps into their respective testcases

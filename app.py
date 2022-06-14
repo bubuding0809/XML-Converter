@@ -40,25 +40,17 @@ class SummaryDialog(qtw.QDialog):
         self.ui.setupUi(self)
         
         #* Additional UI setup
-        self.ui.dataTree_Widget.setSortingEnabled(False)
         self.setWindowModality(qtc.Qt.WindowModal)
+        
+        # Set header to resize to contents
+        header = self.ui.dataTree_Widget.header()
+        header.setSectionResizeMode(qtw.QHeaderView.ResizeToContents)
 
-        # for i in range(10):
-        #     TestCaseItem = qtw.QTreeWidgetItem()
-        #     TestCaseItem.setText(0, f'Testcase {i+1}')
-        #     self.ui.dataTree_Widget.addTopLevelItem(TestCaseItem)
-            
-        #     for j in range(10):
-        #         teststepItem = qtw.QTreeWidgetItem()
-        #         teststepItem.setText(0, f'{(i+1)*(j+1)}')
-        #         teststepItem.setText(1, f'old')
-        #         teststepItem.setText(2, f'new')
-        #         TestCaseItem.addChild(teststepItem)
-            
-        #     TestCaseItem.setExpanded(True)
         
         #* Signal connectors
         self.ui.closeSummary_btn.clicked.connect(self.handleCloseButton)
+    
+    
     
     #* Signal handler functions
     def handleCloseButton(self):
@@ -616,24 +608,36 @@ class MainWindow(qtw.QMainWindow):
 
 
     def handleXMLSummary(self):
-        # Iterate through testcaseBoxList and filter out the teststeps that are in the filteredTeststepIds list
+        
+        #* Create summary dialog widget
         summaryDialog = SummaryDialog(self)
         
+        #* Iterate through testcaseBoxList and filter out the teststeps that are in the filteredTeststepIds list
         for testcase, testcaseBoxList in self.testCaseBoxList.items():
             
+            # Create testcase parent item for each testcase
             testcaseItem = qtw.QTreeWidgetItem(summaryDialog.ui.dataTree_Widget)
-            testcaseItem.setText(1, testcase.title)
-            summaryDialog.ui.dataTree_Widget.addTopLevelItem(testcaseItem)
+            testcaseItem.setFont(0, qtg.QFont('Arial', pointSize=14, weight=qtg.QFont.Bold))
+            testcaseItem.setText(0, testcase.title)
             
+            # Add parent item to tree view and set it to expanded
+            summaryDialog.ui.dataTree_Widget.addTopLevelItem(testcaseItem)
+            testcaseItem.setExpanded(True)
+            
+            # Iterate through each teststep in the testcaseBoxList
             for teststep in testcaseBoxList:
                 
+                # If teststep is in the filteredTeststepIds list, add it to the tree view
                 if teststep.id in self.filteredTeststepIds:
                     teststepItem = qtw.QTreeWidgetItem(testcaseItem)
                     teststepItem.setText(0, str(teststep.id))
-                    teststepItem.setText(1, testcase.title)
-                    teststepItem.setText(2, teststep.data['old']['description'])
-                    teststepItem.setText(3, teststep.data['new']['description'])
+                    teststepItem.setText(1, teststep.data['old']['description'])
+                    teststepItem.setText(2, teststep.data['new']['description'])
                     testcaseItem.addChild(teststepItem)
+
+            #* If there are no teststeps in the testcase, hide the parent item
+            if not testcaseItem.childCount():
+                testcaseItem.setHidden(True)
 
         summaryDialog.show()
 

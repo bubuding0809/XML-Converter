@@ -50,6 +50,7 @@ class TestStepGroupBox(qtw.QGroupBox):
         super(TestStepGroupBox, self).__init__(parent)
         
         # Global attributes
+        self.data = data
         self.id = data['id']
         self.title = title
         

@@ -14,7 +14,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(1115, 839)
+        MainWindow.resize(1115, 779)
         MainWindow.setStyleSheet("")
         MainWindow.setIconSize(QtCore.QSize(40, 40))
         self.centralwidget = QtWidgets.QWidget(MainWindow)
@@ -310,7 +310,7 @@ class Ui_MainWindow(object):
         self.scrollArea.setAlignment(QtCore.Qt.AlignLeading|QtCore.Qt.AlignLeft|QtCore.Qt.AlignTop)
         self.scrollArea.setObjectName("scrollArea")
         self.scrollAreaWidgetContents = QtWidgets.QWidget()
-        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 1088, 570))
+        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 1088, 510))
         self.scrollAreaWidgetContents.setObjectName("scrollAreaWidgetContents")
         self.verticalLayout_3 = QtWidgets.QVBoxLayout(self.scrollAreaWidgetContents)
         self.verticalLayout_3.setSizeConstraint(QtWidgets.QLayout.SetDefaultConstraint)
@@ -328,10 +328,10 @@ class Ui_MainWindow(object):
         self.xml_convert_btn.setEnabled(False)
         self.xml_convert_btn.setObjectName("xml_convert_btn")
         self.gridLayout_2.addWidget(self.xml_convert_btn, 0, 1, 1, 1)
-        self.pushButton = QtWidgets.QPushButton(self.convert_widget)
-        self.pushButton.setEnabled(False)
-        self.pushButton.setObjectName("pushButton")
-        self.gridLayout_2.addWidget(self.pushButton, 0, 0, 1, 1)
+        self.xml_summary_btn = QtWidgets.QPushButton(self.convert_widget)
+        self.xml_summary_btn.setEnabled(False)
+        self.xml_summary_btn.setObjectName("xml_summary_btn")
+        self.gridLayout_2.addWidget(self.xml_summary_btn, 0, 0, 1, 1)
         self.verticalLayout.addWidget(self.convert_widget)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
@@ -388,7 +388,7 @@ class Ui_MainWindow(object):
         self.hideAll_btn.setText(_translate("MainWindow", "Hide all"))
         self.selectAll_checkBox.setText(_translate("MainWindow", "Select all"))
         self.xml_convert_btn.setText(_translate("MainWindow", "Convert"))
-        self.pushButton.setText(_translate("MainWindow", "Summary"))
+        self.xml_summary_btn.setText(_translate("MainWindow", "Summary"))
         self.menuConverter.setTitle(_translate("MainWindow", "File"))
         self.actionsdf.setText(_translate("MainWindow", "sdf"))
         self.actionOpen.setText(_translate("MainWindow", "Open"))
@@ -398,3 +398,13 @@ class Ui_MainWindow(object):
         self.actionSomething.setText(_translate("MainWindow", "Exit"))
         self.actionExit_3.setText(_translate("MainWindow", "Close"))
 import bootstrap_rc
+
+
+if __name__ == "__main__":
+    import sys
+    app = QtWidgets.QApplication(sys.argv)
+    MainWindow = QtWidgets.QMainWindow()
+    ui = Ui_MainWindow()
+    ui.setupUi(MainWindow)
+    MainWindow.show()
+    sys.exit(app.exec_())

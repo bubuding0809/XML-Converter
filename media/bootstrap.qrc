@@ -1,5 +1,6 @@
 <RCC>
   <qresource prefix="icons">
+    <file>bootstrap-icons-1.8.3/info.png</file>
     <file>bootstrap-icons-1.8.3/123.svg</file>
     <file>bootstrap-icons-1.8.3/activity.svg</file>
     <file>bootstrap-icons-1.8.3/alarm.svg</file>

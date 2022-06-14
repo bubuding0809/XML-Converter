@@ -1,6 +1,9 @@
 import logging
 from unicodedata import name
+
+from django.test import TestCase
 from UiMainWindow import Ui_MainWindow
+from SummaryDialog import Ui_SummaryDialogWidget
 from components.TestStepGroupBox import TestStepGroupBox
 from components.CollapseableWidget import CollapsibleBox
 from components.CustomButton import ButtonWithIcon
@@ -16,7 +19,7 @@ import utils as u
 import bootstrap_rc
 from testdata import testFilePaths as testfiles
 
-# Set up logging
+#* Set up logging
 logging.basicConfig(
     level=logging.DEBUG, 
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -25,6 +28,43 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+#* Get base directory of application 
+basedir = os.path.dirname(__file__)
+
+
+class SummaryDialog(qtw.QDialog):
+    def __init__(self, parent, data=[], *args, **kwargs) -> None:
+        super(SummaryDialog, self).__init__(parent, *args, **kwargs)
+        
+        self.ui = Ui_SummaryDialogWidget()
+        self.ui.setupUi(self)
+        
+        #* Additional UI setup
+        self.ui.dataTree_Widget.setSortingEnabled(False)
+        self.setWindowModality(qtc.Qt.WindowModal)
+
+        # for i in range(10):
+        #     TestCaseItem = qtw.QTreeWidgetItem()
+        #     TestCaseItem.setText(0, f'Testcase {i+1}')
+        #     self.ui.dataTree_Widget.addTopLevelItem(TestCaseItem)
+            
+        #     for j in range(10):
+        #         teststepItem = qtw.QTreeWidgetItem()
+        #         teststepItem.setText(0, f'{(i+1)*(j+1)}')
+        #         teststepItem.setText(1, f'old')
+        #         teststepItem.setText(2, f'new')
+        #         TestCaseItem.addChild(teststepItem)
+            
+        #     TestCaseItem.setExpanded(True)
+        
+        #* Signal connectors
+        self.ui.closeSummary_btn.clicked.connect(self.handleCloseButton)
+    
+    #* Signal handler functions
+    def handleCloseButton(self):
+        self.close()
+        
+        
 class MainWindow(qtw.QMainWindow):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -50,7 +90,7 @@ class MainWindow(qtw.QMainWindow):
         #* QShortcuts
         self.ui.quitSc = qtw.QShortcut(qtg.QKeySequence('Ctrl+W'), self)
         
-        #* Event connectors
+        #* Signal connectors
         self.ui.configFile_btn.clicked.connect(self.handleXLSXInput)
         self.ui.xmlFile_btn.clicked.connect(self.handleXMLInput)
         self.ui.saveLocation_btn.clicked.connect(self.handleXMLOutput)
@@ -62,6 +102,7 @@ class MainWindow(qtw.QMainWindow):
         self.ui.selectAll_checkBox.pressed.connect(self.handleSelectAllCheckBox)
         self.ui.xmlData_searchBar.textChanged.connect(self.handleSearchBar)
         self.ui.quitSc.activated.connect(self.handleExitApp)
+        self.ui.xml_summary_btn.clicked.connect(self.handleXMLSummary)
 
 
         #* Global variables
@@ -71,6 +112,7 @@ class MainWindow(qtw.QMainWindow):
 
         #* Global flags
         self.testCaseBoxList = {}
+        self.filteredTeststepIds = set()
         self.ui.xlsxConfig_input_label.setText(self.xlsxInFile)
         self.ui.xml_input_label.setText(self.xmlInFile)
         self.ui.fileLocation_input_label.setText(self.xmlOutFile)
@@ -247,6 +289,7 @@ class MainWindow(qtw.QMainWindow):
         for fields in self.conversionMap.values():
             fields['isMatched'] = False
         
+        #* Get parsed xml data and updated conversion map
         try:
             # Catch errors thrown from xml processing
             xmlData, self.conversionMap = xmlParser.getTestStepData(self.xmlInFile, self.conversionMap)
@@ -365,29 +408,46 @@ class MainWindow(qtw.QMainWindow):
                 elif sys.platform == 'win32':
                     os.startfile(filepath)
 
+
+        #* Add Signal handler to each teststep checkbox
+        # Iterate over every testStepBoxList
+        for teststepBoxList in self.testCaseBoxList.values():
+            
+            # Iterate over every teststep in each teststepBoxList
+            for teststep in teststepBoxList:
+                # Add all teststep IDs to the list of filtered teststeps IDs
+                self.filteredTeststepIds.add(teststep.id)
+                
+                # Get the checkbox object and toggle it
+                checkBox = teststep.hLayout_teststepBox.itemAt(3).widget()
+                checkBox.clicked.connect(lambda _, teststep=teststep: self.handleTestStepCheckbox(teststep))
+        
         
         #* Setup autocompleter for search bar to allow for predictive searching of teststeps by description
         self.autoCompleter = qtw.QCompleter(list({teststep.title for teststepBoxList in self.testCaseBoxList.values() for teststep in teststepBoxList}))
         self.autoCompleter.setCaseSensitivity(qtc.Qt.CaseInsensitive)
         self.ui.xmlData_searchBar.setCompleter(self.autoCompleter)
         
-
-        #* Enable search bar 
+        #* Enable all tool buttons after succesfully loading XML file
+        # Enable search bar 
         self.ui.xmlData_searchBar.setEnabled(True)
         
-        #* Enable convert button
-        self.ui.xml_convert_btn.setEnabled(True)
-        
-        #* Enable toggle drop down button and set it to unchecked
+        # Enable toggle drop down button and set it to unchecked
         self.ui.showAll_btn.setEnabled(True)
         self.ui.hideAll_btn.setEnabled(True)
         
-        #* Enable select all checkbox and set it to checked
+        # Enable select all checkbox and set it to checked
         self.ui.selectAll_checkBox.setEnabled(True)
         self.ui.selectAll_checkBox.setChecked(True)
         
-        #* Enable clear data function
+        # Enable clear data function
         self.ui.xml_clearTeststeps_btn.setEnabled(True)
+        
+        # Enable summary button
+        self.ui.xml_summary_btn.setEnabled(True)
+
+        # Enable convert button
+        self.ui.xml_convert_btn.setEnabled(True)
        
        
     
@@ -417,8 +477,18 @@ class MainWindow(qtw.QMainWindow):
                 
                 # Get the checkbox object and toggle it
                 checkBox = teststep.hLayout_teststepBox.itemAt(3).widget()
-                checkBox.setChecked(False if self.ui.selectAll_checkBox.isChecked() else True)
-
+                
+                # If select all checkbox is checked, check all teststeps and add the ID to the list of filtered teststeps
+                if not self.ui.selectAll_checkBox.isChecked():
+                    self.filteredTeststepIds.add(teststep.id)
+                    checkBox.setChecked(True)
+                # Else, uncheck all teststeps and remove the ID from the list of filtered teststeps
+                else:
+                    self.filteredTeststepIds.clear()
+                    checkBox.setChecked(False)
+        
+        print(self.filteredTeststepIds)
+    
     
     
     def handleSearchBar(self, text):
@@ -445,22 +515,11 @@ class MainWindow(qtw.QMainWindow):
 
                    
                     
-    def handleXMLConvert(self):
-        # Create a filtered set of teststeps ids based on the selected radio box.
-        filteredIds = set()
-        
-        # Iterate over every testStepBoxList
-        for teststepBoxList in self.testCaseBoxList.values():
-            
-            # Iterate over every teststep in each teststepBoxList
-            for teststep in teststepBoxList:
-                checkBox = teststep.hLayout_teststepBox.itemAt(3).widget()
-                if checkBox.isChecked(): filteredIds.add(teststep.id)
-                
-        # Try to execute Execute XML conversion
+    def handleXMLConvert(self):                
+        #* Try to execute Execute XML conversion
         try:
             # To be used in XML_xmlParser to selectively convert old teststeps to new
-            xmlParser.convertTeststepData(filteredIds ,self.xmlInFile, self.xmlOutFile, self.conversionMap)
+            xmlParser.convertTeststepData(self.filteredTeststepIds ,self.xmlInFile, self.xmlOutFile, self.conversionMap)
 
         except Exception as ex:
             # Catch exceptions and handle them 
@@ -556,10 +615,42 @@ class MainWindow(qtw.QMainWindow):
 
 
 
-#* Get base directory of application 
-basedir = os.path.dirname(__file__)
+    def handleXMLSummary(self):
+        # Iterate through testcaseBoxList and filter out the teststeps that are in the filteredTeststepIds list
+        summaryDialog = SummaryDialog(self)
+        
+        for testcase, testcaseBoxList in self.testCaseBoxList.items():
+            
+            testcaseItem = qtw.QTreeWidgetItem(summaryDialog.ui.dataTree_Widget)
+            testcaseItem.setText(1, testcase.title)
+            summaryDialog.ui.dataTree_Widget.addTopLevelItem(testcaseItem)
+            
+            for teststep in testcaseBoxList:
+                
+                if teststep.id in self.filteredTeststepIds:
+                    teststepItem = qtw.QTreeWidgetItem(testcaseItem)
+                    teststepItem.setText(0, str(teststep.id))
+                    teststepItem.setText(1, testcase.title)
+                    teststepItem.setText(2, teststep.data['old']['description'])
+                    teststepItem.setText(3, teststep.data['new']['description'])
+                    testcaseItem.addChild(teststepItem)
+
+        summaryDialog.show()
 
 
+
+    def handleTestStepCheckbox(self, teststep):
+        # Check if the checkbox is checked
+        checked = teststep.hLayout_teststepBox.itemAt(3).widget().isChecked()
+        
+        # if checked, add the teststep id to the filtered set else remove from set
+        self.filteredTeststepIds.add(teststep.id) if checked else self.filteredTeststepIds.remove(teststep.id)
+        
+        print(f"Teststep {teststep.id} is checked: {checked}")
+        print(self.filteredTeststepIds)
+        
+        
+        
 #* Configure windows to identify the application as a custom application
 if sys.platform == 'win32':
     try:

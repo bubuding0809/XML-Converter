@@ -29,11 +29,11 @@ class MainWindow(qtw.QMainWindow):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        #Initialize UI to main window
+        #* Initialize UI to main window
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
-        # Additional UI setup
+        #* Additional UI setup
         pixmap = qtg.QPixmap(":/icons/bootstrap-icons-1.8.3/filetype-xlsx.svg").scaled(20, 20, qtc.Qt.KeepAspectRatio, qtc.Qt.SmoothTransformation)
         self.ui.configFile_btn = ButtonWithIcon(pixmap, 'Config file', self)
         self.ui.configInput_widget.layout().addWidget(self.ui.configFile_btn)
@@ -47,10 +47,10 @@ class MainWindow(qtw.QMainWindow):
         self.ui.saveLocation_widget.layout().addWidget(self.ui.saveLocation_btn)
 
 
-        # QShortcuts
+        #* QShortcuts
         self.ui.quitSc = qtw.QShortcut(qtg.QKeySequence('Ctrl+W'), self)
         
-        #Event connectors
+        #* Event connectors
         self.ui.configFile_btn.clicked.connect(self.handleXLSXInput)
         self.ui.xmlFile_btn.clicked.connect(self.handleXMLInput)
         self.ui.saveLocation_btn.clicked.connect(self.handleXMLOutput)
@@ -64,32 +64,147 @@ class MainWindow(qtw.QMainWindow):
         self.ui.quitSc.activated.connect(self.handleExitApp)
 
 
-        #Global variables
+        #* Global variables
         self.xlsxInFile = testfiles.CONFIG_PATH_WIN32 if sys.platform == 'win32' else testfiles.CONFIG_PATH_DARWIN
         self.xmlInFile = testfiles.INPUT_PATH_WIN32 if sys.platform == 'win32' else testfiles.INPUT_PATH_DARWIN
         self.xmlOutFile =  testfiles.SAVE_PATH_WIN32 if sys.platform == 'win32' else testfiles.SAVE_PATH_DARWIN
 
-        #Global flags
+        #* Global flags
         self.testCaseBoxList = {}
         self.ui.xlsxConfig_input_label.setText(self.xlsxInFile)
         self.ui.xml_input_label.setText(self.xmlInFile)
         self.ui.fileLocation_input_label.setText(self.xmlOutFile)
         
+        # Initialize conversionMap for testing
+        self.conversionMap = xmlParser.handleXlsx(self.xlsxInFile)
+        
         
         
     # ************************* Event Handler methods **************************** #
     def handleXLSXInput(self):
-        file = qtw.QFileDialog.getOpenFileName(self, 'Input config XLSX file', directory='', filter='Xlsx files (*.xlsx)')
+        file = qtw.QFileDialog.getOpenFileName(self, 'Input config XLSX file', directory='', filter='Excel files (*.xlsx)')
         if file:
             self.xlsxInFile = file[0]
             self.ui.xlsxConfig_input_label.setText(file[0])
+        
+        
+        #* Try to process xlsx file and generate conversion map
+        if len(self.xlsxInFile):
+            try:
+                # Read xlsx file and generate conversion map
+                self.conversionMap = xmlParser.handleXlsx(self.xlsxInFile)
+
+            except Exception as ex:
+                # Catch exceptions and handle them 
+                exception = f"There is an error in the xlsx file.\nPlease check the file and try again."
+                arguments = '\n'.join([f"{index+1}: {arg}" for index, arg in enumerate(list(ex.args))])
+                
+                # Create message box to display the error
+                msgBox = qtw.QMessageBox(self)
+                msgBox.setWindowTitle('Error')
+                msgBox.setText(exception)
+                msgBox.setDetailedText(
+                    f"Your excel config at {self.xlsxInFile} are missing these headers:\
+                    \n-----------------------------------------------------------------\
+                    \n{arguments}"
+                )
+                msgBox.setStandardButtons(qtw.QMessageBox.Ok)
+                retryBtn = msgBox.addButton('Try again', qtw.QMessageBox.AcceptRole)
+                msgBox.setIcon(qtw.QMessageBox.Critical)
+                msgBox.setWindowModality(qtc.Qt.WindowModal)
+                
+                ret = msgBox.exec()
+
+                # If user clicks on retry button, try again
+                if msgBox.clickedButton() == retryBtn:
+                    self.handleXLSXInput()
+                    return
+                    
+                # Disable load data button
+                self.ui.xml_loadData_btn.setEnabled(False)
+                
+                # Clear xml data in scroll area
+                self.clearTestStepScrollArea()
+                
+                return
+        
+        
+        #* Filter list of teststeps with empty fields
+        emptyFieldList = []
+        if self.conversionMap:
+            for index, (oldDescription, mapping) in enumerate(self.conversionMap.items()):
+                teststepEmptyField = []
+                
+                # Check if old description is empty
+                if not len(oldDescription):
+                    teststepEmptyField.append('old teststep description')
+                    
+                # Check if there are any empty fields in the teststep
+                for tag, text in mapping.items():
+                    if not len(str(text)):
+                        teststepEmptyField.append(tag)
+                
+                # If all fields are not filled, add to list
+                if teststepEmptyField: emptyFieldList.append({
+                    'description': f"{oldDescription if len(oldDescription) else 'Missing old teststep description'} - [row: {index+2}]",
+                    'emptyFields': teststepEmptyField
+                })
             
-        # Enable load data button if both xlsx and xml inputs exists
+            
+        #* If there are empty fields, display message box to warn user
+        if emptyFieldList:
+            #Create message box to display the error
+            msgBox = qtw.QMessageBox(self)
+            msgBox.setWindowTitle('Warning')
+            msgBox.setText('There are empty fields in your config file.')
+            
+            #* Create string list of empty fields and add to message
+            emptyFieldMessageList = []
+            for index, item in enumerate(emptyFieldList):
+                # Create string of description and empty fields
+                descriptionWithEmptyFields = f"{index+1}: {item['description']:}"
+                emptyFields = '\n'.join([f"   - {field}" for field in item['emptyFields']])
+                emptyFieldMessageList.append(f"{descriptionWithEmptyFields}\n{emptyFields}")
+            
+            # Join all empty fields into one string
+            emptyFieldMessageList = '\n'.join(emptyFieldMessageList)
+            
+            # Add empty fields to message
+            emptyFieldMessage = (
+                f"The following teststeps were found to have empty fields in your config file at {self.xmlInFile}:\
+                \n-----------------------------------------------------------------\
+                \n{emptyFieldMessageList}"
+            )
+            
+            #* Add message to message box detailed text
+            msgBox.setDetailedText(emptyFieldMessage)
+            
+            #* Add buttons and icons to message box
+            msgBox.setStandardButtons(qtw.QMessageBox.Ok)
+            editConfig_btn = msgBox.addButton('Edit config', qtw.QMessageBox.AcceptRole)
+            msgBox.setIcon(qtw.QMessageBox.Warning)
+            msgBox.setWindowModality(qtc.Qt.WindowModal)   
+            
+            #* execute message box
+            ret = msgBox.exec()
+            
+            #* If user clicks edit config button, open config file in default program
+            if msgBox.clickedButton() == editConfig_btn:
+                # macOS
+                if sys.platform == 'darwin':
+                    subprocess.call(('open', self.xlsxInFile))
+                # Windows   
+                elif sys.platform == 'win32':
+                    os.startfile(filepath)
+            
+            
+        #* Enable load data button if both xlsx and xml inputs exists and xlsx input is valid
         if len(self.xlsxInFile) and len(self.xmlInFile):
             self.ui.xml_loadData_btn.setEnabled(True)
         else:
             self.ui.xml_loadData_btn.setEnabled(False)
         self.ui.xml_convert_btn.setEnabled(False)
+        self.clearTestStepScrollArea()
             
             
         
@@ -128,10 +243,13 @@ class MainWindow(qtw.QMainWindow):
         #* Clear data grid of and old data
         self.clearTestStepScrollArea()
         
+        #* Reset all isMatch flags in conversion map to False
+        for fields in self.conversionMap.values():
+            fields['isMatched'] = False
+        
         try:
             # Catch errors thrown from xml processing
-            conversionMap = xmlParser.handleXlsx(self.xlsxInFile)
-            xmlData, conversionMap = xmlParser.getTestStepData(self.xmlInFile, conversionMap)
+            xmlData, self.conversionMap = xmlParser.getTestStepData(self.xmlInFile, self.conversionMap)
             
         except Exception as ex:
             # Catch exceptions and handle them 
@@ -142,7 +260,11 @@ class MainWindow(qtw.QMainWindow):
             msgBox = qtw.QMessageBox()
             msgBox.setWindowTitle('Error')
             msgBox.setText(exception)
-            msgBox.setDetailedText(f"Your config did not include these headers:\n------------------------------------\n{arguments}")
+            msgBox.setDetailedText(
+                f"Here are the error arguments:\
+                \n-----------------------------------------------------------------\
+                \n{arguments}"
+            )
             msgBox.setIcon(qtw.QMessageBox.Critical)
             ret = msgBox.exec()
 
@@ -173,86 +295,76 @@ class MainWindow(qtw.QMainWindow):
         
         
         #* Create filtered data boxes and insert into the vertical scroll layout area 
-        for index, (testcase, teststeps) in enumerate(testCaseList.items()):
-            # Create collapsible box for test case
-            box = CollapsibleBox(title=f"{testcase} <{teststeps[0]['parentType']}>")
-            self.ui.verticalLayout_3.insertWidget(index, box)
-            
-            # Create vertical layout for each collapsible box
-            vlayout = qtw.QVBoxLayout()
-            
-            testStepBoxList = []
-            for teststep in teststeps:
-                testStepBox = TestStepGroupBox(title=teststep['old']['description'], data=teststep, parent=self)
-                vlayout.addWidget(testStepBox)
-                testStepBoxList.append(testStepBox)
+        if testCaseList:
+            for index, (testcase, teststeps) in enumerate(testCaseList.items()):
+                # Create collapsible box for test case
+                box = CollapsibleBox(title=f"{testcase} <{teststeps[0]['parentType']}>")
+                self.ui.verticalLayout_3.insertWidget(index, box)
                 
-            vlayout.addStretch()
-            box.setContentLayout(vlayout)
-            self.testCaseBoxList[box] = testStepBoxList
+                # Create vertical layout for each collapsible box
+                vlayout = qtw.QVBoxLayout()
+                
+                testStepBoxList = []
+                for teststep in teststeps:
+                    testStepBox = TestStepGroupBox(title=teststep['old']['description'], data=teststep, parent=self)
+                    vlayout.addWidget(testStepBox)
+                    testStepBoxList.append(testStepBox)
+                    
+                vlayout.addStretch()
+                box.setContentLayout(vlayout)
+                self.testCaseBoxList[box] = testStepBoxList
+        else:
+            emptyLabel = qtw.QLabel('No test steps matched in XML file')
+            self.ui.verticalLayout_3.addWidget(emptyLabel)
         self.ui.verticalLayout_3.addStretch()
-        
-        
-        emptyFieldList = []
-        for index, (key, value) in enumerate(conversionMap.items()):
-            emptyFields = []
-            
-            # Check if all fields are filled
-            for tag, text in value.items():
-                if not len(str(text)):
-                    emptyFields.append(tag)
-            
-            # If all fields are not filled, add to list
-            if emptyFields: emptyFieldList.append({'description': key, 'emptyFields': emptyFields})
-        
-        if emptyFieldList: print(emptyFieldList)
         
         
         #* Alert user if there are unmatched teststeps
         # Create list of unmatched teststeps
-        unmatchedTeststeps = [key for key, value in conversionMap.items() if value['isMatched'] == False]
+        unmatchedTeststeps = []
+        for index, (oldDescription, fields) in enumerate(self.conversionMap.items()):
+            if fields['isMatched'] == False:
+                unmatchedTeststeps.append(f"{oldDescription} - [row: {index+2}]")
         
+        # If there are unmatched teststeps, alert user with a message box with the list of unmatched teststeps
         if unmatchedTeststeps:
-            # Create message box to display the warning
-            msgBox= qtw.QMessageBox()
-            msgBox.setWindowTitle('Warning')
-            msgBox.setText(f"There are unmatched teststeps descriptions in your config file")
             
+            # Create message box to display the warning
+            msgBox= qtw.QMessageBox(self)
+            msgBox.setWindowTitle('Warning')
+            msgBox.setText(f"There are unmatched teststeps descriptions in your config file.")
+            
+            # Create string list of unmatched teststeps and to message
             unmatchedTeststeps = '\n'.join(
                 [f"{index+1}: {teststep}" for index, teststep in enumerate(unmatchedTeststeps)]
             )
             noMatchMessage = (
-                f"The following teststeps descriptions had no match in the xml file:\
-                \n------------------------------------------------------\
+                f"The following teststeps descriptions at {self.xlsxInFile} had no match in the xml file:\
+                \n-----------------------------------------------------------------\
                 \n{unmatchedTeststeps}"
             )
+
+            # Merge message and set message box detailed text
+            msgBox.setDetailedText(noMatchMessage)
             
-            emptyFieldList = '\n'.join(
-                [f"{index+1}: {item['description']:}\n{item['emptyFields']}" for index, item in enumerate(emptyFieldList)]
-            )
-            emptyFieldMessage = (
-                f"The following teststeps were found to have empty fields in your config file:\
-                \n------------------------------------------------------\
-                \n{emptyFieldList}"
-            )
-            
-            msgBox.setDetailedText(noMatchMessage + ('\n\n' + emptyFieldMessage if emptyFieldList else ''))
-            
+            # Set message buttons and icons
             msgBox.setStandardButtons(qtw.QMessageBox.Ok)
-            
             editConfig_btn = msgBox.addButton('Edit config', qtw.QMessageBox.AcceptRole)
             msgBox.setIcon(qtw.QMessageBox.Warning)
+            msgBox.setWindowModality(qtc.Qt.WindowModal)   
             
+            # execute message box
             ret = msgBox.exec_()
             
+            # If user clicks edit config button, open config file in default program
             if msgBox.clickedButton() == editConfig_btn:
-                # Open config excel file
-                if sys.platform == 'darwin':       # macOS
+                # macOS
+                if sys.platform == 'darwin':
                     subprocess.call(('open', self.xlsxInFile))
-                elif sys.platform == 'win32':    # Windows
+                # Windows   
+                elif sys.platform == 'win32':
                     os.startfile(filepath)
 
-        
         
         #* Setup autocompleter for search bar to allow for predictive searching of teststeps by description
         self.autoCompleter = qtw.QCompleter(list({teststep.title for teststepBoxList in self.testCaseBoxList.values() for teststep in teststepBoxList}))
@@ -347,11 +459,8 @@ class MainWindow(qtw.QMainWindow):
                 
         # Try to execute Execute XML conversion
         try:
-            # Create conversion map based on xlsx config file
-            conversionMap = xmlParser.handleXlsx(self.xlsxInFile)
-            
             # To be used in XML_xmlParser to selectively convert old teststeps to new
-            xmlParser.convertTeststepData(filteredIds ,self.xmlInFile, self.xmlOutFile, conversionMap)
+            xmlParser.convertTeststepData(filteredIds ,self.xmlInFile, self.xmlOutFile, self.conversionMap)
 
         except Exception as ex:
             # Catch exceptions and handle them 

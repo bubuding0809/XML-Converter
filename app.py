@@ -1,7 +1,4 @@
 import logging
-from unicodedata import name
-
-from django.test import TestCase
 from UiMainWindow import Ui_MainWindow
 from SummaryDialog import Ui_SummaryDialogWidget
 from components.TestStepGroupBox import TestStepGroupBox
@@ -237,7 +234,7 @@ class MainWindow(qtw.QMainWindow):
                     subprocess.call(('open', self.xlsxInFile))
                 # Windows   
                 elif sys.platform == 'win32':
-                    os.startfile(filepath)
+                    os.startfile(self.xlsxInFile)
             
             
         #* Enable load data button if both xlsx and xml inputs exists and xlsx input is valid
@@ -406,7 +403,7 @@ class MainWindow(qtw.QMainWindow):
                     subprocess.call(('open', self.xlsxInFile))
                 # Windows   
                 elif sys.platform == 'win32':
-                    os.startfile(filepath)
+                    os.startfile(self.xlsxInFile)
 
 
         #* Add Signal handler to each teststep checkbox

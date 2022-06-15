@@ -10,6 +10,7 @@ from PyQt5 import (
     QtGui as qtg
 )
 import sys, os, subprocess
+import copy
 import xmlParser
 import subprocess
 import utils as u
@@ -29,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 
 #* Get base directory of application 
-basedir = os.path.dirname(__file__)
+baseDir = os.path.dirname(__file__)
 
 
 
@@ -439,7 +440,13 @@ class MainWindow(qtw.QMainWindow):
         
         
         #* Setup autocompleter for search bar to allow for predictive searching of teststeps by description
-        self.autoCompleter = qtw.QCompleter(list({teststep.title for teststepBoxList in self.testCaseBoxList.values() for teststep in teststepBoxList}))
+        SearchByTeststepDescriptionList = []
+        for teststepBoxList in self.testCaseBoxList.values():
+            for teststep in teststepBoxList:
+                SearchByTeststepDescriptionList.append(teststep.title)
+
+        self.autoCompleter = qtw.QCompleter(SearchByTeststepDescriptionList, self)
+        self.autoCompleter.setFilterMode(qtc.Qt.MatchFlag.MatchContains)
         self.autoCompleter.setCaseSensitivity(qtc.Qt.CaseInsensitive)
         self.ui.xmlData_searchBar.setCompleter(self.autoCompleter)
         
@@ -570,7 +577,7 @@ class MainWindow(qtw.QMainWindow):
                     teststepItem = qtw.QTreeWidgetItem(testcaseItem)
                     teststepItem.setText(1, str(teststep.id))
                     teststepItem.setText(2, teststep.data['old']['description'])
-                    teststepItem.setText(3, teststep.data['new']['description'])
+                    teststepItem.setText(3, teststep.newDataTableWidget_1.item(0, 0).text())
                     testcaseItem.addChild(teststepItem)
 
             #* Create counter for number of teststeps selected per testcase
@@ -589,10 +596,17 @@ class MainWindow(qtw.QMainWindow):
 
 
     def handleXMLConvert(self):                
+        conversionMap = self.getUpdatedConversionMap()
+
         #* Try to execute Execute XML conversion
         try:
             # To be used in XML_xmlParser to selectively convert old teststeps to new
-            xmlParser.convertTeststepData(self.filteredTeststepIds ,self.xmlInFile, self.xmlOutFile, self.conversionMap)
+            xmlParser.convertTeststepData(
+                self.filteredTeststepIds,
+                self.xmlInFile, 
+                self.xmlOutFile, 
+                conversionMap
+            )
 
         except Exception as ex:
             # Catch exceptions and handle them 
@@ -604,6 +618,7 @@ class MainWindow(qtw.QMainWindow):
             print(f'{exception}\n{arguments}')
             return
         
+
         #* Create success message box
         msgBox = qtw.QMessageBox()
         msgBox.setWindowTitle("Success")
@@ -614,6 +629,7 @@ class MainWindow(qtw.QMainWindow):
         msgBox.setCheckBox(checkbox)
         ret = msgBox.exec_()
         
+
         #* Open file in explorer/finder if option is checked
         if checkbox.isChecked():
             if sys.platform == 'win32':
@@ -687,6 +703,30 @@ class MainWindow(qtw.QMainWindow):
         clipBoard.setText()
 
 
+    
+    def getUpdatedConversionMap(self):
+        #* Create a updated copy of the conversion map based on the latest state of the teststep boxes
+        updatedConversionMap = {}
+        
+        # Iterate through all the teststeps boxes 
+        for teststepList in self.testCaseBoxList.values():
+
+            for teststep in teststepList:
+                
+                # If teststep has been selected
+                # Extract the latest text value of the mapping data and update the convsersion map
+                if teststep.id in self.filteredTeststepIds:
+                    data = teststep.getNewTeststepMap()
+                    updatedConversionMap[teststep.title] = {
+                        'description': data['description'],
+                        'function_library': data['function_library'],
+                        'function_name': data['function_name'],
+                        'function_parameters': data['function_parameters'],
+                    }
+
+        return updatedConversionMap
+
+
 
 #* Configure windows to identify the application as a custom application
 if sys.platform == 'win32':
@@ -708,7 +748,7 @@ if __name__ == '__main__':
     mainWindow = MainWindow()
 
     # Get and set the main window style sheet
-    with open(os.path.join(basedir, 'static/style.qss'), 'r') as file:
+    with open(os.path.join(baseDir, 'static/style.qss'), 'r') as file:
         stylesheet = file.read()
     mainWindow.setStyleSheet(stylesheet)
 

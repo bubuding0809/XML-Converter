@@ -3,7 +3,7 @@ from utils import *
 from openpyxl import load_workbook
 import os
 
-dirname = os.path.dirname(__file__)
+baseDir = os.path.dirname(__file__)
 
 #********************************************************* Application functions ********************************************************#
 def handleXlsx(xlsxFile):
@@ -61,7 +61,7 @@ def getTestStepData(xmlInFile, conversionMap):
         
         if oldDesciption in conversionMap:
             #If teststep description finds match in conversionMap - set isMatched to True
-            conversionMap.get(oldDesciption)['isMatched'] = True
+            conversionMap[oldDesciption]['isMatched'] = True
             
             #Get all teststep children
             oldFunctionLibrary = teststep.find('function_library').text
@@ -112,10 +112,11 @@ def convertTeststepData(filteredIds, xmlInFile, xmlOutFile, conversionMap):
     allTestSteps = [{'id': index + 1, 'teststep': teststep} 
                     for index, teststep in enumerate(root.iter('teststep'))]
 
-    for teststep in allTestSteps:
+    for index, teststep in enumerate(allTestSteps):
        
         # Get teststep description attribute from teststep
         oldtestStepDescription = teststep['teststep'].get('desc')
+        oldtestStepDescription = f"ID: {index+1} - {oldtestStepDescription}"
 
         # If teststep description finds match in conversionMap - convert to new version
         if oldtestStepDescription in conversionMap and teststep['id'] in filteredIds:
@@ -147,7 +148,6 @@ def convertTeststepData(filteredIds, xmlInFile, xmlOutFile, conversionMap):
                 newParam.text = param['text']
 
             # Debug print
-            print(f"Converted teststeps: {counter} _______________________________________________________________________________________________________________________________")
             print(f'''
 id: {teststep['id']}
 {teststep['teststep'].get('desc')}
@@ -155,6 +155,9 @@ id: {teststep['id']}
 {oldFunctionName.text}
 {[f"{param.get('name')}={param.text}" for param in oldFunctionParams]}
             ''')
+            
+            print(f"Converted teststeps: {counter} _______________________________________________________________________________________________________________________________")
+
     
     # Write modified xml file to specificed file location
     tree.write(xmlOutFile)
@@ -163,7 +166,7 @@ id: {teststep['id']}
 
 #********************************************************* Test functions ********************************************************#
 def testHandleXlsx():
-    xlsxFile = os.path.join(dirname, 'testdata/configWithError.xlsx')
+    xlsxFile = os.path.join(baseDir, 'testdata/configWithError.xlsx')
     
     conversionMap = handleXlsx(xlsxFile)
     for key, value in conversionMap.items():

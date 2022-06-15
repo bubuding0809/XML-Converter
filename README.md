@@ -29,8 +29,8 @@
 
 - [x] Add Error check for Xlsx config.
       For example: If user mistyped one of the old test step description, program will prompt user that that specific test step entered has no match. If a config file with the wrong structure has been submitted (wrong headers or extra columns) and error prompt will be shown.
-- [ ] Implement direct configuration of conversion parameters in the data grid in case there are errors in the Xlsx.
-- [ ] Conversion summary for an overview of the testcases that has been chosen to be converted.
+- [x] Implement direct configuration of conversion parameters in the data grid in case there are errors in the Xlsx.
+- [x] Conversion summary for an overview of the testcases that has been chosen to be converted.
 - [ ] To be provided with more xml test files from the test team to check if conversion works on ATP.
 - [ ] Implement batch conversion of xml files.
 - [x] Release of Xlsx config format to the test team for them to start defining there conversion parameters.

@@ -16,6 +16,8 @@ import utils as u
 import bootstrap_rc
 from testdata import testFilePaths as testfiles
 
+
+
 #* Set up logging
 logging.basicConfig(
     level=logging.DEBUG, 
@@ -25,8 +27,10 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+
 #* Get base directory of application 
 basedir = os.path.dirname(__file__)
+
 
 
 class SummaryDialog(qtw.QDialog):
@@ -39,11 +43,13 @@ class SummaryDialog(qtw.QDialog):
         #* Additional UI setup
         self.setWindowModality(qtc.Qt.WindowModal)
         
-        # Set header to resize to contents
+        #* Set header to resize to contents
         header = self.ui.dataTree_Widget.header()
+        header.setSectionsMovable(True)
         header.setSectionResizeMode(qtw.QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(0, qtw.QHeaderView.Interactive)
 
-        
+
         #* Signal connectors
         self.ui.closeSummary_btn.clicked.connect(self.handleCloseButton)
     
@@ -54,6 +60,7 @@ class SummaryDialog(qtw.QDialog):
         self.close()
         
         
+
 class MainWindow(qtw.QMainWindow):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -329,16 +336,33 @@ class MainWindow(qtw.QMainWindow):
         #* Create filtered data boxes and insert into the vertical scroll layout area 
         if testCaseList:
             for index, (testcase, teststeps) in enumerate(testCaseList.items()):
-                # Create collapsible box for test case
-                box = CollapsibleBox(title=f"{testcase} <{teststeps[0]['parentType']}>")
+
+                #* Create testcase data obj to be passed into the CollapsibleBox widget
+                testcaseData = {
+                    'id': testcase,
+                    'type': teststeps[0]['parentType'],
+                    'teststeps': teststeps
+                }
+
+                #* Create collapsible box for test case
+                box = CollapsibleBox(
+                    title=f"{testcase} <{teststeps[0]['parentType']}> ({len(teststeps)})",
+                    data=testcaseData
+                )
                 self.ui.verticalLayout_3.insertWidget(index, box)
                 
-                # Create vertical layout for each collapsible box
+                #* Create vertical layout for each collapsible box
                 vlayout = qtw.QVBoxLayout()
                 
                 testStepBoxList = []
                 for teststep in teststeps:
-                    testStepBox = TestStepGroupBox(title=teststep['old']['description'], data=teststep, parent=self)
+
+                    testStepBox = TestStepGroupBox(
+                        title=f"ID: {teststep['id']} - {teststep['old']['description']}", 
+                        data=teststep, 
+                        parent=self
+                    )
+
                     vlayout.addWidget(testStepBox)
                     testStepBoxList.append(testStepBox)
                     
@@ -346,8 +370,10 @@ class MainWindow(qtw.QMainWindow):
                 box.setContentLayout(vlayout)
                 self.testCaseBoxList[box] = testStepBoxList
         else:
+
             emptyLabel = qtw.QLabel('No test steps matched in XML file')
             self.ui.verticalLayout_3.addWidget(emptyLabel)
+
         self.ui.verticalLayout_3.addStretch()
         
         
@@ -471,12 +497,13 @@ class MainWindow(qtw.QMainWindow):
                 if not self.ui.selectAll_checkBox.isChecked():
                     self.filteredTeststepIds.add(teststep.id)
                     checkBox.setChecked(True)
+
                 # Else, uncheck all teststeps and remove the ID from the list of filtered teststeps
                 else:
                     self.filteredTeststepIds.clear()
                     checkBox.setChecked(False)
-        
-        print(self.filteredTeststepIds)
+
+        logger.info(f'All teststeps checked: {not self.ui.selectAll_checkBox.isChecked()}')
     
     
     
@@ -503,7 +530,64 @@ class MainWindow(qtw.QMainWindow):
             testcase.show() if isAnyFound else testcase.hide()
 
                    
-                    
+
+    def handleTestStepCheckbox(self, teststep):
+        # Check if the checkbox is checked
+        checked = teststep.hLayout_teststepBox.itemAt(3).widget().isChecked()
+        
+        # if checked, add the teststep id to the filtered set else remove from set
+        if checked: 
+            self.filteredTeststepIds.add(teststep.id) 
+        else :
+            self.filteredTeststepIds.remove(teststep.id)
+        
+        logger.info(f"Teststep {teststep.id} is checked: {checked}")
+
+
+
+    def handleXMLSummary(self):
+        
+        #* Create summary dialog widget
+        summaryDialog = SummaryDialog(self)
+        
+        #* Iterate through testcaseBoxList and filter out the teststeps that are in the filteredTeststepIds list
+        for testcase, testcaseBoxList in self.testCaseBoxList.items():
+            
+            #* Create testcase parent item for each testcase
+            testcaseItem = qtw.QTreeWidgetItem(summaryDialog.ui.dataTree_Widget)
+            testcaseItem.setFont(0, qtg.QFont('Arial', pointSize=10, weight=qtg.QFont.Bold))
+            testcaseItem.setText(0, f"{testcase.id} <{testcase.type}>")
+            
+            #* Add parent item to tree view and set it to expanded
+            summaryDialog.ui.dataTree_Widget.addTopLevelItem(testcaseItem)
+            testcaseItem.setExpanded(True)
+            
+            #* Iterate through each teststep in the testcaseBoxList
+            for teststep in testcaseBoxList:
+                
+                # If teststep is in the filteredTeststepIds list, add it to the tree view
+                if teststep.id in self.filteredTeststepIds:
+                    teststepItem = qtw.QTreeWidgetItem(testcaseItem)
+                    teststepItem.setText(1, str(teststep.id))
+                    teststepItem.setText(2, teststep.data['old']['description'])
+                    teststepItem.setText(3, teststep.data['new']['description'])
+                    testcaseItem.addChild(teststepItem)
+
+            #* Create counter for number of teststeps selected per testcase
+            font = qtg.QFont('Arial', pointSize=10)
+            font.setUnderline(True)
+            font.setItalic(True)
+            testcaseItem.setFont(1, font)
+            testcaseItem.setText(1, f"{testcaseItem.childCount()} / {testcase.teststepsCount}")
+
+            #* If there are no teststeps in the testcase, hide the parent item
+            if not testcaseItem.childCount():
+                testcaseItem.setHidden(True)
+
+        summaryDialog.show()
+
+
+
     def handleXMLConvert(self):                
         #* Try to execute Execute XML conversion
         try:
@@ -604,54 +688,6 @@ class MainWindow(qtw.QMainWindow):
 
 
 
-    def handleXMLSummary(self):
-        
-        #* Create summary dialog widget
-        summaryDialog = SummaryDialog(self)
-        
-        #* Iterate through testcaseBoxList and filter out the teststeps that are in the filteredTeststepIds list
-        for testcase, testcaseBoxList in self.testCaseBoxList.items():
-            
-            # Create testcase parent item for each testcase
-            testcaseItem = qtw.QTreeWidgetItem(summaryDialog.ui.dataTree_Widget)
-            testcaseItem.setFont(0, qtg.QFont('Arial', pointSize=14, weight=qtg.QFont.Bold))
-            testcaseItem.setText(0, testcase.title)
-            
-            # Add parent item to tree view and set it to expanded
-            summaryDialog.ui.dataTree_Widget.addTopLevelItem(testcaseItem)
-            testcaseItem.setExpanded(True)
-            
-            # Iterate through each teststep in the testcaseBoxList
-            for teststep in testcaseBoxList:
-                
-                # If teststep is in the filteredTeststepIds list, add it to the tree view
-                if teststep.id in self.filteredTeststepIds:
-                    teststepItem = qtw.QTreeWidgetItem(testcaseItem)
-                    teststepItem.setText(0, str(teststep.id))
-                    teststepItem.setText(1, teststep.data['old']['description'])
-                    teststepItem.setText(2, teststep.data['new']['description'])
-                    testcaseItem.addChild(teststepItem)
-
-            #* If there are no teststeps in the testcase, hide the parent item
-            if not testcaseItem.childCount():
-                testcaseItem.setHidden(True)
-
-        summaryDialog.show()
-
-
-
-    def handleTestStepCheckbox(self, teststep):
-        # Check if the checkbox is checked
-        checked = teststep.hLayout_teststepBox.itemAt(3).widget().isChecked()
-        
-        # if checked, add the teststep id to the filtered set else remove from set
-        self.filteredTeststepIds.add(teststep.id) if checked else self.filteredTeststepIds.remove(teststep.id)
-        
-        print(f"Teststep {teststep.id} is checked: {checked}")
-        print(self.filteredTeststepIds)
-        
-        
-        
 #* Configure windows to identify the application as a custom application
 if sys.platform == 'win32':
     try:

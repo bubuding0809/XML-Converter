@@ -18,7 +18,7 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <property name="spacing">
-    <number>-1</number>
+    <number>7</number>
    </property>
    <property name="leftMargin">
     <number>5</number>
@@ -157,6 +157,11 @@
         <attribute name="headerStretchLastSection">
          <bool>true</bool>
         </attribute>
+        <column>
+         <property name="text">
+          <string>Testcase</string>
+         </property>
+        </column>
         <column>
          <property name="text">
           <string>ID</string>

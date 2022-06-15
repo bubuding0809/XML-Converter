@@ -1,9 +1,9 @@
 QTableWidget {
-  font-size: 10px;
+  font-size: 12px;
 }
 
 QListWidget {
-  font-size: 10px;
+  font-size: 12px;
 }
 
 QPushButton {

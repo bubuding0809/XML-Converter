@@ -9,11 +9,18 @@ from PyQt5 import (
 
 
 class CollapsibleBox(qtw.QWidget):
-    def __init__(self, title="", parent=None):
+    def __init__(self, title="", data=None, parent=None):
         super(CollapsibleBox, self).__init__(parent)
+
+        #* Initialize some meta attributes for the widgt
         self.title = title
+        self.data = data
+        self.id = data['id']
+        self.type = data['type']
+        self.teststeps = data['teststeps']
+        self.teststepsCount = len(self.teststeps)
         
-        # Toggle button
+        #* Toggle button
         self.toggle_button = qtw.QToolButton(text=title, checkable=True, checked=False)
         self.toggle_button.setFont(qtg.QFont('Arial', 12))
         self.toggle_button.setStyleSheet("QToolButton { border: none; }")
@@ -27,7 +34,8 @@ class CollapsibleBox(qtw.QWidget):
         self.content_area.setSizePolicy(qtw.QSizePolicy.Expanding, qtw.QSizePolicy.Fixed)
         self.content_area.setFrameShape(qtw.QFrame.Panel | qtw.QFrame.Raised)
 
-        # Vertical layout for collapseable box to contain toggle button and content area
+
+        #* Vertical layout for collapseable box to contain toggle button and content area
         lay = qtw.QVBoxLayout()
         lay.setSpacing(0)
         lay.setContentsMargins(0, 0, 0, 0)
@@ -35,7 +43,7 @@ class CollapsibleBox(qtw.QWidget):
         lay.addWidget(self.content_area)
         self.setLayout(lay)
 
-        # Toggle animation for content area
+        #* Toggle animation for content area
         self.toggle_animation = qtc.QParallelAnimationGroup(self)
         self.toggle_animation.addAnimation(
             qtc.QPropertyAnimation(self, b"minimumHeight")

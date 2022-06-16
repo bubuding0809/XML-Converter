@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>SummaryDialogWidget</class>
- <widget class="QDialog" name="SummaryDialogWidget">
+ <class>SummaryDialog</class>
+ <widget class="QDialog" name="SummaryDialog">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1017</width>
-    <height>670</height>
+    <width>1048</width>
+    <height>664</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -47,7 +47,7 @@
          <string/>
         </property>
         <property name="pixmap">
-         <pixmap resource="media/bootstrap.qrc">:/icons/bootstrap-icons-1.8.3/info.png</pixmap>
+         <pixmap resource="../media/bootstrap.qrc">:/icons/bootstrap-icons-1.8.3/info.png</pixmap>
         </property>
         <property name="scaledContents">
          <bool>true</bool>
@@ -78,7 +78,7 @@
     </widget>
    </item>
    <item>
-    <widget class="QWidget" name="summaryDataTree_widget" native="true">
+    <widget class="QWidget" name="summaryDataTreeMain_widget" native="true">
      <layout class="QVBoxLayout" name="verticalLayout_2">
       <property name="leftMargin">
        <number>0</number>
@@ -92,6 +92,87 @@
       <property name="bottomMargin">
        <number>0</number>
       </property>
+      <item>
+       <widget class="QWidget" name="dataTreeTools_widget" native="true">
+        <layout class="QHBoxLayout" name="horizontalLayout_3">
+         <property name="leftMargin">
+          <number>0</number>
+         </property>
+         <property name="topMargin">
+          <number>0</number>
+         </property>
+         <property name="rightMargin">
+          <number>0</number>
+         </property>
+         <property name="bottomMargin">
+          <number>0</number>
+         </property>
+         <item>
+          <widget class="QWidget" name="dataTreeSearchBox_widget" native="true">
+           <layout class="QHBoxLayout" name="horizontalLayout_4">
+            <property name="leftMargin">
+             <number>5</number>
+            </property>
+            <property name="topMargin">
+             <number>0</number>
+            </property>
+            <property name="rightMargin">
+             <number>0</number>
+            </property>
+            <property name="bottomMargin">
+             <number>0</number>
+            </property>
+            <item>
+             <spacer name="horizontalSpacer_3">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </widget>
+         </item>
+         <item>
+          <widget class="QWidget" name="dataTreeButtonBox_widget" native="true">
+           <layout class="QHBoxLayout" name="horizontalLayout_5">
+            <property name="leftMargin">
+             <number>0</number>
+            </property>
+            <property name="topMargin">
+             <number>0</number>
+            </property>
+            <property name="rightMargin">
+             <number>0</number>
+            </property>
+            <property name="bottomMargin">
+             <number>0</number>
+            </property>
+            <item>
+             <widget class="QPushButton" name="showAll_btn">
+              <property name="text">
+               <string>Show all</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="hideAll_btn">
+              <property name="text">
+               <string>Hide all</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
       <item>
        <widget class="QTreeWidget" name="dataTree_Widget">
         <property name="inputMethodHints">
@@ -154,6 +235,9 @@
         <attribute name="headerHighlightSections">
          <bool>false</bool>
         </attribute>
+        <attribute name="headerShowSortIndicator" stdset="0">
+         <bool>false</bool>
+        </attribute>
         <attribute name="headerStretchLastSection">
          <bool>true</bool>
         </attribute>
@@ -185,7 +269,13 @@
    <item>
     <widget class="QWidget" name="toolButtons_widget" native="true">
      <layout class="QHBoxLayout" name="horizontalLayout_2">
+      <property name="leftMargin">
+       <number>0</number>
+      </property>
       <property name="topMargin">
+       <number>0</number>
+      </property>
+      <property name="rightMargin">
        <number>0</number>
       </property>
       <property name="bottomMargin">
@@ -226,7 +316,7 @@
   </layout>
  </widget>
  <resources>
-  <include location="media/bootstrap.qrc"/>
+  <include location="../media/bootstrap.qrc"/>
  </resources>
  <connections/>
 </ui>

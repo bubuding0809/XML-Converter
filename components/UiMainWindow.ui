@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1115</width>
+    <width>1132</width>
     <height>779</height>
    </rect>
   </property>
@@ -698,85 +698,17 @@
             </property>
             <layout class="QHBoxLayout" name="horizontalLayout_2">
              <property name="leftMargin">
-              <number>0</number>
+              <number>5</number>
              </property>
              <property name="topMargin">
               <number>0</number>
              </property>
              <property name="rightMargin">
-              <number>5</number>
+              <number>0</number>
              </property>
              <property name="bottomMargin">
               <number>0</number>
              </property>
-             <item>
-              <widget class="QLabel" name="label">
-               <property name="text">
-                <string/>
-               </property>
-               <property name="pixmap">
-                <pixmap resource="media/bootstrap.qrc">:/icons/bootstrap-icons-1.8.3/search.svg</pixmap>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QLineEdit" name="xmlData_searchBar">
-               <property name="enabled">
-                <bool>false</bool>
-               </property>
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
-               </property>
-               <property name="minimumSize">
-                <size>
-                 <width>200</width>
-                 <height>0</height>
-                </size>
-               </property>
-               <property name="maximumSize">
-                <size>
-                 <width>400</width>
-                 <height>16777215</height>
-                </size>
-               </property>
-               <property name="toolTipDuration">
-                <number>-1</number>
-               </property>
-               <property name="layoutDirection">
-                <enum>Qt::LeftToRight</enum>
-               </property>
-               <property name="autoFillBackground">
-                <bool>false</bool>
-               </property>
-               <property name="styleSheet">
-                <string notr="true"/>
-               </property>
-               <property name="frame">
-                <bool>true</bool>
-               </property>
-               <property name="cursorPosition">
-                <number>0</number>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
-               </property>
-               <property name="dragEnabled">
-                <bool>false</bool>
-               </property>
-               <property name="placeholderText">
-                <string>Search</string>
-               </property>
-               <property name="cursorMoveStyle">
-                <enum>Qt::LogicalMoveStyle</enum>
-               </property>
-               <property name="clearButtonEnabled">
-                <bool>false</bool>
-               </property>
-              </widget>
-             </item>
              <item>
               <spacer name="horizontalSpacer_6">
                <property name="orientation">
@@ -892,8 +824,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>1088</width>
-            <height>510</height>
+            <width>1099</width>
+            <height>534</height>
            </rect>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -910,6 +842,15 @@
     <item>
      <widget class="QWidget" name="convert_widget" native="true">
       <layout class="QGridLayout" name="gridLayout_2">
+       <property name="leftMargin">
+        <number>5</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
        <item row="0" column="2">
         <spacer name="horizontalSpacer_3">
          <property name="orientation">
@@ -953,8 +894,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1115</width>
-     <height>24</height>
+     <width>1132</width>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuConverter">
@@ -976,7 +917,7 @@
   </action>
   <action name="actionOpen">
    <property name="icon">
-    <iconset resource="media/bootstrap.qrc">
+    <iconset resource="../media/bootstrap.qrc">
      <normaloff>:/icons/bootstrap-icons-1.8.3/filetype-xml.svg</normaloff>:/icons/bootstrap-icons-1.8.3/filetype-xml.svg</iconset>
    </property>
    <property name="text">
@@ -985,7 +926,7 @@
   </action>
   <action name="actionSave">
    <property name="icon">
-    <iconset resource="media/bootstrap.qrc">
+    <iconset resource="../media/bootstrap.qrc">
      <normaloff>:/icons/bootstrap-icons-1.8.3/save2-fill.svg</normaloff>:/icons/bootstrap-icons-1.8.3/save2-fill.svg</iconset>
    </property>
    <property name="text">
@@ -1009,7 +950,7 @@
   </action>
   <action name="actionExit_3">
    <property name="icon">
-    <iconset resource="media/bootstrap.qrc">
+    <iconset resource="../media/bootstrap.qrc">
      <normaloff>:/icons/bootstrap-icons-1.8.3/file-excel-fill.svg</normaloff>:/icons/bootstrap-icons-1.8.3/file-excel-fill.svg</iconset>
    </property>
    <property name="text">
@@ -1019,6 +960,7 @@
  </widget>
  <resources>
   <include location="media/resource.qrc"/>
+  <include location="../media/bootstrap.qrc"/>
   <include location="media/bootstrap.qrc"/>
  </resources>
  <connections/>

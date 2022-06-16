@@ -8,9 +8,9 @@ from PyQt5 import (
 
 
 
-class CollapsibleBox(qtw.QWidget):
+class CollapsibleTestcaseWidget(qtw.QWidget):
     def __init__(self, title="", data=None, parent=None):
-        super(CollapsibleBox, self).__init__(parent)
+        super(CollapsibleTestcaseWidget, self).__init__(parent)
 
         #* Initialize some meta attributes for the widgt
         self.title = title
@@ -21,7 +21,11 @@ class CollapsibleBox(qtw.QWidget):
         self.teststepsCount = len(self.teststeps)
         
         #* Toggle button
-        self.toggle_button = qtw.QToolButton(text=title, checkable=True, checked=False)
+        self.toggle_button = qtw.QToolButton(
+            text=f"{title} ({self.teststepsCount}/{self.teststepsCount})", 
+            checkable=True, 
+            checked=False
+        )
         self.toggle_button.setFont(qtg.QFont('Arial', 12))
         self.toggle_button.setStyleSheet("QToolButton { border: none; }")
         self.toggle_button.setCursor(qtg.QCursor(qtc.Qt.PointingHandCursor))
@@ -119,7 +123,7 @@ class MainWindow(qtw.QMainWindow):
         boxList = []
         # Create 10 CollapsibleBox
         for i in range(10):
-            box = CollapsibleBox(f"Collapsible Box Header-{i}")
+            box = CollapsibleTestcaseWidget(f"Collapsible Box Header-{i}")
             self.vlay.addWidget(box)
             
             # Create vertical layout for each collapsible box

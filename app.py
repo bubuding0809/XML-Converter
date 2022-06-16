@@ -1,20 +1,20 @@
 import logging
-from UiMainWindow import Ui_MainWindow
-from SummaryDialog import Ui_SummaryDialogWidget
-from components.TestStepGroupBox import TestStepGroupBox
-from components.CollapseableWidget import CollapsibleBox
+from components.UiMainWindow import Ui_MainWindow
+from components.SummaryDialogWidget import SummaryDialog
+from components.TeststepGroupBoxWidget import TeststepGroupBoxWidget
+from components.CollapsibleTestcaseWidget import CollapsibleTestcaseWidget
 from components.CustomButton import ButtonWithIcon
+from components.CustomLineEdit import CustomLineEdit
 from PyQt5 import (
     QtWidgets as qtw,
     QtCore as qtc,
     QtGui as qtg
 )
 import sys, os, subprocess
-import copy
 import xmlParser
 import subprocess
 import utils as u
-import bootstrap_rc
+from components.resources import bootstrap_rc
 from testdata import testFilePaths as testfiles
 
 
@@ -31,34 +31,6 @@ logger = logging.getLogger(__name__)
 
 #* Get base directory of application 
 baseDir = os.path.dirname(__file__)
-
-
-
-class SummaryDialog(qtw.QDialog):
-    def __init__(self, parent, data=[], *args, **kwargs) -> None:
-        super(SummaryDialog, self).__init__(parent, *args, **kwargs)
-        
-        self.ui = Ui_SummaryDialogWidget()
-        self.ui.setupUi(self)
-        
-        #* Additional UI setup
-        self.setWindowModality(qtc.Qt.WindowModal)
-        
-        #* Set header to resize to contents
-        header = self.ui.dataTree_Widget.header()
-        header.setSectionsMovable(True)
-        header.setSectionResizeMode(qtw.QHeaderView.ResizeToContents)
-        header.setSectionResizeMode(0, qtw.QHeaderView.Interactive)
-
-
-        #* Signal connectors
-        self.ui.closeSummary_btn.clicked.connect(self.handleCloseButton)
-    
-    
-    
-    #* Signal handler functions
-    def handleCloseButton(self):
-        self.close()
         
         
 
@@ -71,18 +43,27 @@ class MainWindow(qtw.QMainWindow):
         self.ui.setupUi(self)
 
         #* Additional UI setup
+        # Create Custom button for save config button
         pixmap = qtg.QPixmap(":/icons/bootstrap-icons-1.8.3/filetype-xlsx.svg").scaled(20, 20, qtc.Qt.KeepAspectRatio, qtc.Qt.SmoothTransformation)
         self.ui.configFile_btn = ButtonWithIcon(pixmap, 'Config file', self)
         self.ui.configInput_widget.layout().addWidget(self.ui.configFile_btn)
-
+        
+        # Create Custom button for save input button
         pixmap = qtg.QPixmap(":/icons/bootstrap-icons-1.8.3/filetype-xml.svg").scaled(20, 20, qtc.Qt.KeepAspectRatio, qtc.Qt.SmoothTransformation)
         self.ui.xmlFile_btn = ButtonWithIcon(pixmap , 'XML file', self)
         self.ui.xmlInput_widget.layout().addWidget(self.ui.xmlFile_btn)
 
+        # Create Custom button for save location button
         pixmap = qtg.QPixmap(":/icons/bootstrap-icons-1.8.3/folder2.svg").scaled(20, 20, qtc.Qt.KeepAspectRatio, qtc.Qt.SmoothTransformation)
         self.ui.saveLocation_btn = ButtonWithIcon(pixmap, 'Save', self)
         self.ui.saveLocation_widget.layout().addWidget(self.ui.saveLocation_btn)
 
+        # Create Custom line edit search bar 
+        self.ui.mainSearchBar_lineEdit = CustomLineEdit(':/icons/bootstrap-icons-1.8.3/search.svg', 'Search')
+        self.ui.mainSearchBar_lineEdit.setMinimumWidth(200)
+        self.ui.mainSearchBar_lineEdit.setMaximumWidth(400)
+        self.ui.mainSearchBar_lineEdit.setEnabled(False)
+        self.ui.scrollAreaSearchBox_widget.layout().insertWidget(0, self.ui.mainSearchBar_lineEdit)
 
         #* QShortcuts
         self.ui.quitSc = qtw.QShortcut(qtg.QKeySequence('Ctrl+W'), self)
@@ -97,7 +78,7 @@ class MainWindow(qtw.QMainWindow):
         self.ui.hideAll_btn.pressed.connect(self.handleToggleAllDropDownBtn)
         self.ui.xml_clearTeststeps_btn.clicked.connect(self.clearTestStepScrollArea)
         self.ui.selectAll_checkBox.pressed.connect(self.handleSelectAllCheckBox)
-        self.ui.xmlData_searchBar.textChanged.connect(self.handleSearchBar)
+        self.ui.mainSearchBar_lineEdit.textChanged.connect(self.handleSearchBar)
         self.ui.quitSc.activated.connect(self.handleExitApp)
         self.ui.xml_summary_btn.clicked.connect(self.handleXMLSummary)
 
@@ -119,8 +100,13 @@ class MainWindow(qtw.QMainWindow):
         
         
         
-    # ************************* Event Handler methods **************************** #
+    # ************************* Signal Handler methods **************************** #
+    
     def handleXLSXInput(self):
+        #* reset conversion map upon clicking config file button
+        self.conversionMap.clear()
+
+        #* Retrieve excel config file path from file dialog
         file = qtw.QFileDialog.getOpenFileName(self, 'Input config XLSX file', directory='', filter='Excel files (*.xlsx)')
         if file:
             self.xlsxInFile = file[0]
@@ -179,8 +165,10 @@ class MainWindow(qtw.QMainWindow):
                     teststepEmptyField.append('old teststep description')
                     
                 # Check if there are any empty fields in the teststep
-                for tag, text in mapping.items():
-                    if not len(str(text)):
+                for tag, value in mapping.items():
+                    if tag == 'isMatched':
+                        continue
+                    if not len(value):
                         teststepEmptyField.append(tag)
                 
                 # If all fields are not filled, add to list
@@ -346,19 +334,20 @@ class MainWindow(qtw.QMainWindow):
                 }
 
                 #* Create collapsible box for test case
-                box = CollapsibleBox(
-                    title=f"{testcase} <{teststeps[0]['parentType']}> ({len(teststeps)})",
+                box = CollapsibleTestcaseWidget(
+                    title=f"{testcase} <{teststeps[0]['parentType']}>",
                     data=testcaseData
                 )
                 self.ui.verticalLayout_3.insertWidget(index, box)
                 
                 #* Create vertical layout for each collapsible box
                 vlayout = qtw.QVBoxLayout()
+                vlayout.setContentsMargins(0, 0, 0, 0)
                 
                 testStepBoxList = []
                 for teststep in teststeps:
 
-                    testStepBox = TestStepGroupBox(
+                    testStepBox = TeststepGroupBoxWidget(
                         title=f"ID: {teststep['id']} - {teststep['old']['description']}", 
                         data=teststep, 
                         parent=self
@@ -445,14 +434,14 @@ class MainWindow(qtw.QMainWindow):
             for teststep in teststepBoxList:
                 SearchByTeststepDescriptionList.append(teststep.title)
 
-        self.autoCompleter = qtw.QCompleter(SearchByTeststepDescriptionList, self)
-        self.autoCompleter.setFilterMode(qtc.Qt.MatchFlag.MatchContains)
-        self.autoCompleter.setCaseSensitivity(qtc.Qt.CaseInsensitive)
-        self.ui.xmlData_searchBar.setCompleter(self.autoCompleter)
+        autoCompleter = qtw.QCompleter(SearchByTeststepDescriptionList, self)
+        autoCompleter.setFilterMode(qtc.Qt.MatchFlag.MatchContains)
+        autoCompleter.setCaseSensitivity(qtc.Qt.CaseInsensitive)
+        self.ui.mainSearchBar_lineEdit.setCompleter(autoCompleter)
         
         #* Enable all tool buttons after succesfully loading XML file
         # Enable search bar 
-        self.ui.xmlData_searchBar.setEnabled(True)
+        self.ui.mainSearchBar_lineEdit.setEnabled(True)
         
         # Enable toggle drop down button and set it to unchecked
         self.ui.showAll_btn.setEnabled(True)
@@ -515,28 +504,27 @@ class MainWindow(qtw.QMainWindow):
     
     
     def handleSearchBar(self, text):
-        for teststep in [teststep for teststepBoxList in self.testCaseBoxList.values() for teststep in teststepBoxList]:
-             if text.lower() in teststep.title.lower():
-                 teststep.show()
-             else:
-                 teststep.hide()
-
-        for testcase in self.testCaseBoxList:
+        for testcase, teststepList in self.testCaseBoxList.items():
             testcase.show()
-
             isAnyFound = False
 
-            # Get layout of collapsible test case box
-            layout = testcase.layout().itemAt(1).widget().layout()
-            
-            # Iterate through each widget instead of the layout and check if it contains any matched teststep
-            for widget in u.getLayoutWidgets(layout):
-                if widget.isVisible():
-                    isAnyFound = True
-            
-            testcase.show() if isAnyFound else testcase.hide()
+            visibleCount = 0
+            for teststep in teststepList:
+                if text.lower() in teststep.title.lower():
+                     teststep.show()
+                     isAnyFound = True
+                     visibleCount += 1
+                else:
+                     teststep.hide()
 
-                   
+            #* Update testcaseBoxWidget with new title text
+            testcase.toggle_button.setText(
+                f"{testcase} ({str(visibleCount)}/{len(teststepList)})"
+            )
+
+            testcase.show() if isAnyFound else testcase.hide()
+        
+
 
     def handleTestStepCheckbox(self, teststep):
         # Check if the checkbox is checked
@@ -553,44 +541,12 @@ class MainWindow(qtw.QMainWindow):
 
 
     def handleXMLSummary(self):
-        
-        #* Create summary dialog widget
-        summaryDialog = SummaryDialog(self)
-        
-        #* Iterate through testcaseBoxList and filter out the teststeps that are in the filteredTeststepIds list
-        for testcase, testcaseBoxList in self.testCaseBoxList.items():
-            
-            #* Create testcase parent item for each testcase
-            testcaseItem = qtw.QTreeWidgetItem(summaryDialog.ui.dataTree_Widget)
-            testcaseItem.setFont(0, qtg.QFont('Arial', pointSize=10, weight=qtg.QFont.Bold))
-            testcaseItem.setText(0, f"{testcase.id} <{testcase.type}>")
-            
-            #* Add parent item to tree view and set it to expanded
-            summaryDialog.ui.dataTree_Widget.addTopLevelItem(testcaseItem)
-            testcaseItem.setExpanded(True)
-            
-            #* Iterate through each teststep in the testcaseBoxList
-            for teststep in testcaseBoxList:
-                
-                # If teststep is in the filteredTeststepIds list, add it to the tree view
-                if teststep.id in self.filteredTeststepIds:
-                    teststepItem = qtw.QTreeWidgetItem(testcaseItem)
-                    teststepItem.setText(1, str(teststep.id))
-                    teststepItem.setText(2, teststep.data['old']['description'])
-                    teststepItem.setText(3, teststep.newDataTableWidget_1.item(0, 0).text())
-                    testcaseItem.addChild(teststepItem)
-
-            #* Create counter for number of teststeps selected per testcase
-            font = qtg.QFont('Arial', pointSize=10)
-            font.setUnderline(True)
-            font.setItalic(True)
-            testcaseItem.setFont(1, font)
-            testcaseItem.setText(1, f"{testcaseItem.childCount()} / {testcase.teststepsCount}")
-
-            #* If there are no teststeps in the testcase, hide the parent item
-            if not testcaseItem.childCount():
-                testcaseItem.setHidden(True)
-
+        #* Create summary dialog widget and show
+        summaryDialog = SummaryDialog(
+            self, 
+            data=self.testCaseBoxList,
+            filteredIds=self.filteredTeststepIds
+        )
         summaryDialog.show()
 
 
@@ -601,7 +557,7 @@ class MainWindow(qtw.QMainWindow):
         #* Try to execute Execute XML conversion
         try:
             # To be used in XML_xmlParser to selectively convert old teststeps to new
-            xmlParser.convertTeststepData(
+            xmlParser.convertXml(
                 self.filteredTeststepIds,
                 self.xmlInFile, 
                 self.xmlOutFile, 
@@ -640,48 +596,6 @@ class MainWindow(qtw.QMainWindow):
                 subprocess.call(['open', '-R', self.xmlOutFile])
     
     
-    
-    #*************************** Utility functions ******************************* #             
-    def clearTestStepScrollArea(self):
-        # Empty global list of testcaseBoxes
-        self.testCaseBoxList.clear()
-        
-        # Remove all widgets inside scroll area
-        while self.ui.verticalLayout_3.count():
-            item = self.ui.verticalLayout_3.takeAt(0)
-            
-            if item.widget():
-                item.widget().deleteLater()
-
-        #* Clear search bar
-        self.ui.xmlData_searchBar.clear()
-
-        #* Disable scroll area tool widgets
-        self.ui.xml_convert_btn.setEnabled(False)
-        self.ui.xml_clearTeststeps_btn.setEnabled(False)
-        self.ui.xmlData_searchBar.setEnabled(False)
-
-        #* Disable toggle dropdown button and set it to unchecked
-        self.ui.showAll_btn.setEnabled(False)
-        self.ui.hideAll_btn.setEnabled(False)
-
-        #* Disable select all checkbox and set it to checked
-        self.ui.selectAll_checkBox.setEnabled(False)
-        self.ui.selectAll_checkBox.setChecked(True)
-
-    
-    
-    def centerWindowOnScreen(self):
-        screenGeo = qtw.QDesktopWidget().screenGeometry()
-        windowGeo = self.geometry()
-
-        print(screenGeo, windowGeo)
-        xPosition = (screenGeo.width() - windowGeo.width()) / 2 
-        yPosition = (screenGeo.height() - windowGeo.height()) / 2 
-
-        self.move(int(xPosition), int(yPosition))
-
-
 
     def handleExitApp(self):
         msgBox = qtw.QMessageBox()
@@ -694,13 +608,53 @@ class MainWindow(qtw.QMainWindow):
         msgBox.defaultButton().clicked.connect(qtw.QApplication.instance().quit)
 
         ret = msgBox.exec_()
+    
 
 
 
-    def handleCopyToClipboard(self):
-        clipBoard = qtw.QApplication.clipboard()
-        clipBoard.clear(clipBoard.Clipboard)
-        clipBoard.setText()
+    #*************************** Utility functions ******************************* #             
+    
+    def clearTestStepScrollArea(self):
+        # Empty global list of testcaseBoxes
+        self.testCaseBoxList.clear()
+        
+        # Remove all widgets inside scroll area
+        while self.ui.verticalLayout_3.count():
+            item = self.ui.verticalLayout_3.takeAt(0)
+            
+            if item.widget():
+                item.widget().deleteLater()
+
+        #* Clear search bar
+        self.ui.mainSearchBar_lineEdit.clear()
+
+        #* Disable scroll area tool widgets
+        self.ui.xml_convert_btn.setEnabled(False)
+        self.ui.xml_clearTeststeps_btn.setEnabled(False)
+        self.ui.mainSearchBar_lineEdit.setEnabled(False)
+
+        #* Disable toggle dropdown button and set it to unchecked
+        self.ui.showAll_btn.setEnabled(False)
+        self.ui.hideAll_btn.setEnabled(False)
+
+        #* Disable select all checkbox and set it to checked
+        self.ui.selectAll_checkBox.setEnabled(False)
+        self.ui.selectAll_checkBox.setChecked(True)
+
+        #* Disable summary button
+        self.ui.xml_summary_btn.setEnabled(False)
+
+    
+    
+    def centerWindowOnScreen(self):
+        screenGeo = qtw.QDesktopWidget().screenGeometry()
+        windowGeo = self.geometry()
+
+        print(screenGeo, windowGeo)
+        xPosition = (screenGeo.width() - windowGeo.width()) / 2 
+        yPosition = (screenGeo.height() - windowGeo.height()) / 2 
+
+        self.move(int(xPosition), int(yPosition))
 
 
     

@@ -42,11 +42,9 @@ QPushButton:default {
   border-color: navy; /* make the default button prominent */
 }
 
-#CustomButton {
-  min-width: 100px;
-  /* padding-left: 30;
-  padding-right: 0;
-  text-align: left; */
+
+QScrollArea {
+  border: 1px solid #8f8f91;
 }
 
 QLineEdit {
@@ -55,4 +53,20 @@ QLineEdit {
   padding: 0 6px;
   selection-background-color: darkgray;
   min-height: 25px;
+}
+
+#CustomLineEdit {
+  border: 1px solid #8f8f91;
+  border-radius: 5px;
+  padding: 0 6px;
+  padding-left: 25px;
+  selection-background-color: darkgray;
+  min-height: 25px;
+}
+
+#CustomButton {
+  min-width: 100px;
+  padding-left: 30;
+  padding-right: 0;
+  text-align: left;
 }

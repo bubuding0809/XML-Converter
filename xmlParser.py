@@ -45,6 +45,7 @@ def handleXlsx(xlsxFile):
     return conversionMap
 
     
+
 def getTestStepData(xmlInFile, conversionMap):
     tree = ET.parse(xmlInFile)
     root = tree.getroot()
@@ -103,7 +104,8 @@ def getTestStepData(xmlInFile, conversionMap):
     return xmlData, conversionMap
 
 
-def convertTeststepData(filteredIds, xmlInFile, xmlOutFile, conversionMap):
+
+def convertXml(filteredIds, xmlInFile, xmlOutFile, conversionMap):
     tree = ET.parse(xmlInFile)
     root = tree.getroot()
     counter = 0
@@ -112,6 +114,7 @@ def convertTeststepData(filteredIds, xmlInFile, xmlOutFile, conversionMap):
     allTestSteps = [{'id': index + 1, 'teststep': teststep} 
                     for index, teststep in enumerate(root.iter('teststep'))]
 
+    print('Displaying converted teststeps')
     for index, teststep in enumerate(allTestSteps):
        
         # Get teststep description attribute from teststep
@@ -156,7 +159,7 @@ id: {teststep['id']}
 {[f"{param.get('name')}={param.text}" for param in oldFunctionParams]}
             ''')
             
-            print(f"Converted teststeps: {counter} _______________________________________________________________________________________________________________________________")
+            print(f"Converted teststeps: {counter} ______________________________________________________________________________________________")
 
     
     # Write modified xml file to specificed file location
@@ -166,7 +169,7 @@ id: {teststep['id']}
 
 #********************************************************* Test functions ********************************************************#
 def testHandleXlsx():
-    xlsxFile = os.path.join(baseDir, 'testdata/configWithError.xlsx')
+    xlsxFile = os.path.join(baseDir, 'testdata/config.xlsx')
     
     conversionMap = handleXlsx(xlsxFile)
     for key, value in conversionMap.items():
@@ -178,14 +181,16 @@ def testHandleXlsx():
         break
 
 
+
 def testHandleConvertXML():
     xlsxFile = './testdata/config.xlsx'
     xmlFile = './testdata/input.xml'
 
     conversionMap = handleXlsx(xlsxFile)
-    convertTeststepData(xmlFile, './testdata/output.xml', conversionMap)
+    convertXml(xmlFile, './testdata/output.xml', conversionMap)
     
     
+
 def testHandleGetTestStepData():
     xlsxFile = './testdata/config.xlsx'
     xmlFile = './testdata/input.xml'
@@ -199,6 +204,6 @@ def testHandleGetTestStepData():
         print('___________________________________________________________________________________________')
     
     
-    
+
 if __name__ == '__main__':
     testHandleXlsx()

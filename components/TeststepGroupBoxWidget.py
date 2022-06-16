@@ -38,9 +38,11 @@ class TableWidget(qtw.QTableWidget):
 
 
 
-class TestStepGroupBox(qtw.QGroupBox):
+class TeststepGroupBoxWidget(qtw.QGroupBox):
     def __init__(self, title="", parent=None, data=None):
-        super(TestStepGroupBox, self).__init__(parent)
+        super(TeststepGroupBoxWidget, self).__init__(parent)
+        self.setObjectName('TeststepGroupBox')
+        self.setAccessibleName('TeststepGroupBox')
         
         # Global attributes
         self.data = data
@@ -66,7 +68,7 @@ class TestStepGroupBox(qtw.QGroupBox):
 
         # Create horizontal layout to contain data tables inside teststep_box
         self.hLayout_teststepBox = qtw.QHBoxLayout(self)
-        self.hLayout_teststepBox.setContentsMargins(0, 0, 0, 0)
+        self.hLayout_teststepBox.setContentsMargins(0, 0, 5, 0)
         self.hLayout_teststepBox.setObjectName("hLayout_teststepBox")
         
 

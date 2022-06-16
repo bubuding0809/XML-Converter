@@ -43,7 +43,7 @@ class MainWindow(qtw.QMainWindow):
         self.ui.setupUi(self)
 
         #* Additional UI setup
-        # Create Custom button for save config button
+        # Create Custom button for save config button this is additional
         pixmap = qtg.QPixmap(":/icons/bootstrap-icons-1.8.3/filetype-xlsx.svg").scaled(20, 20, qtc.Qt.KeepAspectRatio, qtc.Qt.SmoothTransformation)
         self.ui.configFile_btn = ButtonWithIcon(pixmap, 'Config file', self)
         self.ui.configInput_widget.layout().addWidget(self.ui.configFile_btn)

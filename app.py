@@ -15,7 +15,7 @@ import xmlParser
 import subprocess
 import utils as u
 from components.resources import bootstrap_rc
-from testdata import testFilePaths as testfiles
+from samples import testFilePaths as testfiles
 
 
 
@@ -84,9 +84,9 @@ class MainWindow(qtw.QMainWindow):
 
 
         #* Global variables
-        self.xlsxInFile = '' #testfiles.CONFIG_PATH_WIN32 if sys.platform == 'win32' else testfiles.CONFIG_PATH_DARWIN
-        self.xmlInFile = '' #testfiles.INPUT_PATH_WIN32 if sys.platform == 'win32' else testfiles.INPUT_PATH_DARWIN
-        self.xmlOutFile =  '' #testfiles.SAVE_PATH_WIN32 if sys.platform == 'win32' else testfiles.SAVE_PATH_DARWIN
+        self.xlsxInFile = testfiles.CONFIG_PATH_WIN32 if sys.platform == 'win32' else testfiles.CONFIG_PATH_DARWIN
+        self.xmlInFile = testfiles.INPUT_PATH_WIN32 if sys.platform == 'win32' else testfiles.INPUT_PATH_DARWIN
+        self.xmlOutFile = testfiles.SAVE_PATH_WIN32 if sys.platform == 'win32' else testfiles.SAVE_PATH_DARWIN
 
         #* Global flags
         self.testCaseBoxList = {}
@@ -96,7 +96,7 @@ class MainWindow(qtw.QMainWindow):
         self.ui.fileLocation_input_label.setText(self.xmlOutFile)
         
         # Initialize conversionMap
-        self.conversionMap = {} #xmlParser.handleXlsx(self.xlsxInFile)
+        self.conversionMap = xmlParser.handleXlsx(self.xlsxInFile)
         
         
         
@@ -700,7 +700,7 @@ if sys.platform == 'win32':
 if __name__ == '__main__':
     # Create application and set application icon
     app = qtw.QApplication(sys.argv)
-    app.setWindowIcon(qtg.QIcon(":/icons/bootstrap-icons-1.8.3/tools.svg"))
+    app.setWindowIcon(qtg.QIcon(os.path.join(baseDir, 'icon.ico')))
 
     # Create main window
     mainWindow = MainWindow()

@@ -84,9 +84,9 @@ class MainWindow(qtw.QMainWindow):
 
 
         #* Global variables
-        self.xlsxInFile = testfiles.CONFIG_PATH_WIN32 if sys.platform == 'win32' else testfiles.CONFIG_PATH_DARWIN
-        self.xmlInFile = testfiles.INPUT_PATH_WIN32 if sys.platform == 'win32' else testfiles.INPUT_PATH_DARWIN
-        self.xmlOutFile =  testfiles.SAVE_PATH_WIN32 if sys.platform == 'win32' else testfiles.SAVE_PATH_DARWIN
+        self.xlsxInFile = '' #testfiles.CONFIG_PATH_WIN32 if sys.platform == 'win32' else testfiles.CONFIG_PATH_DARWIN
+        self.xmlInFile = '' #testfiles.INPUT_PATH_WIN32 if sys.platform == 'win32' else testfiles.INPUT_PATH_DARWIN
+        self.xmlOutFile =  '' #testfiles.SAVE_PATH_WIN32 if sys.platform == 'win32' else testfiles.SAVE_PATH_DARWIN
 
         #* Global flags
         self.testCaseBoxList = {}
@@ -95,8 +95,8 @@ class MainWindow(qtw.QMainWindow):
         self.ui.xml_input_label.setText(self.xmlInFile)
         self.ui.fileLocation_input_label.setText(self.xmlOutFile)
         
-        # Initialize conversionMap for testing
-        self.conversionMap = xmlParser.handleXlsx(self.xlsxInFile)
+        # Initialize conversionMap
+        self.conversionMap = {} #xmlParser.handleXlsx(self.xlsxInFile)
         
         
         
@@ -135,6 +135,8 @@ class MainWindow(qtw.QMainWindow):
                 )
                 msgBox.setStandardButtons(qtw.QMessageBox.Ok)
                 retryBtn = msgBox.addButton('Try again', qtw.QMessageBox.AcceptRole)
+                editConfig = msgBox.addButton('Edit config', qtw.QMessageBox.ApplyRole)
+
                 msgBox.setIcon(qtw.QMessageBox.Critical)
                 msgBox.setWindowModality(qtc.Qt.WindowModal)
                 
@@ -144,6 +146,14 @@ class MainWindow(qtw.QMainWindow):
                 if msgBox.clickedButton() == retryBtn:
                     self.handleXLSXInput()
                     return
+                if msgBox.clickedButton() == editConfig:
+                    # macOS
+                    if sys.platform == 'darwin':
+                        subprocess.call(('open', self.xlsxInFile))
+                    # Windows   
+                    elif sys.platform == 'win32':
+                        os.startfile(self.xlsxInFile)
+
                     
                 # Disable load data button
                 self.ui.xml_loadData_btn.setEnabled(False)
@@ -257,12 +267,6 @@ class MainWindow(qtw.QMainWindow):
         if file:
             self.xmlOutFile = file[0]
             self.ui.fileLocation_input_label.setText(file[0])
-        
-        # disable convert button if both xlsx and xml inputs exists
-        if len(self.xmlOutFile):
-            self.ui.xml_convert_btn.setEnabled(True)
-        else:
-            self.ui.xml_convert_btn.setEnabled(False)
         
 
 
@@ -432,7 +436,7 @@ class MainWindow(qtw.QMainWindow):
         SearchByTeststepDescriptionList = []
         for teststepBoxList in self.testCaseBoxList.values():
             for teststep in teststepBoxList:
-                SearchByTeststepDescriptionList.append(teststep.title)
+                SearchByTeststepDescriptionList.append(teststep.data['old']['description'])
 
         autoCompleter = qtw.QCompleter(SearchByTeststepDescriptionList, self)
         autoCompleter.setFilterMode(qtc.Qt.MatchFlag.MatchContains)

@@ -53,6 +53,8 @@ class SummaryDialog(qtw.QDialog):
         autoCompleter.setCaseSensitivity(qtc.Qt.CaseInsensitive)
         self.ui.summaryData_searchBar.setCompleter(autoCompleter)
         
+
+
     #*********************************** Signal handler Methods ********************************#
     
     def populateSummaryData(self):
@@ -127,6 +129,8 @@ class SummaryDialog(qtw.QDialog):
 
         for testcase in testcaseList:
             testcase.setExpanded(True)
+    
+
     
     def handleHideAll(self):
         summaryTree = self.ui.dataTree_Widget

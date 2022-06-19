@@ -19,7 +19,8 @@ def handleXlsx(xlsxFile):
     for row in reader:
         # Create mapping based on each row
         # Convert old description to lower case to ensure case insensitive matching
-        old_description = row['old teststep description'].strip().lower()
+        oldDescription = row['old teststep description']
+        cleanedOldDescription = removeWhiteSpace(row['old teststep description'].lower())
         new_description = row['new teststep description'].strip()
         new_function_library = row['new function_library'].strip()
         new_function_name = row['new function_name'].strip()
@@ -35,8 +36,9 @@ def handleXlsx(xlsxFile):
                 })
         
         
-        conversionMap[old_description] = {
+        conversionMap[cleanedOldDescription] = {
             'isMatched': False,
+            'oldDescription': oldDescription,
             'description': new_description,
             'function_library': new_function_library,
             'function_name': new_function_name,
@@ -60,11 +62,11 @@ def getTestStepData(xmlInFile, conversionMap):
         
         # Get teststep description attribute from teststep
         oldDescription = teststep.get('desc')
-        oldDescriptionLower = oldDescription.lower()
+        cleanedOldDescription = removeWhiteSpace(oldDescription.lower())
         
-        if oldDescriptionLower in conversionMap:
+        if cleanedOldDescription in conversionMap:
             #If teststep description finds match in conversionMap - set isMatched to True
-            conversionMap[oldDescriptionLower]['isMatched'] = True
+            conversionMap[cleanedOldDescription]['isMatched'] = True
             
             #Get all teststep children
             oldFunctionLibrary = teststep.find('function_library').text
@@ -84,13 +86,13 @@ def getTestStepData(xmlInFile, conversionMap):
             
             # Create new data object
             newTestStepData = {
-                'description': conversionMap[oldDescriptionLower]['description'],
-                'function_library': conversionMap[oldDescriptionLower]['function_library'],
-                'function_name': conversionMap[oldDescriptionLower]['function_name'],
+                'description': conversionMap[cleanedOldDescription]['description'],
+                'function_library': conversionMap[cleanedOldDescription]['function_library'],
+                'function_name': conversionMap[cleanedOldDescription]['function_name'],
                 'function_parameters': [{
                     'name': param['name'].strip(),
                     'text': param['text'].strip('\n ')
-                    } for param in conversionMap[oldDescriptionLower]['function_parameters']]
+                    } for param in conversionMap[cleanedOldDescription]['function_parameters']]
             }
             
             # Append to teststep data list

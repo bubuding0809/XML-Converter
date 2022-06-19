@@ -13,7 +13,6 @@ from PyQt5 import (
 import sys, os, subprocess
 import xmlParser
 import subprocess
-import utils as u
 from components.resources import bootstrap_rc
 from samples import testFilePaths as testfiles
 
@@ -46,16 +45,25 @@ class MainWindow(qtw.QMainWindow):
         # Create Custom button for save config button
         pixmap = qtg.QPixmap(":/icons/bootstrap-icons-1.8.3/filetype-xlsx.svg").scaled(20, 20, qtc.Qt.KeepAspectRatio, qtc.Qt.SmoothTransformation)
         self.ui.configFile_btn = ButtonWithIcon(pixmap, 'Config file', self)
+        self.ui.configFile_btn.setStatusTip('Select excel config file from explorer')
+        self.ui.configFile_btn.setWhatsThis('Select excel config file from explorer')
+        self.ui.configFile_btn.setToolTip('Select excel config file from explorer')
         self.ui.configInput_widget.layout().addWidget(self.ui.configFile_btn)
         
         # Create Custom button for save input button
         pixmap = qtg.QPixmap(":/icons/bootstrap-icons-1.8.3/filetype-xml.svg").scaled(20, 20, qtc.Qt.KeepAspectRatio, qtc.Qt.SmoothTransformation)
         self.ui.xmlFile_btn = ButtonWithIcon(pixmap , 'XML file', self)
+        self.ui.xmlFile_btn.setStatusTip('Select xml ATP file from explorer')
+        self.ui.xmlFile_btn.setWhatsThis('Select xml ATP file from explorer')
+        self.ui.xmlFile_btn.setToolTip('Select xml ATP file from explorer')
         self.ui.xmlInput_widget.layout().addWidget(self.ui.xmlFile_btn)
 
         # Create Custom button for save location button
         pixmap = qtg.QPixmap(":/icons/bootstrap-icons-1.8.3/folder2.svg").scaled(20, 20, qtc.Qt.KeepAspectRatio, qtc.Qt.SmoothTransformation)
         self.ui.saveLocation_btn = ButtonWithIcon(pixmap, 'Save', self)
+        self.ui.saveLocation_btn.setStatusTip('Set save as location for converted xml file')
+        self.ui.saveLocation_btn.setWhatsThis('Set save as location for converted xml file')
+        self.ui.saveLocation_btn.setToolTip('Set save as location for converted xml file')
         self.ui.saveLocation_widget.layout().addWidget(self.ui.saveLocation_btn)
 
         # Create Custom line edit search bar 
@@ -107,7 +115,7 @@ class MainWindow(qtw.QMainWindow):
         self.conversionMap.clear()
 
         #* Retrieve excel config file path from file dialog
-        file = qtw.QFileDialog.getOpenFileName(self, 'Input config XLSX file', directory='', filter='Excel files (*.xlsx)')
+        file = qtw.QFileDialog.getOpenFileName(self, 'Input config XLSX file', filter='Excel files (*.xlsx)')
         if file:
             self.xlsxInFile = file[0]
             self.ui.xlsxConfig_input_label.setText(file[0])
@@ -130,7 +138,7 @@ class MainWindow(qtw.QMainWindow):
                 msgBox.setText(exception)
                 msgBox.setDetailedText(
                     f"Your excel config at {self.xlsxInFile} are missing these headers:\
-                    \n-----------------------------------------------------------------\
+                    \n--------------------------------------------------------\
                     \n{arguments}"
                 )
                 msgBox.setStandardButtons(qtw.QMessageBox.Ok)
@@ -176,14 +184,16 @@ class MainWindow(qtw.QMainWindow):
                     
                 # Check if there are any empty fields in the teststep
                 for tag, value in mapping.items():
-                    if tag == 'isMatched':
+                    
+                    if tag == 'isMatched' or tag == 'oldDescription':
                         continue
+                    
                     if not len(value):
                         teststepEmptyField.append(tag)
                 
                 # If all fields are not filled, add to list
                 if teststepEmptyField: emptyFieldList.append({
-                    'description': f"{oldDescription if len(oldDescription) else 'Missing old teststep description'} - [row: {index+2}]",
+                    'description': f"{mapping['oldDescription'] if len(oldDescription) else 'Missing old teststep description'} - [row: {index+2}]",
                     'emptyFields': teststepEmptyField
                 })
             
@@ -193,7 +203,7 @@ class MainWindow(qtw.QMainWindow):
             #Create message box to display the error
             msgBox = qtw.QMessageBox(self)
             msgBox.setWindowTitle('Warning')
-            msgBox.setText('There are empty fields in your config file.')
+            msgBox.setText('There are empty fields in your config file.\t\t\t\t\t\t\t')
             
             #* Create string list of empty fields and add to message
             emptyFieldMessageList = []
@@ -204,13 +214,13 @@ class MainWindow(qtw.QMainWindow):
                 emptyFieldMessageList.append(f"{descriptionWithEmptyFields}\n{emptyFields}")
             
             # Join all empty fields into one string
-            emptyFieldMessageList = '\n'.join(emptyFieldMessageList)
+            emptyFieldMessageList = '\n\n'.join(emptyFieldMessageList)
             
             # Add empty fields to message
             emptyFieldMessage = (
-                f"The following teststeps were found to have empty fields in your config file at {self.xmlInFile}:\
-                \n-----------------------------------------------------------------\
-                \n{emptyFieldMessageList}"
+                f"The following teststeps were found to have empty fields in your config file at \n{self.xmlInFile}:\
+                \n--------------------------------------------------------\
+                \n\n{emptyFieldMessageList}"
             )
             
             #* Add message to message box detailed text
@@ -246,7 +256,7 @@ class MainWindow(qtw.QMainWindow):
             
         
     def handleXMLInput(self):
-        file = qtw.QFileDialog.getOpenFileName(self, 'Input ATP XML file', directory='', filter='XML files (*.xml)' )
+        file = qtw.QFileDialog.getOpenFileName(self, 'Input ATP XML file', filter='XML files (*.xml)' )
         
         if file:
             self.xmlInFile = file[0]
@@ -262,7 +272,7 @@ class MainWindow(qtw.QMainWindow):
 
 
     def handleXMLOutput(self):
-        file = qtw.QFileDialog.getSaveFileName(self, 'Save converted ATP XML file', directory='', filter='XML files (*.xml)')
+        file = qtw.QFileDialog.getSaveFileName(self, 'Save converted ATP XML file', filter='XML files (*.xml)')
         
         if file:
             self.xmlOutFile = file[0]
@@ -275,8 +285,8 @@ class MainWindow(qtw.QMainWindow):
         self.clearTestStepScrollArea()
         
         #* Reset all isMatch flags in conversion map to False
-        for fields in self.conversionMap.values():
-            fields['isMatched'] = False
+        for mapping in self.conversionMap.values():
+            mapping['isMatched'] = False
         
         #* Get parsed xml data and updated conversion map
         try:
@@ -294,8 +304,8 @@ class MainWindow(qtw.QMainWindow):
             msgBox.setText(exception)
             msgBox.setDetailedText(
                 f"Here are the error arguments:\
-                \n-----------------------------------------------------------------\
-                \n{arguments}"
+                \n--------------------------------------------------------\
+                \n\n{arguments}"
             )
             msgBox.setIcon(qtw.QMessageBox.Critical)
             ret = msgBox.exec()
@@ -374,9 +384,9 @@ class MainWindow(qtw.QMainWindow):
         #* Alert user if there are unmatched teststeps
         # Create list of unmatched teststeps
         unmatchedTeststeps = []
-        for index, (oldDescription, fields) in enumerate(self.conversionMap.items()):
-            if fields['isMatched'] == False:
-                unmatchedTeststeps.append(f"{oldDescription} - [row: {index+2}]")
+        for index, (oldDescription, mapping) in enumerate(self.conversionMap.items()):
+            if mapping['isMatched'] == False:
+                unmatchedTeststeps.append(f"{mapping['oldDescription']} - [row: {index+2}]")
         
         # If there are unmatched teststeps, alert user with a message box with the list of unmatched teststeps
         if unmatchedTeststeps:
@@ -392,8 +402,8 @@ class MainWindow(qtw.QMainWindow):
             )
             noMatchMessage = (
                 f"The following teststeps descriptions at {self.xlsxInFile} had no match in the xml file:\
-                \n-----------------------------------------------------------------\
-                \n{unmatchedTeststeps}"
+                \n--------------------------------------------------------\
+                \n\n{unmatchedTeststeps}"
             )
 
             # Merge message and set message box detailed text
@@ -436,7 +446,7 @@ class MainWindow(qtw.QMainWindow):
         SearchByTeststepDescriptionList = []
         for teststepBoxList in self.testCaseBoxList.values():
             for teststep in teststepBoxList:
-                SearchByTeststepDescriptionList.append(teststep.data['old']['description'])
+                SearchByTeststepDescriptionList.append(teststep.title)
 
         autoCompleter = qtw.QCompleter(SearchByTeststepDescriptionList, self)
         autoCompleter.setFilterMode(qtc.Qt.MatchFlag.MatchContains)

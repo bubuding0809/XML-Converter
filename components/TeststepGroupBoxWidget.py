@@ -28,8 +28,8 @@ class ListWidget(qtw.QListWidget):
         if source is not self:
             return False
         
+        
         if event.type() == qtc.QEvent.ContextMenu:
-            print(source.objectName())
             # Create a menu and add the actions
             menu = qtw.QMenu()
             
@@ -43,16 +43,17 @@ class ListWidget(qtw.QListWidget):
                 self.handleAddParamItem()
             elif action == deleteSelectedParamAction:
                 self.handleDeleteSelectedParamItem()
-                
             return True
+
 
         if event == qtg.QKeySequence.Delete:
             #* Get the selected item modelIndexes and use it to delete the selected items
             for index, modelIndex in enumerate(self.selectedIndexes()):
                 item = self.takeItem(modelIndex.row() - index)  
+                print(f'removed {item.text()}')
                 del item
-            
             return True
+        
         
         return super(ListWidget, self).eventFilter(source, event)
 
@@ -66,6 +67,7 @@ class ListWidget(qtw.QListWidget):
         self.insertItem(self.currentRow() + 1, item)
         self.setCurrentItem(item)
         self.editItem(item)
+        print('added new list item')
 
 
     
@@ -73,6 +75,7 @@ class ListWidget(qtw.QListWidget):
         #* Get the selected item modelIndexes and use it to delete the selected items
         for index, modelIndex in enumerate(self.selectedIndexes()):
             item = self.takeItem(modelIndex.row() - index)  
+            print(f'removed {item.text()}')
             del item
             
         

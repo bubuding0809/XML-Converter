@@ -736,6 +736,15 @@
              </property>
              <item>
               <widget class="QPushButton" name="xml_loadData_btn">
+               <property name="toolTip">
+                <string>Filter and load xml teststep data based on config</string>
+               </property>
+               <property name="statusTip">
+                <string>Filter and load xml teststep data based on config</string>
+               </property>
+               <property name="whatsThis">
+                <string>Filter and load xml teststep data based on config</string>
+               </property>
                <property name="text">
                 <string>Load data</string>
                </property>
@@ -746,6 +755,15 @@
                <property name="enabled">
                 <bool>false</bool>
                </property>
+               <property name="toolTip">
+                <string>Clear data grid of and loaded xml teststeps</string>
+               </property>
+               <property name="statusTip">
+                <string>Clear data grid of and loaded xml teststeps</string>
+               </property>
+               <property name="whatsThis">
+                <string>Clear data grid of and loaded xml teststeps</string>
+               </property>
                <property name="text">
                 <string>Clear data</string>
                </property>
@@ -755,6 +773,15 @@
               <widget class="QPushButton" name="showAll_btn">
                <property name="enabled">
                 <bool>false</bool>
+               </property>
+               <property name="toolTip">
+                <string>Enable drop down on all testcase items</string>
+               </property>
+               <property name="statusTip">
+                <string>Enable drop down on all testcase items</string>
+               </property>
+               <property name="whatsThis">
+                <string>Enable drop down on all testcase items</string>
                </property>
                <property name="text">
                 <string>Show all</string>
@@ -769,6 +796,9 @@
                <property name="enabled">
                 <bool>false</bool>
                </property>
+               <property name="toolTip">
+                <string>Disable all drop down on testcase items</string>
+               </property>
                <property name="text">
                 <string>Hide all</string>
                </property>
@@ -778,6 +808,15 @@
               <widget class="QCheckBox" name="selectAll_checkBox">
                <property name="enabled">
                 <bool>false</bool>
+               </property>
+               <property name="toolTip">
+                <string>Toggle all teststep selection</string>
+               </property>
+               <property name="statusTip">
+                <string>Toggle all teststep selection</string>
+               </property>
+               <property name="whatsThis">
+                <string>Toggle all teststep selection</string>
                </property>
                <property name="text">
                 <string>Select all</string>
@@ -824,8 +863,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>1099</width>
-            <height>534</height>
+            <width>1105</width>
+            <height>510</height>
            </rect>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -849,7 +888,7 @@
         <number>0</number>
        </property>
        <property name="bottomMargin">
-        <number>0</number>
+        <number>12</number>
        </property>
        <item row="0" column="2">
         <spacer name="horizontalSpacer_3">
@@ -869,6 +908,15 @@
          <property name="enabled">
           <bool>false</bool>
          </property>
+         <property name="toolTip">
+          <string>Convert all selected teststeps</string>
+         </property>
+         <property name="statusTip">
+          <string>Convert all selected teststeps</string>
+         </property>
+         <property name="whatsThis">
+          <string>Convert all selected teststeps</string>
+         </property>
          <property name="text">
           <string>Convert</string>
          </property>
@@ -878,6 +926,15 @@
         <widget class="QPushButton" name="xml_summary_btn">
          <property name="enabled">
           <bool>false</bool>
+         </property>
+         <property name="toolTip">
+          <string>Summary of selected teststeps for conversion</string>
+         </property>
+         <property name="statusTip">
+          <string>Summary of selected teststeps for conversion</string>
+         </property>
+         <property name="whatsThis">
+          <string>Summary of selected teststeps for conversion</string>
          </property>
          <property name="text">
           <string>Summary</string>
@@ -895,7 +952,7 @@
      <x>0</x>
      <y>0</y>
      <width>1132</width>
-     <height>26</height>
+     <height>24</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuConverter">
@@ -961,7 +1018,7 @@
  <resources>
   <include location="media/resource.qrc"/>
   <include location="../media/bootstrap.qrc"/>
-  <include location="media/bootstrap.qrc"/>
+  <include location="../media/bootstrap.qrc"/>
  </resources>
  <connections/>
 </ui>

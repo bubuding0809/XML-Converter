@@ -19,8 +19,65 @@ class ListWidget(qtw.QListWidget):
             # Join the values and set it to the global clipboard
             clipboard = qtw.QApplication.clipboard()
             clipboard.setText('\n'.join(copiedValues), mode=clipboard.Clipboard)
+            
 
 
+    
+    def eventFilter(self, source, event) -> bool:
+        #* If the event is a right click, open the context menu
+        if source is not self:
+            return False
+        
+        if event.type() == qtc.QEvent.ContextMenu:
+            print(source.objectName())
+            # Create a menu and add the actions
+            menu = qtw.QMenu()
+            
+            addParamAction = menu.addAction('Insert below')
+            deleteSelectedParamAction = menu.addAction('Delete selected')
+            
+            action = menu.exec_(event.globalPos())
+
+            # Call the respective functions based on the action
+            if action == addParamAction:
+                self.handleAddParamItem()
+            elif action == deleteSelectedParamAction:
+                self.handleDeleteSelectedParamItem()
+                
+            return True
+
+        if event == qtg.QKeySequence.Delete:
+            #* Get the selected item modelIndexes and use it to delete the selected items
+            for index, modelIndex in enumerate(self.selectedIndexes()):
+                item = self.takeItem(modelIndex.row() - index)  
+                del item
+            
+            return True
+        
+        return super(ListWidget, self).eventFilter(source, event)
+
+    
+    
+    def handleAddParamItem(self):
+        #* Insert new item below the selected item and set it to be selected and in edit mode
+        item = qtw.QListWidgetItem()
+        item.setText('name=text')
+        item.setFlags(qtc.Qt.ItemIsSelectable | qtc.Qt.ItemIsEditable| qtc.Qt.ItemIsDragEnabled | qtc.Qt.ItemIsEnabled)
+        self.insertItem(self.currentRow() + 1, item)
+        self.setCurrentItem(item)
+        self.editItem(item)
+
+
+    
+    def handleDeleteSelectedParamItem(self):
+        #* Get the selected item modelIndexes and use it to delete the selected items
+        for index, modelIndex in enumerate(self.selectedIndexes()):
+            item = self.takeItem(modelIndex.row() - index)  
+            del item
+            
+        
+        
+        
 
 class TableWidget(qtw.QTableWidget):
     def __init__(self, parent=None):
@@ -150,7 +207,7 @@ class TeststepGroupBoxWidget(qtw.QGroupBox):
         
         ############################################## oldDataListWidget_1 ########################################
         oldDataListWidget_1 = ListWidget(oldDataBox)
-        oldDataListWidget_1.setSelectionMode(2)
+        oldDataListWidget_1.setSelectionMode(qtw.QAbstractItemView.ExtendedSelection)
         oldDataListWidget_1.setMinimumSize(qtc.QSize(0, 0))
         oldDataListWidget_1.setMaximumSize(qtc.QSize(300,10000))
         font = qtg.QFont()
@@ -200,6 +257,7 @@ class TeststepGroupBoxWidget(qtw.QGroupBox):
         self.newDataTableWidget_1.setObjectName("newDataTableWidget_1")
         self.newDataTableWidget_1.setColumnCount(3)
         self.newDataTableWidget_1.setRowCount(1)
+        
         
         item = qtw.QTableWidgetItem()
         self.newDataTableWidget_1.setVerticalHeaderItem(0, item)
@@ -255,6 +313,8 @@ class TeststepGroupBoxWidget(qtw.QGroupBox):
         
         ############################################## newDataListWidget_1 #####################################
         self.newDataListWidget_1 = ListWidget(newDataBox)
+        self.newDataListWidget_1.installEventFilter(self.newDataListWidget_1)
+        self.newDataListWidget_1.setSelectionMode(qtw.QAbstractItemView.ExtendedSelection)
         self.newDataListWidget_1.setEditTriggers(qtw.QAbstractItemView.DoubleClicked)
         self.newDataListWidget_1.setMinimumSize(qtc.QSize(0, 0))
         self.newDataListWidget_1.setMaximumSize(qtc.QSize(300, 10000))
@@ -292,22 +352,26 @@ class TeststepGroupBoxWidget(qtw.QGroupBox):
         
         #* Parse the parameter strings into a obj readable by xmlParser
         function_parameters = []
+        
+        # Loop through the parameter strings and if the string contains a = then split it into a key and value
         for param in paramStringList:
-            function_parameters.append({
-                'name': param.split('=')[0],
-                'text': param.split('=')[1]
-            })
+            if len(param.split('=')) == 2:
+                function_parameters.append({
+                    'name': param.split('=')[0],
+                    'text': param.split('=')[1]
+                })
 
         #* Create updated teststep conversion mapping
         newTeststepMap = {
-            #Get old teststep description
-            'oldDescription': self.data['old']['description'],
             #Get new teststep description
             'description': self.newDataTableWidget_1.item(0, 0).text(),
+            
             #Get new teststep function library
             'function_library': self.newDataTableWidget_1.item(0, 1).text(),
+            
             #Get new teststep function name
             'function_name': self.newDataTableWidget_1.item(0, 2).text(),
+            
             #Get new teststep function parameters
             'function_parameters': function_parameters
         }

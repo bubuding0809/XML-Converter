@@ -666,21 +666,17 @@ class MainWindow(qtw.QMainWindow):
         #* Create a updated copy of the conversion map based on the latest state of the teststep boxes
         updatedConversionMap = {}
         
-        # Iterate through all the teststeps boxes 
+        # Iterate through each teststepList in testCaseBoxList
         for teststepList in self.testCaseBoxList.values():
 
+            # Iterate through each teststepGroupBox widget in teststepList
             for teststep in teststepList:
                 
                 # If teststep has been selected
                 # Extract the latest text value of the mapping data and update the convsersion map
                 if teststep.id in self.filteredTeststepIds:
-                    data = teststep.getNewTeststepMap()
-                    updatedConversionMap[teststep.title] = {
-                        'description': data['description'],
-                        'function_library': data['function_library'],
-                        'function_name': data['function_name'],
-                        'function_parameters': data['function_parameters'],
-                    }
+                    newTeststepMap = teststep.getNewTeststepMap()
+                    updatedConversionMap[teststep.title] = newTeststepMap
 
         return updatedConversionMap
 

@@ -359,21 +359,20 @@ class MainWindow(qtw.QMainWindow):
             autoCompleter.setFilterMode(qtc.Qt.MatchFlag.MatchContains)
             autoCompleter.setCaseSensitivity(qtc.Qt.CaseInsensitive)
 
-        
+
             #* Check if the xml file have already been loaded into the program
-            listWidgetFilepathList = [self.ui.xmlATPFileList_widget.item(i).data(qtc.Qt.UserRole) for i in range(self.ui.xmlATPFileList_widget.count())]
+            xmlFileData = self.xmlData.get(file, None)
 
             #* Replace Existing stacked widget with updated data
-            if file in listWidgetFilepathList:
-                for widget, data in self.xmlData.items():
-                    if data['filepath'] == file:
-                        self.ui.stackDataGrids_widget.removeWidget(widget)
-                        self.ui.stackDataGrids_widget.addWidget(widget)
+            if xmlFileData:
+                self.ui.stackDataGrids_widget.removeWidget(xmlFileData['widget'])
+                self.ui.stackDataGrids_widget.addWidget(xmlFileDataWidget)
 
-                        #* Replace xml data with new widget and data objects
-                        self.xmlData[widget]['testcases'] = testcases
-                        self.xmlData[widget]['filteredTeststepIds'] = filteredTeststepIds
-                        self.xmlData[widget]['autoCompleter'] = autoCompleter
+                #* Replace xml data with new widget and data objects
+                xmlFileData['widget'] = xmlFileDataWidget
+                xmlFileData['testcases'] = testcases
+                xmlFileData['filteredTeststepIds'] = filteredTeststepIds
+                xmlFileData['autoCompleter'] = autoCompleter
 
             #* Create new data for the xml file
             else:

@@ -282,6 +282,34 @@
        <number>0</number>
       </property>
       <item>
+       <widget class="QLCDNumber" name="totalSelectedCounter_lcd">
+        <property name="toolTip">
+         <string>Total Number of teststeps selected for conversion</string>
+        </property>
+        <property name="statusTip">
+         <string>Total Number of teststeps selected for conversion</string>
+        </property>
+        <property name="whatsThis">
+         <string>Total Number of teststeps selected for conversion</string>
+        </property>
+        <property name="frameShape">
+         <enum>QFrame::StyledPanel</enum>
+        </property>
+        <property name="smallDecimalPoint">
+         <bool>false</bool>
+        </property>
+        <property name="segmentStyle">
+         <enum>QLCDNumber::Flat</enum>
+        </property>
+        <property name="value" stdset="0">
+         <double>0.000000000000000</double>
+        </property>
+        <property name="intValue" stdset="0">
+         <number>0</number>
+        </property>
+       </widget>
+      </item>
+      <item>
        <spacer name="horizontalSpacer_2">
         <property name="orientation">
          <enum>Qt::Horizontal</enum>

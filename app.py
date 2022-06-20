@@ -17,21 +17,19 @@ from components.resources import bootstrap_rc
 from samples import testFilePaths as testfiles
 
 
+#* Get base directory of application 
+baseDir = os.path.dirname(__file__)
+
 
 #* Set up logging
 logging.basicConfig(
     level=logging.DEBUG, 
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    filename='app.log',
+    filename=os.path.join(baseDir, 'app.log'),
 )
 logger = logging.getLogger(__name__)
 
 
-
-#* Get base directory of application 
-baseDir = os.path.dirname(__file__)
-        
-        
 
 class MainWindow(qtw.QMainWindow):
     def __init__(self, *args, **kwargs) -> None:
@@ -129,7 +127,9 @@ class MainWindow(qtw.QMainWindow):
 
             except Exception as ex:
                 # Catch exceptions and handle them 
-                exception = f"There is an error in the xlsx file.\nPlease check the file and try again."
+                exception = f"There is an error in the xlsx file.\
+                    \n\nPlease try to upload a correct config file or edit the current config file."
+
                 arguments = '\n'.join([f"{index+1}: {arg}" for index, arg in enumerate(list(ex.args))])
                 
                 # Create message box to display the error
@@ -142,8 +142,8 @@ class MainWindow(qtw.QMainWindow):
                     \n{arguments}"
                 )
                 msgBox.setStandardButtons(qtw.QMessageBox.Ok)
-                retryBtn = msgBox.addButton('Try again', qtw.QMessageBox.AcceptRole)
                 editConfig = msgBox.addButton('Edit config', qtw.QMessageBox.ApplyRole)
+                retryBtn = msgBox.addButton('Try again', qtw.QMessageBox.AcceptRole)
 
                 msgBox.setIcon(qtw.QMessageBox.Critical)
                 msgBox.setWindowModality(qtc.Qt.WindowModal)
@@ -203,7 +203,7 @@ class MainWindow(qtw.QMainWindow):
             #Create message box to display the error
             msgBox = qtw.QMessageBox(self)
             msgBox.setWindowTitle('Warning')
-            msgBox.setText('There are empty fields in your config file.\t\t\t\t\t\t\t')
+            msgBox.setText('There are empty fields in your config file.')
             
             #* Create string list of empty fields and add to message
             emptyFieldMessageList = []
@@ -218,7 +218,7 @@ class MainWindow(qtw.QMainWindow):
             
             # Add empty fields to message
             emptyFieldMessage = (
-                f"The following teststeps were found to have empty fields in your config file at \n{self.xmlInFile}:\
+                f"The following teststeps were found to have empty fields in your config file at \n{self.xlsxInFile}:\
                 \n--------------------------------------------------------\
                 \n\n{emptyFieldMessageList}"
             )

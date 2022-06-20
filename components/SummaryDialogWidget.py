@@ -28,7 +28,7 @@ class SummaryDialog(qtw.QDialog):
         self.ui.dataTreeSearchBox_widget.layout().insertWidget(0, self.ui.summaryData_searchBar)
         
 
-        #* Set header to resize to contents
+        #* Set tree widget header to resize to contents
         header = self.ui.dataTree_Widget.header()
         header.setSectionsMovable(True)
         header.setSectionResizeMode(qtw.QHeaderView.ResizeToContents)
@@ -89,6 +89,8 @@ class SummaryDialog(qtw.QDialog):
             #* If there are no teststeps in the testcase, hide the parent item
             if not testcaseItem.childCount():
                 testcaseItem.setHidden(True)
+        
+        self.ui.totalSelectedCounter_lcd.display(len(self.filteredTeststepIds))
 
 
 

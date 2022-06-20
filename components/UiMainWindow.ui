@@ -778,10 +778,10 @@
                 <string>Enable drop down on all testcase items</string>
                </property>
                <property name="statusTip">
-                <string>Enable drop down on all testcase items</string>
+                <string>Disable all drop down on testcase items</string>
                </property>
                <property name="whatsThis">
-                <string>Enable drop down on all testcase items</string>
+                <string>Disable all drop down on testcase items</string>
                </property>
                <property name="text">
                 <string>Show all</string>
@@ -797,6 +797,12 @@
                 <bool>false</bool>
                </property>
                <property name="toolTip">
+                <string>Disable all drop down on testcase items</string>
+               </property>
+               <property name="statusTip">
+                <string>Disable all drop down on testcase items</string>
+               </property>
+               <property name="whatsThis">
                 <string>Disable all drop down on testcase items</string>
                </property>
                <property name="text">
@@ -863,8 +869,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>1105</width>
-            <height>510</height>
+            <width>1099</width>
+            <height>522</height>
            </rect>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -952,7 +958,7 @@
      <x>0</x>
      <y>0</y>
      <width>1132</width>
-     <height>24</height>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuConverter">

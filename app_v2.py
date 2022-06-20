@@ -348,31 +348,32 @@ class MainWindow(qtw.QMainWindow):
                     checkBox = teststep.hLayout_teststepBox.itemAt(3).widget()
                     checkBox.clicked.connect(lambda _, teststep=teststep: self.handleTestStepCheckbox(teststep))
             
-            
-            #* Setup autocompleter for search bar to allow for predictive searching of teststeps by description
-            # SearchByTeststepDescriptionList = []
-            # for teststepList in self.testCaseBoxList.values():
-            #     for teststep in teststepList:
-            #         SearchByTeststepDescriptionList.append(teststep.title)
 
-            # autoCompleter = qtw.QCompleter(SearchByTeststepDescriptionList, self)
-            # autoCompleter.setFilterMode(qtc.Qt.MatchFlag.MatchContains)
-            # autoCompleter.setCaseSensitivity(qtc.Qt.CaseInsensitive)
-            # self.ui.mainSearchBar_lineEdit.setCompleter(autoCompleter)
+            #* Create teststep title list for autocompleter
+            autoComppleterKeyWordList = []
+            for teststepList in testcases.values():
+                for teststep in teststepList:
+                    autoComppleterKeyWordList.append(teststep.title)
 
+            autoCompleter = qtw.QCompleter(autoComppleterKeyWordList, self)
+            autoCompleter.setFilterMode(qtc.Qt.MatchFlag.MatchContains)
+            autoCompleter.setCaseSensitivity(qtc.Qt.CaseInsensitive)
 
+        
             #* Check if the xml file have already been loaded into the program
-            xmlFileData = self.xmlData.get(file, None)
+            listWidgetFilepathList = [self.ui.xmlATPFileList_widget.item(i).data(qtc.Qt.UserRole) for i in range(self.ui.xmlATPFileList_widget.count())]
 
             #* Replace Existing stacked widget with updated data
-            if xmlFileData:
-                self.ui.stackDataGrids_widget.removeWidget(xmlFileData['widget'])
-                self.ui.stackDataGrids_widget.addWidget(xmlFileDataWidget)
+            if file in listWidgetFilepathList:
+                for widget, data in self.xmlData.items():
+                    if data['filepath'] == file:
+                        self.ui.stackDataGrids_widget.removeWidget(widget)
+                        self.ui.stackDataGrids_widget.addWidget(widget)
 
-                #* Replace xml data with new widget and data objects
-                xmlFileData['widget'] = xmlFileDataWidget
-                xmlFileData['testcases'] = testcases
-                xmlFileData['filteredTeststepIds'] = filteredTeststepIds
+                        #* Replace xml data with new widget and data objects
+                        self.xmlData[widget]['testcases'] = testcases
+                        self.xmlData[widget]['filteredTeststepIds'] = filteredTeststepIds
+                        self.xmlData[widget]['autoCompleter'] = autoCompleter
 
             #* Create new data for the xml file
             else:
@@ -393,10 +394,9 @@ class MainWindow(qtw.QMainWindow):
                 self.xmlData[xmlFileDataWidget] = {
                     'filepath': file,
                     'testcases': testcases,
-                    'filteredTeststepIds': filteredTeststepIds
+                    'filteredTeststepIds': filteredTeststepIds,
+                    'autoCompleter': autoCompleter
                 }
-
-
 
 
 
@@ -429,6 +429,9 @@ class MainWindow(qtw.QMainWindow):
         for xmlFileWidget, widgetData in self.xmlData.items():
             if filepath == widgetData['filepath']:
                 self.ui.stackDataGrids_widget.setCurrentWidget(xmlFileWidget)
+
+            #* Setup autocompleter for search bar to allow for predictive searching of teststeps by description
+            self.ui.mainSearchBar_lineEdit.setCompleter(self.xmlData[xmlFileWidget]['autoCompleter'])
 
 
 

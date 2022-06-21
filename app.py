@@ -1,5 +1,4 @@
 import logging
-from tkinter import filedialog
 from components.UiMainWindow import Ui_MainWindow
 from components.SummaryDialogWidget import SummaryDialog
 from components.TeststepGroupBoxWidget import TeststepGroupBoxWidget
@@ -12,6 +11,7 @@ from PyQt5 import (
     QtCore as qtc,
     QtGui as qtg
 )
+import utils
 import sys, os, subprocess
 import xmlParser
 import subprocess
@@ -73,6 +73,13 @@ class MainWindow(qtw.QMainWindow):
         self.ui.mainSearchBar_lineEdit.setEnabled(False)
         self.ui.scrollAreaSearchBox_widget.layout().insertWidget(0, self.ui.mainSearchBar_lineEdit)
 
+        # Create radio buttons for filter box
+        self.filterButtonGroup = qtw.QButtonGroup()
+        self.filterButtonGroup.addButton(self.ui.filterTestcaseOnly_btn, 1)
+        self.filterButtonGroup.addButton(self.ui.filterBoth_btn, 2)
+        self.filterButtonGroup.addButton(self.ui.filterFunctionOnly_btn, 3)
+
+
         #* QShortcuts
         self.ui.quitSc = qtw.QShortcut(qtg.QKeySequence('Ctrl+W'), self)
         
@@ -85,26 +92,32 @@ class MainWindow(qtw.QMainWindow):
         self.ui.showAll_btn.pressed.connect(self.handleToggleAllDropDownBtn)
         self.ui.hideAll_btn.pressed.connect(self.handleToggleAllDropDownBtn)
         self.ui.xml_clearTeststeps_btn.clicked.connect(self.clearTestStepScrollArea)
-        self.ui.selectAll_checkBox.pressed.connect(self.handleSelectAllCheckBox)
+        self.ui.selectAll_checkBox.stateChanged.connect(self.handleSelectAllCheckBox)
         self.ui.mainSearchBar_lineEdit.textChanged.connect(self.handleSearchBar)
         self.ui.quitSc.activated.connect(self.handleExitApp)
         self.ui.xml_summary_btn.clicked.connect(self.handleXMLSummary)
+        self.filterButtonGroup.buttonClicked.connect(self.handleFilterButtonClicked)
 
 
         #* Global variables
-        self.xlsxInFile = testfiles.CONFIG_PATH_WIN32 if sys.platform == 'win32' else testfiles.CONFIG_PATH_DARWIN
-        self.xmlInFile = testfiles.INPUT_PATH_WIN32 if sys.platform == 'win32' else testfiles.INPUT_PATH_DARWIN
-        self.xmlOutFile = testfiles.SAVE_PATH_WIN32 if sys.platform == 'win32' else testfiles.SAVE_PATH_DARWIN
+        self.xlsxInFile = '' #testfiles.CONFIG_PATH_WIN32 if sys.platform == 'win32' else testfiles.CONFIG_PATH_DARWIN
+        self.xmlInFile = '' #testfiles.INPUT_PATH_WIN32 if sys.platform == 'win32' else testfiles.INPUT_PATH_DARWIN
+        self.xmlOutFile = '' #testfiles.SAVE_PATH_WIN32 if sys.platform == 'win32' else testfiles.SAVE_PATH_DARWIN
+
 
         #* Global flags
         self.testCaseBoxList = {}
         self.filteredTeststepIds = set()
+        self.filterDataMap = {
+            radioButton.text(): utils.removeWhiteSpace(radioButton.text().lower()) 
+            for radioButton in self.filterButtonGroup.buttons()
+        }
         self.ui.xlsxConfig_input_label.setText(self.xlsxInFile)
         self.ui.xml_input_label.setText(self.xmlInFile)
         self.ui.fileLocation_input_label.setText(self.xmlOutFile)
         
         # Initialize conversionMap
-        self.conversionMap = xmlParser.handleXlsx(self.xlsxInFile)
+        self.conversionMap = {} #xmlParser.handleXlsx(self.xlsxInFile)
         
         
         
@@ -255,16 +268,18 @@ class MainWindow(qtw.QMainWindow):
                     os.startfile(self.xlsxInFile)
             
             
-        #* Enable load data button if both xlsx and xml inputs exists and xlsx input is valid
+        #* Enable load xml data if both xlsx and xml inputs exists
         if len(self.xlsxInFile) and len(self.xmlInFile):
+            self.handleXMLLoad()
             self.ui.xml_loadData_btn.setEnabled(True)
+
+        #* If all three required inputs are set, enable conversion button
+        if len(self.xmlOutFile) and len(self.xmlInFile) and len(self.xmlOutFile):
+            self.ui.xml_convert_btn.setEnabled(True)
         else:
-            self.ui.xml_loadData_btn.setEnabled(False)
-        self.ui.xml_convert_btn.setEnabled(False)
-        self.clearTestStepScrollArea()
+            self.ui.xml_convert_btn.setEnabled(False)
             
             
-        
     def handleXMLInput(self):
         #* Retrieve atp xml file path from file dialog
         fileDialog = qtw.QFileDialog(self)
@@ -280,12 +295,16 @@ class MainWindow(qtw.QMainWindow):
             self.ui.xml_input_label.setText(selectedFiles[0])
 
 
-        # Enable load data button if both xlsx and xml inputs exists
+        #* Enable load xml data if both xlsx and xml inputs exists
         if len(self.xlsxInFile) and len(self.xmlInFile):
+            self.handleXMLLoad()
             self.ui.xml_loadData_btn.setEnabled(True)
+
+        #* If all three required inputs are set, enable conversion button
+        if len(self.xmlOutFile) and len(self.xmlInFile) and len(self.xmlOutFile):
+            self.ui.xml_convert_btn.setEnabled(True)
         else:
-            self.ui.xml_loadData_btn.setEnabled(False)
-        self.ui.xml_convert_btn.setEnabled(False)
+            self.ui.xml_convert_btn.setEnabled(False)
             
 
 
@@ -295,6 +314,12 @@ class MainWindow(qtw.QMainWindow):
         if file:
             self.xmlOutFile = file[0]
             self.ui.fileLocation_input_label.setText(file[0])
+
+        #* If all three required inputs are set, enable conversion button
+        if len(self.xmlOutFile) and len(self.xmlInFile) and len(self.xmlOutFile):
+            self.ui.xml_convert_btn.setEnabled(True)
+        else:
+            self.ui.xml_convert_btn.setEnabled(False)
         
 
 
@@ -489,8 +514,10 @@ class MainWindow(qtw.QMainWindow):
         # Enable summary button
         self.ui.xml_summary_btn.setEnabled(True)
 
-        # Enable convert button
-        self.ui.xml_convert_btn.setEnabled(True)
+
+        # Enable filter radio buttons
+        self.ui.scrollAreaFilterBox_widget.setEnabled(True)
+        self.ui.filterBoth_btn.setChecked(True)
        
        
     
@@ -511,36 +538,53 @@ class MainWindow(qtw.QMainWindow):
         
 
 
-    def handleSelectAllCheckBox(self):
-        # Iterate over every testStepBoxList
-        for teststepBoxList in self.testCaseBoxList.values():
+    def handleSelectAllCheckBox(self, state): #state == 0: unchecked, state == 2: checked
+        #* Get current checked filter radio button
+        checkFilterButton = self.filterButtonGroup.checkedButton()
+        filterTypeChecked = self.filterDataMap[checkFilterButton.text()]
+
+        #* Get state of select all checkbox 
+        isChecked = True if state else False
+
+        #* Iterate over every testStepBoxList and its teststeps 
+        for testcase, teststepBoxList in self.testCaseBoxList.items():
             
-            # Iterate over every teststep in each teststepBoxList
             for teststep in teststepBoxList:
-                
-                # Get the checkbox object and toggle it
-                checkBox = teststep.hLayout_teststepBox.itemAt(3).widget()
-                
-                # If select all checkbox is checked, check all teststeps and add the ID to the list of filtered teststeps
-                if not self.ui.selectAll_checkBox.isChecked():
-                    self.filteredTeststepIds.add(teststep.id)
-                    checkBox.setChecked(True)
 
-                # Else, uncheck all teststeps and remove the ID from the list of filtered teststeps
+                # Get the teststepbox checkbox object 
+                radioButton = teststep.hLayout_teststepBox.itemAt(3).widget()
+
+                # Check if teststep parent type matches filtertype
+                if filterTypeChecked == testcase.type or filterTypeChecked == 'both':
+
+                    # add or remove teststep id to/from filteredIds
+                    if isChecked:
+                        self.filteredTeststepIds.add(teststep.id)
+                    else:
+                        self.filteredTeststepIds.discard(teststep.id)                            
+
+                    # Set teststep selection radio box state based on isChecked
+                    radioButton.setChecked(isChecked)
+                
                 else:
-                    self.filteredTeststepIds.clear()
-                    checkBox.setChecked(False)
+                    # Remove teststep id from filteredIds
+                    self.filteredTeststepIds.discard(teststep.id)
 
-        logger.info(f'All teststeps checked: {not self.ui.selectAll_checkBox.isChecked()}')
+                    # Set teststep selection radio box state to unchecked
+                    radioButton.setChecked(False)
     
     
     
     def handleSearchBar(self, text):
-        for testcase, teststepList in self.testCaseBoxList.items():
-            testcase.show()
-            isAnyFound = False
+        checkFilterButton = self.filterButtonGroup.checkedButton()
+        filterTypeChecked = self.filterDataMap[checkFilterButton.text()]
 
+        for testcase, teststepList in self.testCaseBoxList.items():
+            isAnyFound = False
             visibleCount = 0
+
+            testcase.show()
+
             for teststep in teststepList:
                 if text.lower() in teststep.title.lower():
                      teststep.show()
@@ -554,7 +598,7 @@ class MainWindow(qtw.QMainWindow):
                 f"{testcase} ({str(visibleCount)}/{len(teststepList)})"
             )
 
-            testcase.show() if isAnyFound else testcase.hide()
+            testcase.show() if isAnyFound and testcase.type == filterTypeChecked else testcase.hide()
         
 
 
@@ -641,6 +685,21 @@ class MainWindow(qtw.QMainWindow):
 
         ret = msgBox.exec_()
     
+
+
+    def handleFilterButtonClicked(self, button):
+        filterTypeChecked = self.filterDataMap[button.text()]
+        
+        for testcase in self.testCaseBoxList.keys():
+            testcase.show()
+
+            if filterTypeChecked != testcase.type and filterTypeChecked != 'both':
+                testcase.hide()
+
+        #Check select all checkbox and call handleSelect All checkbox to reset selection for new filtered data
+        self.ui.selectAll_checkBox.setChecked(True)
+        self.ui.mainSearchBar_lineEdit.clear()
+        self.handleSelectAllCheckBox(2)
 
 
 

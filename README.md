@@ -7,6 +7,8 @@
 - [x] Parse xml file and map over old data with new data as specified in the xlsx file.
 - [x] Outputs newly parsed xml file for user to use in ATP
 
+---
+
 ## Core UI Features:
 
 - [x] File Input field for xml file, via file-explorer
@@ -18,12 +20,16 @@
 - [x] Group matched teststeps under respective testcases and functions
 - [x] Make this teststeps groups collapsable to aid focus on individual groups
 
+---
+
 ## Additional Features:
 
 - [x] Data-grid to display xml file contents pre-conversion
 - [x] Data-grid to display xml file contents post-conversion  
        with conditioanl highlighting
 - [x] Interative data-grid that allows for selection of test-steps filtered for conversion
+
+---
 
 ## To-do implementations: Feature Alignment and Progress 10/6/2022
 
@@ -34,17 +40,30 @@
 - [x] Release of Xlsx config format to the test team for them to start defining there conversion parameters.
 - [ ] To be provided with more xml test files from the test team to check if conversion works on ATP.
 - [ ] Implement batch conversion of xml files.
+- [ ]
+
+---
 
 ## To-do implementations: First build release and additional feature implementation 20/6/2022
 
+<details open>
+  <summary>UI implementations</summary>
+  <br>
+
 - [x] Prevent user from selecting temp excel files which starts with ~$
-- [ ] Remove load button and implement loading of data directly after both config and xml file has been uploaded
-- [ ] Implement filter feature to allow user to choose to show testcase/functions/all
+- [x] Remove load button and implement loading of data directly after both config and xml file has been uploaded
+- [x] Implement filter feature to allow user to choose to show testcase/functions/all
 - [ ] Implement right click context menu for old parameter list with the following features
   - Append parameters to new parameter list
   - Replace new parameter list with old parameters
 - [ ] Change direct editing of DD2 mapping in the UI data grid to propagate to all similar teststeps instead of only for the particular teststep.
 - [ ] Add option to output updated config file based on the changes in the UI data grid
+</details>
+
+<details>
+  <summary>Config parser implementations</summary>
+  <br>
+
 - [ ] Add multiple classic ATP test step description mapping for a single teststep.
   - ![config image](media\images\config_classicATP.png "config image")
 - [ ] Add keyword column in excel config file for users to define must have keywords for match. keywords are seperated by a newline(\n) which indicates an AND relation.
@@ -52,7 +71,11 @@
 - [ ] Add integrity check for function library, function name and function parameters at column C,D and E of excel config. To be provided with a list of valid info to check against.
 - [ ] Catch multiple classic description key error
 - [ ] Implement parameter referencing in the config excel
-  - ![config image](media\images\config_reference.PNG "config image")
+  - ![config image](media\images\config_at_reference.PNG "config image")
+  - ![config image](media\images\config_sharp_reference.PNG "config image")
+  </details>
+
+---
 
 ## Software stack used:
 

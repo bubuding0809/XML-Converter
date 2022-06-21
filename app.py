@@ -1,10 +1,12 @@
 import logging
+from tkinter import filedialog
 from components.UiMainWindow import Ui_MainWindow
 from components.SummaryDialogWidget import SummaryDialog
 from components.TeststepGroupBoxWidget import TeststepGroupBoxWidget
 from components.CollapsibleTestcaseWidget import CollapsibleTestcaseWidget
 from components.CustomButton import ButtonWithIcon
 from components.CustomLineEdit import CustomLineEdit
+from components.FileFilterProxyModel import FileFilterProxyModel
 from PyQt5 import (
     QtWidgets as qtw,
     QtCore as qtc,
@@ -113,12 +115,20 @@ class MainWindow(qtw.QMainWindow):
         self.conversionMap.clear()
 
         #* Retrieve excel config file path from file dialog
-        file = qtw.QFileDialog.getOpenFileName(self, 'Input config XLSX file', filter='Excel files (*.xlsx)')
-        if file:
-            self.xlsxInFile = file[0]
-            self.ui.xlsxConfig_input_label.setText(file[0])
-        
-        
+        fileDialog = qtw.QFileDialog(self)
+        fileDialog.setOption(qtw.QFileDialog.DontUseNativeDialog)
+        fileDialog.setProxyModel(FileFilterProxyModel())
+        fileDialog.setWindowTitle('Input config xlsx file')
+        fileDialog.setNameFilter('XLSX files (*.xlsx)')
+        fileDialog.setDirectory('./samples')
+
+    
+        if fileDialog.exec_():
+            selectedFiles = fileDialog.selectedFiles()
+            self.xlsxInFile = selectedFiles[0]
+            self.ui.xlsxConfig_input_label.setText(selectedFiles[0])
+
+
         #* Try to process xlsx file and generate conversion map
         if len(self.xlsxInFile):
             try:
@@ -256,12 +266,20 @@ class MainWindow(qtw.QMainWindow):
             
         
     def handleXMLInput(self):
-        file = qtw.QFileDialog.getOpenFileName(self, 'Input ATP XML file', filter='XML files (*.xml)' )
-        
-        if file:
-            self.xmlInFile = file[0]
-            self.ui.xml_input_label.setText(file[0])
-            
+        #* Retrieve atp xml file path from file dialog
+        fileDialog = qtw.QFileDialog(self)
+        fileDialog.setOption(qtw.QFileDialog.DontUseNativeDialog)
+        fileDialog.setWindowTitle('Input ATP xml file')
+        fileDialog.setNameFilter('XML files (*.xml)')
+        fileDialog.setDirectory('./samples')
+
+    
+        if fileDialog.exec_():
+            selectedFiles = fileDialog.selectedFiles()
+            self.xmlInFile = selectedFiles[0]
+            self.ui.xml_input_label.setText(selectedFiles[0])
+
+
         # Enable load data button if both xlsx and xml inputs exists
         if len(self.xlsxInFile) and len(self.xmlInFile):
             self.ui.xml_loadData_btn.setEnabled(True)

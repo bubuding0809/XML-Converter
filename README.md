@@ -1,4 +1,4 @@
-\*\*\*\*# ATPxml converter app (Project planning)
+# ATPxml converter app (Project planning)
 
 ## Core Features:
 
@@ -25,15 +25,34 @@
        with conditioanl highlighting
 - [x] Interative data-grid that allows for selection of test-steps filtered for conversion
 
-## To-do implementations:
+## To-do implementations: Feature Alignment and Progress 10/6/2022
 
 - [x] Add Error check for Xlsx config.
       For example: If user mistyped one of the old test step description, program will prompt user that that specific test step entered has no match. If a config file with the wrong structure has been submitted (wrong headers or extra columns) and error prompt will be shown.
 - [x] Implement direct configuration of conversion parameters in the data grid in case there are errors in the Xlsx.
 - [x] Conversion summary for an overview of the testcases that has been chosen to be converted.
+- [x] Release of Xlsx config format to the test team for them to start defining there conversion parameters.
 - [ ] To be provided with more xml test files from the test team to check if conversion works on ATP.
 - [ ] Implement batch conversion of xml files.
-- [x] Release of Xlsx config format to the test team for them to start defining there conversion parameters.
+
+## To-do implementations: First build release and additional feature implementation 20/6/2022
+
+- [x] Prevent user from selecting temp excel files which starts with ~$
+- [ ] Remove load button and implement loading of data directly after both config and xml file has been uploaded
+- [ ] Implement filter feature to allow user to choose to show testcase/functions/all
+- [ ] Implement right click context menu for old parameter list with the following features
+  - Append parameters to new parameter list
+  - Replace new parameter list with old parameters
+- [ ] Change direct editing of DD2 mapping in the UI data grid to propagate to all similar teststeps instead of only for the particular teststep.
+- [ ] Add option to output updated config file based on the changes in the UI data grid
+- [ ] Add multiple classic ATP test step description mapping for a single teststep.
+  - ![config image](media\images\config_classicATP.png "config image")
+- [ ] Add keyword column in excel config file for users to define must have keywords for match. keywords are seperated by a newline(\n) which indicates an AND relation.
+  - ![config image](media\images\config_keywords.png "config image")
+- [ ] Add integrity check for function library, function name and function parameters at column C,D and E of excel config. To be provided with a list of valid info to check against.
+- [ ] Catch multiple classic description key error
+- [ ] Implement parameter referencing in the config excel
+  - ![config image](media\images\config_reference.PNG "config image")
 
 ## Software stack used:
 

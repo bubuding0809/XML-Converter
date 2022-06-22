@@ -56,7 +56,7 @@
 - [x] Implement right click context menu for old parameter list with the following features
   - Append parameters to new parameter list
   - Replace new parameter list with old parameters
-- [ ] Change direct editing of DD2 mapping in the UI data grid to propagate to all similar teststeps instead of only for the particular teststep.
+- [x] Change direct editing of DD2 mapping in the UI data grid to propagate to all similar teststeps instead of only for the particular teststep.
 - [ ] Add option to output updated config file based on the changes in the UI data grid
 </details>
 

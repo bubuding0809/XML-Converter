@@ -63,7 +63,8 @@ class SummaryDialog(qtw.QDialog):
             #* Create testcase parent item for each testcase
             testcaseItem = qtw.QTreeWidgetItem()
             testcaseItem.setFont(0, qtg.QFont('Arial', pointSize=10))
-            testcaseItem.setText(0, f"{testcase.id} <{testcase.type}>")
+            testcaseItem.setText(0, testcase.id)
+            testcaseItem.setText(1, testcase.type)
             
             #* Add parent item to tree view and set it to expanded
             self.ui.dataTree_Widget.addTopLevelItem(testcaseItem)
@@ -75,16 +76,17 @@ class SummaryDialog(qtw.QDialog):
                 # If teststep is in the filteredTeststepIds list, add it to the tree view
                 if teststep.id in self.filteredTeststepIds:
                     teststepItem = qtw.QTreeWidgetItem(testcaseItem)
-                    teststepItem.setText(1, str(teststep.id))
-                    teststepItem.setText(2, teststep.data['old']['description'])
-                    teststepItem.setText(3, teststep.newDataTableWidget_1.item(0, 0).text())
+                    teststepItem.setText(1, testcase.type)
+                    teststepItem.setText(2, str(teststep.id))
+                    teststepItem.setText(3, teststep.data['old']['description'])
+                    teststepItem.setText(4, teststep.newDataTableWidget.item(0, 0).text())
                     testcaseItem.addChild(teststepItem)
 
             #* Create counter for number of teststeps selected per testcase
             font = qtg.QFont('Arial', pointSize=10)
             font.setUnderline(True)
-            testcaseItem.setFont(1, font)
-            testcaseItem.setText(1, f"{testcaseItem.childCount()} / {testcase.teststepsCount}")
+            testcaseItem.setFont(5, font)
+            testcaseItem.setText(5, f"{testcaseItem.childCount()} / {testcase.teststepsCount}")
 
             #* If there are no teststeps in the testcase, hide the parent item
             if not testcaseItem.childCount():

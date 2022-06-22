@@ -6,8 +6,13 @@ from PyQt5 import (
 
 
 class ListWidget(qtw.QListWidget):
-    def __init__(self, parent=None):
+
+    def __init__(self, atpType, targetListWidget=None, parent=None):
         super(ListWidget,self).__init__(parent)
+        self.TYPE = atpType
+        self.targetListWidget = targetListWidget
+        self.installEventFilter(self)
+        
 
 
     def keyPressEvent(self, event):
@@ -21,70 +26,108 @@ class ListWidget(qtw.QListWidget):
             clipboard.setText('\n'.join(copiedValues), mode=clipboard.Clipboard)
             
 
-
     
     def eventFilter(self, source, event) -> bool:
-        #* If the event is a right click, open the context menu
+        #* If the source is not from a ListWidget Object, return
         if source is not self:
             return False
         
-        
-        if event.type() == qtc.QEvent.ContextMenu:
-            # Create a menu and add the actions
-            menu = qtw.QMenu()
-            
-            addParamAction = menu.addAction('Insert below')
-            deleteSelectedParamAction = menu.addAction('Delete selected')
-            
-            action = menu.exec_(event.globalPos())
+        #* Handle event for new parameter list widget
+        if source.TYPE == 'DD2.0': 
 
-            # Call the respective functions based on the action
-            if action == addParamAction:
-                self.handleAddParamItem()
-            elif action == deleteSelectedParamAction:
-                self.handleDeleteSelectedParamItem()
-            return True
+            # Handle right click context menu
+            if event.type() == qtc.QEvent.ContextMenu:
+                # Create a context menu and add the actions
+                menu = qtw.QMenu()
+                
+                addParamAction = menu.addAction('Insert below')
+                deleteSelectedParamAction = menu.addAction('Delete selected')
+                
+                action = menu.exec_(event.globalPos())
+
+                # Call the respective functions based on the action
+                if action == addParamAction:
+                    self.handleDD2ParamActions('ADD')
+                elif action == deleteSelectedParamAction:
+                    self.handleDD2ParamActions('DELETE')
+
+                return True
 
 
-        if event == qtg.QKeySequence.Delete:
-            #* Get the selected item modelIndexes and use it to delete the selected items
-            for index, modelIndex in enumerate(self.selectedIndexes()):
-                item = self.takeItem(modelIndex.row() - index)  
-                print(f'removed {item.text()}')
-                del item
-            return True
-        
+            if event == qtg.QKeySequence.Delete:
+                #* Get the selected item modelIndexes and use it to delete the selected items
+                self.handleDD2ParamActions('DELETE')
+
+                return True
+
+        #* Handle event for old parameter list widget
+        elif source.TYPE == 'CLASSIC':
+
+            # Handle right click context menu
+            if event.type() == qtc.QEvent.ContextMenu:
+                # Create a context menu and add the actions
+                menu = qtw.QMenu()
+                
+                appendSelectedParamAction = menu.addAction('Appended Selected')
+                mirrorSelectedParamAction = menu.addAction('Mirror Selected')
+                
+                action = menu.exec_(event.globalPos())
+
+                if action == appendSelectedParamAction:
+                    self.handleClassicParamActions('APPEND')
+                elif action == mirrorSelectedParamAction:
+                    self.handleClassicParamActions('MIRROR')
+
+                return True
+
         
         return super(ListWidget, self).eventFilter(source, event)
-
-    
-    
-    def handleAddParamItem(self):
-        #* Insert new item below the selected item and set it to be selected and in edit mode
-        item = qtw.QListWidgetItem()
-        item.setText('name=text')
-        item.setFlags(qtc.Qt.ItemIsSelectable | qtc.Qt.ItemIsEditable| qtc.Qt.ItemIsDragEnabled | qtc.Qt.ItemIsEnabled)
-        self.insertItem(self.currentRow() + 1, item)
-        self.setCurrentItem(item)
-        self.editItem(item)
-        print('added new list item')
-
-
-    
-    def handleDeleteSelectedParamItem(self):
-        #* Get the selected item modelIndexes and use it to delete the selected items
-        for index, modelIndex in enumerate(self.selectedIndexes()):
-            item = self.takeItem(modelIndex.row() - index)  
-            print(f'removed {item.text()}')
-            del item
             
-        
-        
-        
+    
+
+    def handleClassicParamActions(self, action):
+        #* Clear new list widget if action is mirror
+        if action == 'MIRROR':
+            self.targetListWidget.clear()
+
+        #* Else append selected items to new param list widget
+        for modelIndex in self.selectedIndexes():
+
+            # Get Selected item
+            selectedItem = self.item(modelIndex.row())
+
+            # Create new list widget item
+            newItem = qtw.QListWidgetItem()
+            newItem.setText(selectedItem.text())
+            newItem.setFlags(qtc.Qt.ItemIsSelectable | qtc.Qt.ItemIsEditable| qtc.Qt.ItemIsDragEnabled | qtc.Qt.ItemIsEnabled)
+            self.targetListWidget.addItem(newItem)
+
+
+
+    def handleDD2ParamActions(self, action):
+            if action == 'DELETE':
+                #* Get the selected item modelIndexes and use it to delete the selected items
+                for index, modelIndex in enumerate(self.selectedIndexes()):
+                    item = self.takeItem(modelIndex.row() - index)  
+
+                    del item
+                
+            else:
+                #* Insert new item below the selected item and set it to be selected and in edit mode
+                item = qtw.QListWidgetItem()
+                item.setText('name=text')
+                item.setFlags(qtc.Qt.ItemIsSelectable | qtc.Qt.ItemIsEditable| qtc.Qt.ItemIsDragEnabled | qtc.Qt.ItemIsEnabled)
+                self.insertItem(self.currentRow() + 1, item)
+                self.setCurrentItem(item)
+                self.editItem(item)
+    
+
 
 class TableWidget(qtw.QTableWidget):
     def __init__(self, parent=None):
         super(TableWidget,self).__init__(parent)
+
+
 
     def keyPressEvent(self, event):
         if event == qtg.QKeySequence.Copy:
@@ -208,23 +251,25 @@ class TeststepGroupBoxWidget(qtw.QGroupBox):
         hLayout_oldDataBox.addWidget(oldDataTableWidget_1)
         
         
-        ############################################## oldDataListWidget_1 ########################################
-        oldDataListWidget_1 = ListWidget(oldDataBox)
-        oldDataListWidget_1.setSelectionMode(qtw.QAbstractItemView.ExtendedSelection)
-        oldDataListWidget_1.setMinimumSize(qtc.QSize(0, 0))
-        oldDataListWidget_1.setMaximumSize(qtc.QSize(300,10000))
+        ############################################## oldDataListWidget ########################################
+        newDataBox = qtw.QGroupBox(self)
+        self.newDataListWidget = ListWidget('DD2.0', newDataBox)
+        self.oldDataListWidget = ListWidget('CLASSIC', self.newDataListWidget, oldDataBox)
+        self.oldDataListWidget.setSelectionMode(qtw.QAbstractItemView.ExtendedSelection)
+        self.oldDataListWidget.setMinimumSize(qtc.QSize(0, 0))
+        self.oldDataListWidget.setMaximumSize(qtc.QSize(300,10000))
         font = qtg.QFont()
         font.setPointSize(10)
-        oldDataListWidget_1.setFont(font)
-        oldDataListWidget_1.setObjectName("oldDataListWidget_1")
+        self.oldDataListWidget.setFont(font)
+        self.oldDataListWidget.setObjectName("oldDataListWidget")
         
         for param in data['old']['function_parameters']:
             item = qtw.QListWidgetItem()
             item.setText(f"{param['name']}={param['text']}")
-            oldDataListWidget_1.addItem(item)
+            self.oldDataListWidget.addItem(item)
         
         # Add Function parameter list to old data box
-        hLayout_oldDataBox.addWidget(oldDataListWidget_1)
+        hLayout_oldDataBox.addWidget(self.oldDataListWidget)
         
         # Add completed oldDataBox to teststep horizontal layout
         self.hLayout_teststepBox.addWidget(oldDataBox)
@@ -239,7 +284,6 @@ class TeststepGroupBoxWidget(qtw.QGroupBox):
         
 
         ###################################################### New data box ###############################################
-        newDataBox = qtw.QGroupBox(self)
         newDataBox.setMinimumSize(qtc.QSize(0, 0))
         newDataBox.setTitle("")
         newDataBox.setObjectName("newDataBox")
@@ -248,22 +292,22 @@ class TeststepGroupBoxWidget(qtw.QGroupBox):
         hLayout_newDataBox.setObjectName("hLayout_newDataBox")
         
 
-        ############################################## newDataTableWidget_1 #####################################
-        self.newDataTableWidget_1 = TableWidget(newDataBox)
-        self.newDataTableWidget_1.setMinimumSize(qtc.QSize(0, 0))
+        ############################################## newDataTableWidget #####################################
+        self.newDataTableWidget = TableWidget(newDataBox)
+        self.newDataTableWidget.setMinimumSize(qtc.QSize(0, 0))
         font = qtg.QFont()
         font.setPointSize(10)
-        self.newDataTableWidget_1.setFont(font)
-        self.newDataTableWidget_1.setGridStyle(qtc.Qt.SolidLine)
-        self.newDataTableWidget_1.setWordWrap(True)
-        self.newDataTableWidget_1.setCornerButtonEnabled(True)
-        self.newDataTableWidget_1.setObjectName("newDataTableWidget_1")
-        self.newDataTableWidget_1.setColumnCount(3)
-        self.newDataTableWidget_1.setRowCount(1)
+        self.newDataTableWidget.setFont(font)
+        self.newDataTableWidget.setGridStyle(qtc.Qt.SolidLine)
+        self.newDataTableWidget.setWordWrap(True)
+        self.newDataTableWidget.setCornerButtonEnabled(True)
+        self.newDataTableWidget.setObjectName("newDataTableWidget")
+        self.newDataTableWidget.setColumnCount(3)
+        self.newDataTableWidget.setRowCount(1)
         
         
         item = qtw.QTableWidgetItem()
-        self.newDataTableWidget_1.setVerticalHeaderItem(0, item)
+        self.newDataTableWidget.setVerticalHeaderItem(0, item)
         
         # Set table header 1
         item = qtw.QTableWidgetItem()
@@ -272,7 +316,7 @@ class TeststepGroupBoxWidget(qtw.QGroupBox):
         font.setBold(True)
         font.setWeight(75)
         item.setFont(font)
-        self.newDataTableWidget_1.setHorizontalHeaderItem(0, item)
+        self.newDataTableWidget.setHorizontalHeaderItem(0, item)
         
         # Set table header 2
         item = qtw.QTableWidgetItem()
@@ -281,7 +325,7 @@ class TeststepGroupBoxWidget(qtw.QGroupBox):
         font.setBold(True)
         font.setWeight(75)
         item.setFont(font)
-        self.newDataTableWidget_1.setHorizontalHeaderItem(1, item)
+        self.newDataTableWidget.setHorizontalHeaderItem(1, item)
         
         # Set table header 3
         item = qtw.QTableWidgetItem()
@@ -290,50 +334,48 @@ class TeststepGroupBoxWidget(qtw.QGroupBox):
         font.setBold(True)
         font.setWeight(75)
         item.setFont(font)
-        self.newDataTableWidget_1.setHorizontalHeaderItem(2, item)
+        self.newDataTableWidget.setHorizontalHeaderItem(2, item)
         
         # Set Table data
         item = qtw.QTableWidgetItem()
         item.setText(data['new']['description'])
         item.setTextAlignment(qtc.Qt.AlignCenter)
-        self.newDataTableWidget_1.setItem(0, 0, item)
+        self.newDataTableWidget.setItem(0, 0, item)
         
         item = qtw.QTableWidgetItem()
         item.setText(data['new']['function_library'])
         item.setTextAlignment(qtc.Qt.AlignCenter)
-        self.newDataTableWidget_1.setItem(0, 1, item)
+        self.newDataTableWidget.setItem(0, 1, item)
         
         item = qtw.QTableWidgetItem()
         item.setText(data['new']['function_name'])
         item.setTextAlignment(qtc.Qt.AlignCenter)
-        self.newDataTableWidget_1.setItem(0, 2, item)
+        self.newDataTableWidget.setItem(0, 2, item)
         
-        self.newDataTableWidget_1.horizontalHeader().setCascadingSectionResizes(False)
-        self.newDataTableWidget_1.horizontalHeader().setStretchLastSection(True)
-        self.newDataTableWidget_1.verticalHeader().setVisible(False)
-        self.newDataTableWidget_1.verticalHeader().setStretchLastSection(True)
-        hLayout_newDataBox.addWidget(self.newDataTableWidget_1)
+        self.newDataTableWidget.horizontalHeader().setCascadingSectionResizes(False)
+        self.newDataTableWidget.horizontalHeader().setStretchLastSection(True)
+        self.newDataTableWidget.verticalHeader().setVisible(False)
+        self.newDataTableWidget.verticalHeader().setStretchLastSection(True)
+        hLayout_newDataBox.addWidget(self.newDataTableWidget)
         
-        ############################################## newDataListWidget_1 #####################################
-        self.newDataListWidget_1 = ListWidget(newDataBox)
-        self.newDataListWidget_1.installEventFilter(self.newDataListWidget_1)
-        self.newDataListWidget_1.setSelectionMode(qtw.QAbstractItemView.ExtendedSelection)
-        self.newDataListWidget_1.setEditTriggers(qtw.QAbstractItemView.DoubleClicked)
-        self.newDataListWidget_1.setMinimumSize(qtc.QSize(0, 0))
-        self.newDataListWidget_1.setMaximumSize(qtc.QSize(300, 10000))
+        ############################################## newDataListWidget #####################################
+        self.newDataListWidget.setSelectionMode(qtw.QAbstractItemView.ExtendedSelection)
+        self.newDataListWidget.setEditTriggers(qtw.QAbstractItemView.DoubleClicked)
+        self.newDataListWidget.setMinimumSize(qtc.QSize(0, 0))
+        self.newDataListWidget.setMaximumSize(qtc.QSize(300, 10000))
         font = qtg.QFont()
         font.setPointSize(10)
-        self.newDataListWidget_1.setFont(font)
-        self.newDataListWidget_1.setObjectName("newDataListWidget_1")
+        self.newDataListWidget.setFont(font)
+        self.newDataListWidget.setObjectName("newDataListWidget")
         
         for param in data['new']['function_parameters']:
             item = qtw.QListWidgetItem()
             item.setFlags(qtc.Qt.ItemIsSelectable | qtc.Qt.ItemIsEditable| qtc.Qt.ItemIsDragEnabled | qtc.Qt.ItemIsEnabled)
             item.setText(f"{param['name']}={param['text']}")
-            self.newDataListWidget_1.addItem(item)
+            self.newDataListWidget.addItem(item)
         
         # Add Function parameter list to new data box
-        hLayout_newDataBox.addWidget(self.newDataListWidget_1)
+        hLayout_newDataBox.addWidget(self.newDataListWidget)
         
         # Add new data box to test_step box
         self.hLayout_teststepBox.addWidget(newDataBox)
@@ -350,8 +392,8 @@ class TeststepGroupBoxWidget(qtw.QGroupBox):
     def getNewTeststepMap(self):
         #* Get list of function parameters from teststep data box
         paramStringList = []
-        for i in range(self.newDataListWidget_1.count()):
-            paramStringList.append(self.newDataListWidget_1.item(i).text())
+        for i in range(self.newDataListWidget.count()):
+            paramStringList.append(self.newDataListWidget.item(i).text())
         
         #* Parse the parameter strings into a obj readable by xmlParser
         function_parameters = []
@@ -367,13 +409,13 @@ class TeststepGroupBoxWidget(qtw.QGroupBox):
         #* Create updated teststep conversion mapping
         newTeststepMap = {
             #Get new teststep description
-            'description': self.newDataTableWidget_1.item(0, 0).text(),
+            'description': self.newDataTableWidget.item(0, 0).text(),
             
             #Get new teststep function library
-            'function_library': self.newDataTableWidget_1.item(0, 1).text(),
+            'function_library': self.newDataTableWidget.item(0, 1).text(),
             
             #Get new teststep function name
-            'function_name': self.newDataTableWidget_1.item(0, 2).text(),
+            'function_name': self.newDataTableWidget.item(0, 2).text(),
             
             #Get new teststep function parameters
             'function_parameters': function_parameters

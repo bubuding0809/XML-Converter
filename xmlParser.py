@@ -75,6 +75,7 @@ def getTestStepData(xmlInFile, conversionMap):
             
             # Create old data object
             oldTestStepData = {
+                'cleanedDescription': cleanedOldDescription,
                 'description': oldDescription,
                 'function_library': oldFunctionLibrary,
                 'function_name': oldFunctionName,

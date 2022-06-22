@@ -53,7 +53,7 @@
 - [x] Prevent user from selecting temp excel files which starts with ~$
 - [x] Remove load button and implement loading of data directly after both config and xml file has been uploaded
 - [x] Implement filter feature to allow user to choose to show testcase/functions/all
-- [ ] Implement right click context menu for old parameter list with the following features
+- [x] Implement right click context menu for old parameter list with the following features
   - Append parameters to new parameter list
   - Replace new parameter list with old parameters
 - [ ] Change direct editing of DD2 mapping in the UI data grid to propagate to all similar teststeps instead of only for the particular teststep.

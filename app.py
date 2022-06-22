@@ -100,9 +100,9 @@ class MainWindow(qtw.QMainWindow):
 
 
         #* Global variables
-        self.xlsxInFile = '' #testfiles.CONFIG_PATH_WIN32 if sys.platform == 'win32' else testfiles.CONFIG_PATH_DARWIN
-        self.xmlInFile = '' #testfiles.INPUT_PATH_WIN32 if sys.platform == 'win32' else testfiles.INPUT_PATH_DARWIN
-        self.xmlOutFile = '' #testfiles.SAVE_PATH_WIN32 if sys.platform == 'win32' else testfiles.SAVE_PATH_DARWIN
+        self.xlsxInFile = testfiles.CONFIG_PATH_WIN32 if sys.platform == 'win32' else testfiles.CONFIG_PATH_DARWIN
+        self.xmlInFile = testfiles.INPUT_PATH_WIN32 if sys.platform == 'win32' else testfiles.INPUT_PATH_DARWIN
+        self.xmlOutFile = testfiles.SAVE_PATH_WIN32 if sys.platform == 'win32' else testfiles.SAVE_PATH_DARWIN
 
 
         #* Global flags
@@ -117,7 +117,8 @@ class MainWindow(qtw.QMainWindow):
         self.ui.fileLocation_input_label.setText(self.xmlOutFile)
         
         # Initialize conversionMap
-        self.conversionMap = {} #xmlParser.handleXlsx(self.xlsxInFile)
+        self.conversionMap = xmlParser.handleXlsx(self.xlsxInFile)
+        self.handleXMLLoad()
         
         
         
@@ -280,6 +281,7 @@ class MainWindow(qtw.QMainWindow):
             self.ui.xml_convert_btn.setEnabled(False)
             
             
+
     def handleXMLInput(self):
         #* Retrieve atp xml file path from file dialog
         fileDialog = qtw.QFileDialog(self)
@@ -379,43 +381,64 @@ class MainWindow(qtw.QMainWindow):
                     })
         
         
-        #* Create filtered data boxes and insert into the vertical scroll layout area 
+        #* Create mapped data boxes and insert into the vertical scroll layout area 
         if testCaseList:
             for index, (testcase, teststeps) in enumerate(testCaseList.items()):
 
-                #* Create testcase data obj to be passed into the CollapsibleBox widget
+                # Create testcase data obj to be passed into the CollapsibleBox widget
                 testcaseData = {
                     'id': testcase,
                     'type': teststeps[0]['parentType'],
                     'teststeps': teststeps
                 }
 
-                #* Create collapsible box for test case
+                # Create collapsible box for test case
                 box = CollapsibleTestcaseWidget(
                     title=f"{testcase} <{teststeps[0]['parentType']}>",
                     data=testcaseData
                 )
                 self.ui.verticalLayout_3.insertWidget(index, box)
                 
-                #* Create vertical layout for each collapsible box
+                # Create vertical layout for each collapsible box
                 vlayout = qtw.QVBoxLayout()
                 vlayout.setContentsMargins(0, 0, 0, 0)
                 
-                testStepBoxList = []
+                teststepBoxList = []
                 for teststep in teststeps:
 
-                    testStepBox = TeststepGroupBoxWidget(
+                    teststepBox = TeststepGroupBoxWidget(
                         title=f"ID: {teststep['id']} - {teststep['old']['description']}", 
                         data=teststep, 
                         parent=self
                     )
 
-                    vlayout.addWidget(testStepBox)
-                    testStepBoxList.append(testStepBox)
+                    teststepBox.newDataTableWidget.itemChanged.connect(
+                        lambda item, teststepBox=teststepBox: 
+                        self.handleAbstractItemTextChange(item, teststepBox)
+                    )
+
+                    teststepBox.newDataListWidget.itemChanged.connect(
+                        lambda item, teststepBox=teststepBox: 
+                        self.handleAbstractItemTextChange(item, teststepBox)
+                    )
+
+                    teststepBox.newDataListWidget.model().rowsInserted.connect(
+                        lambda modelIndex, first, last, teststepBox=teststepBox, listWidget=teststepBox.newDataListWidget:
+                        self.handleRowsInserted(modelIndex, first, last, teststepBox, listWidget)
+                    )
+
+                    teststepBox.newDataListWidget.model().rowsRemoved.connect(
+                        lambda modelIndex, first, last, teststepBox=teststepBox, listWidget=teststepBox.newDataListWidget:
+                        self.handleRowsRemoved(modelIndex, first, last, teststepBox, listWidget)
+                    )
+
+                    # Add teststep box to vlayout and store in a list
+                    vlayout.addWidget(teststepBox)
+                    teststepBoxList.append(teststepBox)
                     
                 vlayout.addStretch()
                 box.setContentLayout(vlayout)
-                self.testCaseBoxList[box] = testStepBoxList
+                self.testCaseBoxList[box] = teststepBoxList
         else:
 
             emptyLabel = qtw.QLabel('No test steps matched in XML file')
@@ -472,7 +495,7 @@ class MainWindow(qtw.QMainWindow):
 
 
         #* Add Signal handler to each teststep checkbox
-        # Iterate over every testStepBoxList
+        # Iterate over every teststepBoxList
         for teststepBoxList in self.testCaseBoxList.values():
             
             # Iterate over every teststep in each teststepBoxList
@@ -482,7 +505,10 @@ class MainWindow(qtw.QMainWindow):
                 
                 # Get the checkbox object and toggle it
                 checkBox = teststep.hLayout_teststepBox.itemAt(3).widget()
-                checkBox.clicked.connect(lambda _, teststep=teststep: self.handleTestStepCheckbox(teststep))
+                checkBox.clicked.connect(
+                    lambda _, teststep=teststep: 
+                    self.handleTestStepCheckbox(teststep)
+                )
         
         
         #* Setup autocompleter for search bar to allow for predictive searching of teststeps by description
@@ -514,6 +540,8 @@ class MainWindow(qtw.QMainWindow):
         # Enable summary button
         self.ui.xml_summary_btn.setEnabled(True)
 
+        # Enable convert button
+        self.ui.xml_convert_btn.setEnabled(True)
 
         # Enable filter radio buttons
         self.ui.scrollAreaFilterBox_widget.setEnabled(True)
@@ -546,7 +574,7 @@ class MainWindow(qtw.QMainWindow):
         #* Get state of select all checkbox 
         isChecked = True if state else False
 
-        #* Iterate over every testStepBoxList and its teststeps 
+        #* Iterate over every teststepBoxList and its teststeps 
         for testcase, teststepBoxList in self.testCaseBoxList.items():
             
             for teststep in teststepBoxList:
@@ -612,7 +640,7 @@ class MainWindow(qtw.QMainWindow):
         else :
             self.filteredTeststepIds.remove(teststep.id)
         
-        logger.info(f"Teststep {teststep.id} is checked: {checked}")
+        print(f"Teststep {teststep.id} is checked: {checked}")
 
 
 
@@ -703,6 +731,84 @@ class MainWindow(qtw.QMainWindow):
 
 
 
+    def handleAbstractItemTextChange(self, item, teststepBox):
+        print('Item change triggered')
+        # Check if item edited belongs to table widget 
+        isTableWidget = type(item) == type(qtw.QTableWidgetItem())
+        
+        #* Get item text, parent widget of item, item postion and cleaned description of the teststep box
+        changedText = item.text()
+        widget = item.tableWidget() if isTableWidget else item.listWidget()
+        position = widget.column(item) if isTableWidget else widget.row(item)
+        sourceCleanedDescription = teststepBox.data['old']['cleanedDescription']
+
+        #* Iterate through all teststeps with the same classic description and propagate the changed text
+        for teststeps in self.testCaseBoxList.values():
+            
+            for teststep in teststeps:
+
+                # Get the target cleaned description for matching purpose 
+                targetCleanedDescription = teststep.data['old']['cleanedDescription']
+
+                #If matched, propagate changes to target 
+                if sourceCleanedDescription == targetCleanedDescription:
+                    # Get target table widget
+                    widget = teststep.newDataTableWidget if isTableWidget else teststep.newDataListWidget
+
+                    # Get target table item
+                    item = widget.item(0, position) if isTableWidget else widget.item(position)
+
+                    # Block signals from table widget to prevent repeated calls to table item changed event
+                    widget.blockSignals(True)
+
+                    # Propagate change to table item text
+                    item.setText(changedText)
+
+                    # Unblock singals from table widget once text has been changed
+                    widget.blockSignals(False)
+
+
+
+    def handleRowsInserted(self, modelIndex, first, last, teststepBox, listWidget):
+        print('Rows inserted triggered')
+        item = listWidget.item(first)
+        sourceCleanedDescription = teststepBox.data['old']['cleanedDescription']
+        sourceId = teststepBox.id
+
+        for teststeps in self.testCaseBoxList.values():
+            
+            for teststep in teststeps:
+
+                # Get the target cleaned description for matching purpose 
+                targetCleanedDescription = teststep.data['old']['cleanedDescription']
+                targetId = teststep.id
+
+                #If matched, propagate changes to target 
+                if sourceCleanedDescription == targetCleanedDescription and sourceId != targetId:
+                    # Get target list widget
+                    listWidget = teststep.newDataListWidget
+
+                    # Create new list item
+                    newItem = qtw.QListWidgetItem()
+                    newItem.setText('name=text')
+                    newItem.setFlags(qtc.Qt.ItemIsSelectable | qtc.Qt.ItemIsEditable| qtc.Qt.ItemIsDragEnabled | qtc.Qt.ItemIsEnabled)
+
+                    # Block signals from table widget to prevent repeated calls to table item changed event
+                    listWidget.model().blockSignals(True)
+
+                    # Propagate change to table item text
+                    listWidget.insertItem(first, newItem)
+
+                    # Unblock singals from table widget once text has been changed
+                    listWidget.model().blockSignals(False)
+
+
+
+        
+
+    def handleRowsRemoved(self, modelIndex, first, last, teststepBox, listWidget):
+        print(f"Removed row at {first} - {last}")
+
     #*************************** Utility functions ******************************* #             
     
     def clearTestStepScrollArea(self):
@@ -741,7 +847,11 @@ class MainWindow(qtw.QMainWindow):
         screenGeo = qtw.QDesktopWidget().screenGeometry()
         windowGeo = self.geometry()
 
-        print(screenGeo, windowGeo)
+        logger.info(
+            f"Screen resolution:{screenGeo.width()}x{screenGeo.height()}.\
+             Applcation window: {windowGeo.width()}x{windowGeo.height()}"
+        )
+
         xPosition = (screenGeo.width() - windowGeo.width()) / 2 
         yPosition = (screenGeo.height() - windowGeo.height()) / 2 
 

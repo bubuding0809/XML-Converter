@@ -789,18 +789,23 @@ class MainWindow(qtw.QMainWindow):
                     listWidget = teststep.newDataListWidget
 
                     # Create new list item
-                    newItem = qtw.QListWidgetItem()
-                    newItem.setText('name=text')
+                    newItem = qtw.QListWidgetItem('')
                     newItem.setFlags(qtc.Qt.ItemIsSelectable | qtc.Qt.ItemIsEditable| qtc.Qt.ItemIsDragEnabled | qtc.Qt.ItemIsEnabled)
 
-                    # Block signals from table widget to prevent repeated calls to table item changed event
+                    # Block signals from table model widget to prevent repeated calls to table item inserted event
+                    # Propagate insertion of new item
                     listWidget.model().blockSignals(True)
-
-                    # Propagate change to table item text
                     listWidget.insertItem(first, newItem)
-
-                    # Unblock singals from table widget once text has been changed
                     listWidget.model().blockSignals(False)
+
+                    # Block signals from table widget to prevent repeated calls to table item changed event
+                    # Propagate new text of new item
+                    listWidget.blockSignals(True)
+                    newItem.setText(item.text())
+                    listWidget.blockSignals(False)
+
+                    print(targetId)
+                    print(listWidget.count())
 
 
 

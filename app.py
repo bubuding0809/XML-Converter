@@ -809,10 +809,34 @@ class MainWindow(qtw.QMainWindow):
 
 
 
-        
-
     def handleRowsRemoved(self, modelIndex, first, last, teststepBox, listWidget):
-        print(f"Removed row at {first} - {last}")
+        print(f"Removed row at {first}")
+        sourceCleanedDescription = teststepBox.data['old']['cleanedDescription']
+        sourceId = teststepBox.id
+        
+        for teststeps in self.testCaseBoxList.values():
+            
+            for teststep in teststeps:
+
+                # Get the target cleaned description for matching purpose 
+                targetCleanedDescription = teststep.data['old']['cleanedDescription']
+                targetId = teststep.id
+
+                #If matched, propagate changes to target 
+                if sourceCleanedDescription == targetCleanedDescription and sourceId != targetId:
+                    # Get target list widget
+                    listWidget = teststep.newDataListWidget
+
+                    # Block signals from table model widget to prevent repeated calls to table item inserted event
+                    # Propagate insertion of new item
+                    listWidget.model().blockSignals(True)
+                    item = listWidget.takeItem(first)
+                    del item
+                    listWidget.model().blockSignals(False)
+
+                    print(targetId)
+                    print(listWidget.count())
+        
 
     #*************************** Utility functions ******************************* #             
     

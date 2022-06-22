@@ -88,8 +88,11 @@ class ListWidget(qtw.QListWidget):
     def handleClassicParamActions(self, action):
         #* Clear new list widget if action is mirror
         if action == 'MIRROR':
-            self.targetListWidget.clear()
-
+            for i in range(self.targetListWidget.count()):
+                item = self.targetListWidget.takeItem(0)
+                
+                del item
+                
         #* Else append selected items to new param list widget
         for modelIndex in self.selectedIndexes():
 

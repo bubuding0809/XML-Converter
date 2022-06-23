@@ -48,6 +48,37 @@ def handleXlsx(xlsxFile):
     return conversionMap
 
     
+    
+def handleXlsxUpdate(configData, xlsxInFile, xlsxOutFile):
+
+    #Load excel file with openpyxl load_workbook
+    workbook = load_workbook(filename=xlsxInFile)
+    sheet = workbook.active 
+
+    #Convert excel sheet into a list of dictionary with header:value pairs
+    reader = ExcelDictReader(sheet)
+
+    for rowIndex, row in enumerate(reader):
+        oldDescription = row['old teststep description']
+        cleanedDescription = removeWhiteSpace(oldDescription.lower())
+        
+        data = configData.get(cleanedDescription, None)
+        if data:
+            cell = sheet.cell(rowIndex + 2, 2)
+            cell.value = data['description']
+
+            cell = sheet.cell(rowIndex + 2, 3)
+            cell.value = data['function_library']
+
+            cell = sheet.cell(rowIndex + 2, 4)
+            cell.value = data['function_name']
+            
+            cell = sheet.cell(rowIndex + 2, 5)
+            cell.value = '\n'.join(data['function_params'])
+
+    workbook.save(os.path.join(baseDir, 'UpdatedConfig.xlsx'))
+    
+
 
 def getTestStepData(xmlInFile, conversionMap):
     tree = ET.parse(xmlInFile)

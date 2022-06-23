@@ -65,7 +65,7 @@ QLineEdit {
 }
 
 #CustomButton {
-  min-width: 40px;
+  min-width: 60px;
   padding-left: 30;
   padding-right: 0;
   text-align: left;

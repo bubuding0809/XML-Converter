@@ -48,7 +48,7 @@ class MainWindow(qtw.QMainWindow):
         self.ui.configFile_btn.setStatusTip('Select excel config file from explorer')
         self.ui.configFile_btn.setWhatsThis('Select excel config file from explorer')
         self.ui.configFile_btn.setToolTip('Select excel config file from explorer')
-        self.ui.configInput_widget.layout().addWidget(self.ui.configFile_btn)
+        self.ui.configInput_widget.layout().insertWidget(0, self.ui.configFile_btn)
         
         # Create Custom button for save input button
         pixmap = qtg.QPixmap(":/icons/bootstrap-icons-1.8.3/filetype-xml.svg").scaled(20, 20, qtc.Qt.KeepAspectRatio, qtc.Qt.SmoothTransformation)
@@ -56,7 +56,7 @@ class MainWindow(qtw.QMainWindow):
         self.ui.xmlFile_btn.setStatusTip('Select xml ATP file from explorer')
         self.ui.xmlFile_btn.setWhatsThis('Select xml ATP file from explorer')
         self.ui.xmlFile_btn.setToolTip('Select xml ATP file from explorer')
-        self.ui.xmlInput_widget.layout().addWidget(self.ui.xmlFile_btn)
+        self.ui.xmlInput_widget.layout().insertWidget(0, self.ui.xmlFile_btn)
 
         # Create Custom button for save location button
         pixmap = qtg.QPixmap(":/icons/bootstrap-icons-1.8.3/folder2.svg").scaled(20, 20, qtc.Qt.KeepAspectRatio, qtc.Qt.SmoothTransformation)
@@ -64,7 +64,7 @@ class MainWindow(qtw.QMainWindow):
         self.ui.saveLocation_btn.setStatusTip('Set save as location for converted xml file')
         self.ui.saveLocation_btn.setWhatsThis('Set save as location for converted xml file')
         self.ui.saveLocation_btn.setToolTip('Set save as location for converted xml file')
-        self.ui.saveLocation_widget.layout().addWidget(self.ui.saveLocation_btn)
+        self.ui.saveLocation_widget.layout().insertWidget(0, self.ui.saveLocation_btn)
 
         # Create Custom line edit search bar 
         self.ui.mainSearchBar_lineEdit = CustomLineEdit(':/icons/bootstrap-icons-1.8.3/search.svg', 'Search')
@@ -96,6 +96,7 @@ class MainWindow(qtw.QMainWindow):
         self.ui.mainSearchBar_lineEdit.textChanged.connect(self.handleSearchBar)
         self.ui.quitSc.activated.connect(self.handleExitApp)
         self.ui.xml_summary_btn.clicked.connect(self.handleXMLSummary)
+        self.ui.configFileUpdate_btn.clicked.connect(self.handleUpdateConfig)
         self.filterButtonGroup.buttonClicked.connect(self.handleFilterButtonClicked)
 
 
@@ -112,9 +113,9 @@ class MainWindow(qtw.QMainWindow):
             radioButton.text(): utils.removeWhiteSpace(radioButton.text().lower()) 
             for radioButton in self.filterButtonGroup.buttons()
         }
-        self.ui.xlsxConfig_input_label.setText(self.xlsxInFile)
-        self.ui.xml_input_label.setText(self.xmlInFile)
-        self.ui.fileLocation_input_label.setText(self.xmlOutFile)
+        self.ui.configFilePath_display.setText(self.xlsxInFile)
+        self.ui.xmlFilePath_display.setText(self.xmlInFile)
+        self.ui.saveLocationFilePath_display.setText(self.xmlOutFile)
         
         # Initialize conversionMap
         self.conversionMap = xmlParser.handleXlsx(self.xlsxInFile)
@@ -140,7 +141,7 @@ class MainWindow(qtw.QMainWindow):
         if fileDialog.exec_():
             selectedFiles = fileDialog.selectedFiles()
             self.xlsxInFile = selectedFiles[0]
-            self.ui.xlsxConfig_input_label.setText(selectedFiles[0])
+            self.ui.configFilePath_display.setText(selectedFiles[0])
 
 
         #* Try to process xlsx file and generate conversion map
@@ -294,7 +295,7 @@ class MainWindow(qtw.QMainWindow):
         if fileDialog.exec_():
             selectedFiles = fileDialog.selectedFiles()
             self.xmlInFile = selectedFiles[0]
-            self.ui.xml_input_label.setText(selectedFiles[0])
+            self.ui.xmlFilePath_display.setText(selectedFiles[0])
 
 
         #* Enable load xml data if both xlsx and xml inputs exists
@@ -315,7 +316,7 @@ class MainWindow(qtw.QMainWindow):
         
         if file:
             self.xmlOutFile = file[0]
-            self.ui.fileLocation_input_label.setText(file[0])
+            self.ui.saveLocationFilePath_display.setText(file[0])
 
         #* If all three required inputs are set, enable conversion button
         if len(self.xmlOutFile) and len(self.xmlInFile) and len(self.xmlOutFile):
@@ -411,7 +412,8 @@ class MainWindow(qtw.QMainWindow):
                         data=teststep, 
                         parent=self
                     )
-
+                    
+                    #* Connect teststep box data modification signals to callbacks
                     teststepBox.newDataTableWidget.itemChanged.connect(
                         lambda item, teststepBox=teststepBox: 
                         self.handleAbstractItemTextChange(item, teststepBox)
@@ -548,6 +550,9 @@ class MainWindow(qtw.QMainWindow):
         # Enable filter radio buttons
         self.ui.scrollAreaFilterBox_widget.setEnabled(True)
         self.ui.filterBoth_btn.setChecked(True)
+
+        # Enable update config button
+        self.ui.configFileUpdate_btn.setEnabled(True) 
        
        
     
@@ -880,6 +885,47 @@ class MainWindow(qtw.QMainWindow):
         
 
 
+    def handleUpdateConfig(self):
+
+        configData = {}
+
+        for teststeps in self.testCaseBoxList.values():
+
+            for teststep in teststeps: 
+                
+                #Get cleaned teststep description
+                cleanedDescription = utils.removeWhiteSpace(teststep.searchKey.lower())
+
+                if cleanedDescription in configData:
+                    continue
+
+                #New table data 
+                description = teststep.newDataTableWidget.item(0, 0).text()
+                function_name = teststep.newDataTableWidget.item(0, 1).text()
+                function_library = teststep.newDataTableWidget.item(0, 2).text()
+
+                #New List data
+                function_parameters = []
+                for i in range(teststep.newDataListWidget.count()):
+                    param = teststep.newDataListWidget.item(i).text()
+                    function_parameters.append(param)
+
+                
+                configData[cleanedDescription] = {
+                    'description': description,
+                    'function_name': function_name,
+                    'function_library': function_library,
+                    'function_params': function_parameters
+                }
+        
+        try:
+            xmlParser.handleXlsxUpdate(configData, self.xlsxInFile, self.xlsxInFile)
+
+        except PermissionError:
+            
+            print('Try again when you have closed the excel file')
+
+
     #*************************** Utility functions ******************************* #             
     
     def clearTestStepScrollArea(self):
@@ -912,7 +958,11 @@ class MainWindow(qtw.QMainWindow):
         #* Disable summary button
         self.ui.xml_summary_btn.setEnabled(False)
 
-    
+        #* Disable update config button
+        self.ui.configFileUpdate_btn.setEnabled(False)
+
+
+
     
     def centerWindowOnScreen(self):
         screenGeo = qtw.QDesktopWidget().screenGeometry()

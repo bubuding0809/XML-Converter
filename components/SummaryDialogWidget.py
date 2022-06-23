@@ -13,7 +13,7 @@ class SummaryDialog(qtw.QDialog):
         
         self.ui = Ui_SummaryDialog()
         self.ui.setupUi(self)
-        self.testCaseBoxList = data
+        self.testcaseData = data
         self.filteredTeststepIds = filteredIds
         self.populateSummaryData()
         
@@ -45,7 +45,7 @@ class SummaryDialog(qtw.QDialog):
         #* Create new autocomplete list for search bar based on filtered data
         teststepDescriptionSet = set()
         #Append title of visible teststeps to autocomplete list
-        for teststepBoxList in self.testCaseBoxList.values():
+        for teststepBoxList in self.testcaseData.values():
             for teststep in teststepBoxList:
                 if teststep.isVisible(): 
                     teststepDescriptionSet.add(teststep.searchKey)
@@ -60,7 +60,7 @@ class SummaryDialog(qtw.QDialog):
     #*********************************** Signal handler Methods ********************************#
     
     def populateSummaryData(self):
-        for testcase, testcaseBoxList in self.testCaseBoxList.items():
+        for testcase, teststeps in self.testcaseData.items():
             
             #* Create testcase parent item for each testcase
             testcaseItem = qtw.QTreeWidgetItem()
@@ -72,8 +72,8 @@ class SummaryDialog(qtw.QDialog):
             self.ui.dataTree_Widget.addTopLevelItem(testcaseItem)
             testcaseItem.setExpanded(True)
             
-            #* Iterate through each teststep in the testcaseBoxList
-            for teststep in testcaseBoxList:
+            #* Iterate through each teststep in the teststep list
+            for teststep in teststeps:
                 
                 # If teststep is in the filteredTeststepIds list, add it to the tree view
                 if teststep.id in self.filteredTeststepIds:

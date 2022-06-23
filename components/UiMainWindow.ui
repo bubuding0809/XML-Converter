@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1215</width>
-    <height>863</height>
+    <width>1122</width>
+    <height>842</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -493,101 +493,6 @@
        <property name="bottomMargin">
         <number>20</number>
        </property>
-       <item row="2" column="5">
-        <spacer name="horizontalSpacer_5">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>40</width>
-           <height>20</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
-       <item row="1" column="3" colspan="2">
-        <widget class="QLabel" name="xml_input_label">
-         <property name="minimumSize">
-          <size>
-           <width>500</width>
-           <height>0</height>
-          </size>
-         </property>
-         <property name="autoFillBackground">
-          <bool>true</bool>
-         </property>
-         <property name="text">
-          <string>/filepath/input.xml</string>
-         </property>
-         <property name="indent">
-          <number>4</number>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="5">
-        <spacer name="horizontalSpacer">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>40</width>
-           <height>20</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
-       <item row="0" column="3" colspan="2">
-        <widget class="QLabel" name="xlsxConfig_input_label">
-         <property name="enabled">
-          <bool>true</bool>
-         </property>
-         <property name="minimumSize">
-          <size>
-           <width>500</width>
-           <height>0</height>
-          </size>
-         </property>
-         <property name="maximumSize">
-          <size>
-           <width>16777215</width>
-           <height>16777215</height>
-          </size>
-         </property>
-         <property name="autoFillBackground">
-          <bool>true</bool>
-         </property>
-         <property name="text">
-          <string>/filepath/config.xlsx</string>
-         </property>
-         <property name="indent">
-          <number>4</number>
-         </property>
-        </widget>
-       </item>
-       <item row="2" column="3" colspan="2">
-        <widget class="QLabel" name="fileLocation_input_label">
-         <property name="minimumSize">
-          <size>
-           <width>500</width>
-           <height>0</height>
-          </size>
-         </property>
-         <property name="acceptDrops">
-          <bool>false</bool>
-         </property>
-         <property name="autoFillBackground">
-          <bool>true</bool>
-         </property>
-         <property name="text">
-          <string>/filepath/output.xml</string>
-         </property>
-         <property name="indent">
-          <number>4</number>
-         </property>
-        </widget>
-       </item>
        <item row="0" column="0">
         <widget class="QWidget" name="configInput_widget" native="true">
          <layout class="QHBoxLayout" name="horizontalLayout_4">
@@ -603,11 +508,40 @@
           <property name="bottomMargin">
            <number>0</number>
           </property>
+          <item>
+           <widget class="QLineEdit" name="configFilePath_display">
+            <property name="minimumSize">
+             <size>
+              <width>400</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="readOnly">
+             <bool>true</bool>
+            </property>
+            <property name="placeholderText">
+             <string>Excel config filepath</string>
+            </property>
+           </widget>
+          </item>
          </layout>
         </widget>
        </item>
        <item row="1" column="5">
         <spacer name="horizontalSpacer_2">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item row="2" column="5">
+        <spacer name="horizontalSpacer_4">
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
          </property>
@@ -634,6 +568,22 @@
           <property name="bottomMargin">
            <number>0</number>
           </property>
+          <item>
+           <widget class="QLineEdit" name="xmlFilePath_display">
+            <property name="minimumSize">
+             <size>
+              <width>400</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="readOnly">
+             <bool>true</bool>
+            </property>
+            <property name="placeholderText">
+             <string>ATP xml filepath</string>
+            </property>
+           </widget>
+          </item>
          </layout>
         </widget>
        </item>
@@ -652,7 +602,55 @@
           <property name="bottomMargin">
            <number>0</number>
           </property>
+          <item>
+           <widget class="QLineEdit" name="saveLocationFilePath_display">
+            <property name="minimumSize">
+             <size>
+              <width>400</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="readOnly">
+             <bool>true</bool>
+            </property>
+            <property name="placeholderText">
+             <string>Save as location filepath</string>
+            </property>
+           </widget>
+          </item>
          </layout>
+        </widget>
+       </item>
+       <item row="0" column="5">
+        <spacer name="horizontalSpacer">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item row="0" column="1">
+        <widget class="QPushButton" name="configFileUpdate_btn">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="toolTip">
+          <string>Update config with latest changes to mapping</string>
+         </property>
+         <property name="statusTip">
+          <string>Update config with latest changes to mapping</string>
+         </property>
+         <property name="whatsThis">
+          <string>Update config with latest changes to mapping</string>
+         </property>
+         <property name="text">
+          <string>Update</string>
+         </property>
         </widget>
        </item>
       </layout>
@@ -920,8 +918,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>1182</width>
-            <height>591</height>
+            <width>1089</width>
+            <height>554</height>
            </rect>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -1008,7 +1006,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1215</width>
+     <width>1122</width>
      <height>26</height>
     </rect>
    </property>

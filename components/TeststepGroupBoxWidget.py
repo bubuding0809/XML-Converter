@@ -153,6 +153,7 @@ class TeststepGroupBoxWidget(qtw.QGroupBox):
         # Global attributes
         self.data = data
         self.id = data['id']
+        self.searchKey = data['old']['description']
         self.title = title
         
 

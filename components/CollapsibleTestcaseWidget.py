@@ -19,6 +19,7 @@ class CollapsibleTestcaseWidget(qtw.QWidget):
         self.type = data['type']
         self.teststeps = data['teststeps']
         self.teststepsCount = len(self.teststeps)
+        self.isChecked = False
         
         #* Toggle button
         self.toggle_button = qtw.QToolButton(
@@ -32,7 +33,6 @@ class CollapsibleTestcaseWidget(qtw.QWidget):
         self.toggle_button.setIconSize(qtc.QSize(10, 10))
         self.toggle_button.setToolButtonStyle(qtc.Qt.ToolButtonTextBesideIcon)
         self.toggle_button.setArrowType(qtc.Qt.RightArrow)
-        self.toggle_button.pressed.connect(self.on_pressed)
 
         self.content_area = qtw.QScrollArea(maximumHeight=0, minimumHeight=0)
         self.content_area.setSizePolicy(qtw.QSizePolicy.Expanding, qtw.QSizePolicy.Fixed)
@@ -47,53 +47,81 @@ class CollapsibleTestcaseWidget(qtw.QWidget):
         lay.addWidget(self.content_area)
         self.setLayout(lay)
 
-        #* Toggle animation for content area
-        self.toggle_animation = qtc.QParallelAnimationGroup(self)
-        self.toggle_animation.addAnimation(
+        #* Greate parallel animation group for components of collapsible box
+        self.ToggleDropDownAnimationGroup = qtc.QParallelAnimationGroup(self)
+        self.ToggleDropDownAnimationGroup.addAnimation(
             qtc.QPropertyAnimation(self, b"minimumHeight")
         )
-        self.toggle_animation.addAnimation(
+        self.ToggleDropDownAnimationGroup.addAnimation(
             qtc.QPropertyAnimation(self, b"maximumHeight")
         )
-        self.toggle_animation.addAnimation(
+        self.ToggleDropDownAnimationGroup.addAnimation(
             qtc.QPropertyAnimation(self.content_area, b"maximumHeight")
         )
+        self.ToggleDropDownAnimationGroup.addAnimation(
+            qtc.QPropertyAnimation(self.content_area, b"minimumHeight")
+        )
+
+        #* Signal connector
+        self.toggle_button.pressed.connect(self.HandleDropDown)
         
-    def on_pressed(self):
-        checked = self.toggle_button.isChecked()
+
+
+    def HandleDropDown(self):
+        content_height = self.content_area.layout().sizeHint().height()
+
+        #* Iterate through parallel animation group to set animation parameters
+        for i in range(self.ToggleDropDownAnimationGroup.animationCount() - 1):
+            animation = self.ToggleDropDownAnimationGroup.animationAt(i)
+            animation.setStartValue(26)
+            animation.setEndValue(26 + content_height)        
+
+        for i in range(2,4):
+            content_animation = self.ToggleDropDownAnimationGroup.animationAt(i)
+            content_animation.setDuration(100)
+            content_animation.setStartValue(0)
+            content_animation.setEndValue(content_height)
+
+
+        self.toggle_button.setArrowType(qtc.Qt.DownArrow if not self.isChecked else qtc.Qt.RightArrow)
+        self.ToggleDropDownAnimationGroup.setDirection(qtc.QAbstractAnimation.Forward if not self.isChecked else qtc.QAbstractAnimation.Backward)
         
-        self.toggle_button.setArrowType(qtc.Qt.DownArrow if not checked else qtc.Qt.RightArrow)
-        self.toggle_animation.setDirection(qtc.QAbstractAnimation.Forward if not checked else qtc.QAbstractAnimation.Backward)
+        self.ToggleDropDownAnimationGroup.start()
+
+        #* Toggle tool button check status
+        self.isChecked = not self.isChecked
         
-        self.toggle_animation.start()
-        
+
+
     def setContentLayout(self, layout):
         lay = self.content_area.layout()
         del lay
+        
         self.content_area.setLayout(layout)
-        collapsed_height = (self.sizeHint().height() - self.content_area.maximumHeight())
         content_height = layout.sizeHint().height()
         
-        for i in range(self.toggle_animation.animationCount()):
-            animation = self.toggle_animation.animationAt(i)
-            animation.setDuration(50)
-            animation.setStartValue(collapsed_height)
-            animation.setEndValue(collapsed_height + content_height)
+        #* Iterate through parallel animation group to set animation parameters
+        for i in range(self.ToggleDropDownAnimationGroup.animationCount()):
+            animation = self.ToggleDropDownAnimationGroup.animationAt(i)
+            animation.setDuration(100)
+            animation.setStartValue(26 if i < 2 else 0)
+            animation.setEndValue(26 + content_height if i < 2 else content_height)
 
-        content_animation = self.toggle_animation.animationAt(self.toggle_animation.animationCount() - 1)
-        content_animation.setDuration(50)
-        content_animation.setStartValue(0)
-        content_animation.setEndValue(content_height)
 
     def __str__(self):
         return self.title
         
+
+
+
 class MainWindow(qtw.QMainWindow):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.initUi()
        
+
+
     def initUi(self):
         centralWidget = qtw.QWidget(self)
         
@@ -156,6 +184,8 @@ class MainWindow(qtw.QMainWindow):
         toggle_allDropDow_btn.pressed.connect(lambda: self.HandleToggleAllDropDownBtn(boxList))
         delete_btn.clicked.connect(self.handleDeleteAllBoxes)
         
+
+
     def HandleToggleAllDropDownBtn(self, boxList):
         eventSender = self.sender()
         isChecked = eventSender.isChecked()
@@ -166,6 +196,8 @@ class MainWindow(qtw.QMainWindow):
             box.on_pressed()
             box.toggle_button.setChecked(not isChecked)
     
+
+
     def handleDeleteAllBoxes(self):
         while self.vlay.count():
             item = self.vlay.takeAt(0)

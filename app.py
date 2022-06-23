@@ -450,7 +450,7 @@ class MainWindow(qtw.QMainWindow):
         #* Alert user if there are unmatched teststeps
         # Create list of unmatched teststeps
         unmatchedTeststeps = []
-        for index, (oldDescription, mapping) in enumerate(self.conversionMap.items()):
+        for index, mapping in enumerate(self.conversionMap.values()):
             if mapping['isMatched'] == False:
                 unmatchedTeststeps.append(f"{mapping['oldDescription']} - [row: {index+2}]")
         
@@ -512,12 +512,14 @@ class MainWindow(qtw.QMainWindow):
         
         
         #* Setup autocompleter for search bar to allow for predictive searching of teststeps by description
-        SearchByTeststepDescriptionList = []
+        teststepDescriptionSet = set()
+
+        #Append title of visible teststeps to autocomplete list
         for teststepBoxList in self.testCaseBoxList.values():
             for teststep in teststepBoxList:
-                SearchByTeststepDescriptionList.append(teststep.title)
+                    teststepDescriptionSet.add(teststep.searchKey)
 
-        autoCompleter = qtw.QCompleter(SearchByTeststepDescriptionList, self)
+        autoCompleter = qtw.QCompleter(teststepDescriptionSet, self)
         autoCompleter.setFilterMode(qtc.Qt.MatchFlag.MatchContains)
         autoCompleter.setCaseSensitivity(qtc.Qt.CaseInsensitive)
         self.ui.mainSearchBar_lineEdit.setCompleter(autoCompleter)
@@ -551,27 +553,27 @@ class MainWindow(qtw.QMainWindow):
     
     def handleToggleAllDropDownBtn(self):
         eventSender = self.sender()
+
         if eventSender == self.ui.showAll_btn:
             #Show all testcases
-            for box in self.testCaseBoxList:
-                box.toggle_button.setChecked(False)
-                box.on_pressed()
-                box.toggle_button.setChecked(True) 
+            for testcaseBox in self.testCaseBoxList:
+                if not testcaseBox.isChecked:
+                    testcaseBox.toggle_button.click()
+
         else:
             #Hide all testcases
-            for box in self.testCaseBoxList:
-                box.toggle_button.setChecked(True)
-                box.on_pressed()
-                box.toggle_button.setChecked(False) 
+            for testcaseBox in self.testCaseBoxList:
+                if testcaseBox.isChecked:
+                    testcaseBox.toggle_button.click()
         
 
 
-    def handleSelectAllCheckBox(self, state): #state == 0: unchecked, state == 2: checked
+    def handleSelectAllCheckBox(self, state): 
         #* Get current checked filter radio button
         checkFilterButton = self.filterButtonGroup.checkedButton()
         filterTypeChecked = self.filterDataMap[checkFilterButton.text()]
 
-        #* Get state of select all checkbox 
+        #* Get state of select all checkbox state == 0: unchecked, state == 2: checked
         isChecked = True if state else False
 
         #* Iterate over every teststepBoxList and its teststeps 
@@ -613,6 +615,7 @@ class MainWindow(qtw.QMainWindow):
 
             testcase.show()
 
+            #* Show teststeps that matches the search keywords, else hide them
             for teststep in teststepList:
                 if text.lower() in teststep.title.lower():
                      teststep.show()
@@ -621,27 +624,42 @@ class MainWindow(qtw.QMainWindow):
                 else:
                      teststep.hide()
 
-            #* Update testcaseBoxWidget with new title text
+            #* Update testcaseBoxWidget with new visibility count
             testcase.toggle_button.setText(
                 f"{testcase} ({str(visibleCount)}/{len(teststepList)})"
             )
+            
+            #* Only show the testcases with teststeps that matches the search
+            if isAnyFound and (filterTypeChecked == testcase.type or filterTypeChecked == 'both'):
+                testcase.show()
+            else:
+                testcase.hide()
+            
+            #* Resize collapsible box height to fit to newly visibile contents
+            if testcase.isVisible():
+                # Get content height of visible teststeps
+                content_height = testcase.content_area.layout().sizeHint().height()
 
-            testcase.show() if isAnyFound and testcase.type == filterTypeChecked else testcase.hide()
-        
+                # Reisize testcase box
+                testcase.setMinimumHeight(26 + content_height if testcase.isChecked else 26)
+                testcase.setMaximumHeight(26 + content_height if testcase.isChecked else 26)
+
+                # Resize testcase box content area
+                testcase.content_area.setMinimumHeight(content_height if testcase.isChecked else 0)
+                testcase.content_area.setMaximumHeight(content_height if testcase.isChecked else 0)
+
 
 
     def handleTestStepCheckbox(self, teststep):
-        # Check if the checkbox is checked
+        #* Check if the checkbox is checked
         checked = teststep.hLayout_teststepBox.itemAt(3).widget().isChecked()
         
-        # if checked, add the teststep id to the filtered set else remove from set
+        #* if checked, add the teststep id to the filtered set else remove from set
         if checked: 
             self.filteredTeststepIds.add(teststep.id) 
         else :
             self.filteredTeststepIds.remove(teststep.id)
         
-        print(f"Teststep {teststep.id} is checked: {checked}")
-
 
 
     def handleXMLSummary(self):
@@ -675,7 +693,6 @@ class MainWindow(qtw.QMainWindow):
             
             msgBox = qtw.QMessageBox.critical(self, 'Error', exception)
             
-            print(f'{exception}\n{arguments}')
             return
         
 
@@ -718,21 +735,49 @@ class MainWindow(qtw.QMainWindow):
     def handleFilterButtonClicked(self, button):
         filterTypeChecked = self.filterDataMap[button.text()]
         
-        for testcase in self.testCaseBoxList.keys():
-            testcase.show()
+        for testcase, teststeps in self.testCaseBoxList.items():
+            
+            #* If testcase type matches filter or filter is both, show testcase and show all its teststeps. Else hide the testcase
+            if filterTypeChecked == testcase.type or filterTypeChecked == 'both':
+                testcase.show()
 
-            if filterTypeChecked != testcase.type and filterTypeChecked != 'both':
+                #Show all teststep under the testcase
+                for teststep in teststeps:
+                    teststep.show()
+
+            else:
                 testcase.hide()
 
-        #Check select all checkbox and call handleSelect All checkbox to reset selection for new filtered data
+
+        #* Create new autocomplete list for search bar based on filtered data
+        teststepDescriptionSet = set()
+        #Append title of visible teststeps to autocomplete list
+        for teststepBoxList in self.testCaseBoxList.values():
+            for teststep in teststepBoxList:
+                if teststep.isVisible(): 
+                    teststepDescriptionSet.add(teststep.searchKey)
+        
+        # Setup autocompleter
+        autoCompleter = qtw.QCompleter(teststepDescriptionSet, self)
+        autoCompleter.setFilterMode(qtc.Qt.MatchFlag.MatchContains)
+        autoCompleter.setCaseSensitivity(qtc.Qt.CaseInsensitive)
+        self.ui.mainSearchBar_lineEdit.setCompleter(autoCompleter)
+
+
+        #* Check select all checkbox and call handleSelect All checkbox to reset selection for new filtered data
         self.ui.selectAll_checkBox.setChecked(True)
         self.ui.mainSearchBar_lineEdit.clear()
         self.handleSelectAllCheckBox(2)
 
+        #* Hide all teststeps by default
+        for testcaseBox in self.testCaseBoxList:
+            if testcaseBox.isChecked:
+                testcaseBox.toggle_button.click()
+
 
 
     def handleAbstractItemTextChange(self, item, teststepBox):
-        print('Item change triggered')
+
         # Check if item edited belongs to table widget 
         isTableWidget = type(item) == type(qtw.QTableWidgetItem())
         
@@ -770,7 +815,6 @@ class MainWindow(qtw.QMainWindow):
 
 
     def handleRowsInserted(self, modelIndex, first, last, teststepBox, listWidget):
-        print('Rows inserted triggered')
         item = listWidget.item(first)
         sourceCleanedDescription = teststepBox.data['old']['cleanedDescription']
         sourceId = teststepBox.id
@@ -804,13 +848,9 @@ class MainWindow(qtw.QMainWindow):
                     newItem.setText(item.text())
                     listWidget.blockSignals(False)
 
-                    print(targetId)
-                    print(listWidget.count())
-
 
 
     def handleRowsRemoved(self, modelIndex, first, last, teststepBox, listWidget):
-        print(f"Removed row at {first}")
         sourceCleanedDescription = teststepBox.data['old']['cleanedDescription']
         sourceId = teststepBox.id
         
@@ -827,16 +867,18 @@ class MainWindow(qtw.QMainWindow):
                     # Get target list widget
                     listWidget = teststep.newDataListWidget
 
+                    # Create temp item to trigger repaint event
+                    tempItem = qtw.QListWidgetItem('')
+                    tempItem.setFlags(qtc.Qt.ItemIsSelectable | qtc.Qt.ItemIsEditable| qtc.Qt.ItemIsDragEnabled | qtc.Qt.ItemIsEnabled)
+
                     # Block signals from table model widget to prevent repeated calls to table item inserted event
                     # Propagate insertion of new item
                     listWidget.model().blockSignals(True)
                     item = listWidget.takeItem(first)
                     del item
                     listWidget.model().blockSignals(False)
-
-                    print(targetId)
-                    print(listWidget.count())
         
+
 
     #*************************** Utility functions ******************************* #             
     

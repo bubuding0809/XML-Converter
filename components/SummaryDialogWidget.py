@@ -42,13 +42,15 @@ class SummaryDialog(qtw.QDialog):
         self.ui.hideAll_btn.clicked.connect(self.handleHideAll)
     
     
-        #* Create Autocompleter for search box
-        SearchByTeststepDescriptionList = []
-        for teststepList in self.testCaseBoxList.values():
-             for teststep in teststepList:
-                SearchByTeststepDescriptionList.append(teststep.data['old']['description'])
+        #* Create new autocomplete list for search bar based on filtered data
+        teststepDescriptionSet = set()
+        #Append title of visible teststeps to autocomplete list
+        for teststepBoxList in self.testCaseBoxList.values():
+            for teststep in teststepBoxList:
+                if teststep.isVisible(): 
+                    teststepDescriptionSet.add(teststep.searchKey)
 
-        autoCompleter = qtw.QCompleter(SearchByTeststepDescriptionList)
+        autoCompleter = qtw.QCompleter(teststepDescriptionSet)
         autoCompleter.setFilterMode(qtc.Qt.MatchFlag.MatchContains)
         autoCompleter.setCaseSensitivity(qtc.Qt.CaseInsensitive)
         self.ui.summaryData_searchBar.setCompleter(autoCompleter)

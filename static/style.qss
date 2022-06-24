@@ -17,10 +17,10 @@ QPushButton {
     stop: 0 #f6f7fa,
     stop: 1 #dadbde
   );
-  min-width: 60px;
+  min-width: 50px;
   min-height: 25px;
-  padding-left: 3px;
-  padding-right: 3px;
+  padding-left: 10px;
+  padding-right: 10px;
 }
 
 QPushButton:pressed {
@@ -42,6 +42,26 @@ QPushButton:default {
   border-color: navy; /* make the default button prominent */
 }
 
+QPushButton#IconOnlyButton {
+  transition: all .5s ease;
+  color: #fff;
+  font-family:'Montserrat', sans-serif;
+  text-transform: uppercase;
+  text-align: center;
+  line-height: 1;
+  font-size: 17px;
+  background-color : transparent;
+  outline: none;
+  border: None;
+  min-width: 0px;
+  padding-left: 0px;
+  padding-right: 0px;
+}
+
+QPushButton#IconOnlyButton:hover {
+  color: #001F3F;
+  background-color: #fff;
+}
 
 QScrollArea {
   border: 1px solid #8f8f91;

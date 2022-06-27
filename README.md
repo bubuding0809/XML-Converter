@@ -69,7 +69,7 @@
 - [ ] Add keyword column in excel config file for users to define must have keywords for match. keywords are seperated by a newline(\n) which indicates an AND relation.
   - ![config image](media\images\config_keywords.png "config image")
 - [ ] Add integrity check for function library, function name and function parameters at column C,D and E of excel config. To be provided with a list of valid info to check against.
-- [ ] Catch multiple classic description key error
+- [x] Catch multiple classic description key error
 - [ ] Implement parameter referencing in the config excel
   - ![config image](media\images\config_at_reference.PNG "config image")
   - ![config image](media\images\config_sharp_reference.PNG "config image")

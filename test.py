@@ -7,6 +7,8 @@ from PyQt5 import (
 from samples import testFilePaths as testfiles
 import sys
 
+# * Test functions
+
 
 @pytest.fixture
 def window(qtbot):
@@ -25,22 +27,23 @@ def window(qtbot):
             qtbot.keyPress(message_box, qtc.Qt.Key_Return)
 
     #qtc.QTimer.singleShot(0, handle_message_box)
-            
+
     # * Try to process xlsx file and generate conversion map
     window.handleConversionMapGenerate()
-    
+
     #qtc.QTimer.singleShot(100, handle_message_box)
 
     # * If conversionMap has been generated, conduct checks on config file
     window.handleXLSXProcess()
-    
+
     #qtc.QTimer.singleShot(100, handle_message_box)
-    
+
     # * Parse xml data with config mapping, raise messagebox if there are unmatched teststeps
     window.handleDataLoad()
 
     return window
-    
+
+
 def test_data_load(window):
     assert window.ui.mainSearchBar_lineEdit.isEnabled()
     assert window.ui.scrollAreaFilterBox_widget.isEnabled()
@@ -53,100 +56,47 @@ def test_data_load(window):
     assert window.ui.xml_convert_btn.isEnabled()
 
     datagrid_layout = window.ui.verticalLayout_3
-    test_case_boxes = [datagrid_layout.itemAt(i).widget() for i in range(datagrid_layout.count()) if datagrid_layout.itemAt(i).widget()]
+    test_case_boxes = [datagrid_layout.itemAt(i).widget() for i in range(
+        datagrid_layout.count()) if datagrid_layout.itemAt(i).widget()]
 
     # * Check if visible testcase count is correct for both filter
-    visible_teststep_count = 0
-    for test_case in test_case_boxes:
-        
-        content_area_layout = test_case.content_area.layout()
-        
-        for i in range(content_area_layout.count()):
-            
-            widget = content_area_layout.itemAt(i).widget()
-            if not widget: continue
-            if widget: visible_teststep_count += 1
-    
-    assert visible_teststep_count == 11
-    
+    assert_teststep_count(test_case_boxes, 11)
+
     # * Check if visible testcase count is correct for both filter
-    visible_testcase_count = 0
-    for i in range(datagrid_layout.count()):
-        widget = datagrid_layout.itemAt(i).widget()
-        
-        if not widget:
-            continue
-        
-        if not widget.isHidden(): visible_testcase_count += 1
-    assert visible_testcase_count == 4
-    
+    assert_testcase_count(datagrid_layout, 4)
+
+
 def test_filter_function_only(window, qtbot):
     # * Get scroll area layout widgets
     datagrid_layout = window.ui.verticalLayout_3
-    test_case_boxes = [datagrid_layout.itemAt(i).widget() for i in range(datagrid_layout.count()) if datagrid_layout.itemAt(i).widget()]
+    test_case_boxes = [datagrid_layout.itemAt(i).widget() for i in range(
+        datagrid_layout.count()) if datagrid_layout.itemAt(i).widget()]
 
     # * Apply function only filter
     qtbot.mouseClick(window.ui.filterFunctionOnly_btn, qtc.Qt.LeftButton)
 
     # * Check if visible teststep count is correct for function only filter
-    visible_teststep_count = 0
-    for test_case in test_case_boxes:
-        
-        content_area_layout = test_case.content_area.layout()
-        
-        for i in range(content_area_layout.count()):
-            
-            widget = content_area_layout.itemAt(i).widget()
-            if not widget: continue
-            if widget.isVisible(): visible_teststep_count += 1
-    
-    assert visible_teststep_count == 4
+    assert_teststep_count(test_case_boxes, 4)
 
     # * Check if visible teststep count is correct for function only filter
-    visible_testcase_count = 0
-    for i in range(datagrid_layout.count()):
-        widget = datagrid_layout.itemAt(i).widget()
-        
-        if not widget:
-            continue
-        
-        if not widget.isHidden(): visible_testcase_count += 1
-        
-    assert visible_testcase_count == 2
+    assert_testcase_count(datagrid_layout, 2)
+
 
 def test_filter_testcase_only(window, qtbot):
     # * Get scroll area layout widgets
     datagrid_layout = window.ui.verticalLayout_3
-    test_case_boxes = [datagrid_layout.itemAt(i).widget() for i in range(datagrid_layout.count()) if datagrid_layout.itemAt(i).widget()]
+    test_case_boxes = [datagrid_layout.itemAt(i).widget() for i in range(
+        datagrid_layout.count()) if datagrid_layout.itemAt(i).widget()]
 
     # * Apply function only filter
     qtbot.mouseClick(window.ui.filterTestcaseOnly_btn, qtc.Qt.LeftButton)
 
     # * Check if visible teststep count is correct for testcase only filter
-    visible_teststep_count = 0
-    for test_case in test_case_boxes:
-        
-        content_area_layout = test_case.content_area.layout()
-        
-        for i in range(content_area_layout.count()):
-            
-            widget = content_area_layout.itemAt(i).widget()
-            if not widget: continue
-            if widget.isVisible(): visible_teststep_count += 1
-    
-    assert visible_teststep_count == 7
-    
-    # * Check if visible testcase count is correct for testcase only filter
-    visible_testcase_count = 0
-    for i in range(datagrid_layout.count()):
-        widget = datagrid_layout.itemAt(i).widget()
+    assert_teststep_count(test_case_boxes, 7)
 
-        if not widget:
-            continue
-        
-        if not widget.isHidden(): visible_testcase_count += 1
-        
-    assert visible_testcase_count == 2
+    # * Check if visible testcase count is correct for testcase only filter
+    assert_testcase_count(datagrid_layout, 2)
+
 
 def test_clear_data(window, qtbot):
     datagrid_layout = window.ui.verticalLayout_3
@@ -171,6 +121,7 @@ def test_clear_data(window, qtbot):
 
     assert datagrid_layout.count() == 0
 
+
 def test_refresh_data(window, qtbot):
 
     # * Check if refresh data btn is enabled after loading data
@@ -191,29 +142,15 @@ def test_refresh_data(window, qtbot):
     assert window.ui.xml_convert_btn.isEnabled()
 
     datagrid_layout = window.ui.verticalLayout_3
-    test_case_boxes = [datagrid_layout.itemAt(i).widget() for i in range(datagrid_layout.count()) if datagrid_layout.itemAt(i).widget()]
+    test_case_boxes = [datagrid_layout.itemAt(i).widget() for i in range(
+        datagrid_layout.count()) if datagrid_layout.itemAt(i).widget()]
 
     # * Check if visible testcase count is correct for both filter
-    visible_teststep_count = 0
-    for test_case in test_case_boxes:
-        
-        content_area_layout = test_case.content_area.layout()
-        
-        for i in range(content_area_layout.count()):
-            
-            widget = content_area_layout.itemAt(i).widget()
-            if not widget: continue
-            if not widget.isHidden(): visible_teststep_count += 1
-    assert visible_teststep_count == 11
-    
+    assert_teststep_count(test_case_boxes, 11)
+
     # * Check if visible testcase count is correct for both filter
-    visible_testcase_count = 0
-    for i in range(datagrid_layout.count()):
-        widget = datagrid_layout.itemAt(i).widget()
-        
-        if not widget: continue
-        if not widget.isHidden(): visible_testcase_count += 1
-    assert visible_testcase_count == 4
+    assert_testcase_count(datagrid_layout, 4)
+
 
 def test_search_results(window, qtbot):
     searchbar = window.ui.mainSearchBar_lineEdit
@@ -222,11 +159,12 @@ def test_search_results(window, qtbot):
     qtbot.keyClicks(searchbar, 'wait 5 second')
 
     datagrid_layout = window.ui.verticalLayout_3
-    test_case_boxes = [datagrid_layout.itemAt(i).widget() for i in range(datagrid_layout.count()) if datagrid_layout.itemAt(i).widget()]
+    test_case_boxes = [datagrid_layout.itemAt(i).widget() for i in range(
+        datagrid_layout.count()) if datagrid_layout.itemAt(i).widget()]
 
     # Check if visible teststep count is correct for both filter
     assert_teststep_count(test_case_boxes, 10)
-    
+
     # Check if visible testcase count is correct for both filter
     assert_testcase_count(datagrid_layout, 4)
 
@@ -237,7 +175,7 @@ def test_search_results(window, qtbot):
 
     # Check if visible teststep count is correct for both filter
     assert_teststep_count(test_case_boxes, 4)
-    
+
     # Check if visible testcase count is correct for both filter
     assert_testcase_count(datagrid_layout, 2)
 
@@ -248,37 +186,39 @@ def test_search_results(window, qtbot):
 
     # Check if visible teststep count is correct for both filter
     assert_teststep_count(test_case_boxes, 6)
-    
+
     # Check if visible testcase count is correct for both filter
     assert_testcase_count(datagrid_layout, 2)
 
 
-#* Helper functions
+# * Helper functions
 
 def assert_teststep_count(test_case_boxes, count):
     visible_teststep_count = 0
     for test_case in test_case_boxes:
-        
+
         content_area_layout = test_case.content_area.layout()
-        
+
         for i in range(content_area_layout.count()):
-            
+
             widget = content_area_layout.itemAt(i).widget()
-            if not widget: continue
-            if widget.isVisible(): visible_teststep_count += 1
+            if not widget:
+                continue
+            if widget.isVisible():
+                visible_teststep_count += 1
             print(widget, widget.isVisible())
 
     assert visible_teststep_count == count
+
 
 def assert_testcase_count(datagrid_layout, count):
     visible_testcase_count = 0
 
     for i in range(datagrid_layout.count()):
         widget = datagrid_layout.itemAt(i).widget()
-        
-        if not widget: continue
-        if not widget.isHidden(): visible_testcase_count += 1
+
+        if not widget:
+            continue
+        if not widget.isHidden():
+            visible_testcase_count += 1
     assert visible_testcase_count == count
-
-
-

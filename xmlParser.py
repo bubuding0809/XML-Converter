@@ -1,4 +1,5 @@
 from distutils.command.clean import clean
+from distutils.command.config import config
 import xml.etree.ElementTree as ET
 from utils import *
 from openpyxl import load_workbook
@@ -23,16 +24,17 @@ def handleXlsx(xlsxFile):
     for rowCount, row in enumerate(reader):
         # Create mapping based on each row
         # Convert old description to lower case to ensure case insensitive matching
-        oldDescription = row['old teststep description'].strip()
-        cleanedOldDescription = removeWhiteSpace(
-            row['old teststep description'].lower())
-        new_description = row['new teststep description'].strip()
-        new_function_library = row['new function_library'].strip()
-        new_function_name = row['new function_name'].strip()
+        keywords = [keyword for keyword in row['keywords'].split('\n') if keyword]
+        oldDescriptions = [description for description in row['classic teststep description'].split('\n') if description]
+        cleanedOldDescriptions = [removeWhiteSpace(description.lower()) for description in oldDescriptions]
+
+        new_description = row['DD2 teststep description'].strip()
+        new_function_library = row['DD2 function_library'].strip()
+        new_function_name = row['DD2 function_name'].strip()
         new_function_parameters = []
 
         funcParams = [param.strip()
-                      for param in row['new function_parameters'].split('\n')]
+                      for param in row['DD2 function_parameters'].split('\n')]
         for param in funcParams:
             if len(param):
                 param = param.split('=')
@@ -41,21 +43,23 @@ def handleXlsx(xlsxFile):
                     'text': param[1]
                 })
 
-        if not cleanedOldDescription:
-            cleanedOldDescription = f"empty_description_key - [row: {rowCount+2}]"
+        if not cleanedOldDescriptions:
+            cleanedOldDescriptions.append(f"empty_description_key - [row: {rowCount+2}]")
 
-        if cleanedOldDescription not in conversionMap:
-            conversionMap[cleanedOldDescription] = {
-                'isMatched': False,
-                'excelRowCount': rowCount + 2,
-                'oldDescription': oldDescription,
-                'description': new_description,
-                'function_library': new_function_library,
-                'function_name': new_function_name,
-                'function_parameters': new_function_parameters,
-            }
-        else:
-            duplicateDescriptionkeys.append(f"{oldDescription} - [row: {rowCount+2}]")
+        for cleanedOldDescription, oldDescription in zip(cleanedOldDescriptions, oldDescriptions):
+
+            if cleanedOldDescription not in conversionMap:
+                conversionMap[cleanedOldDescription] = {
+                    'isMatched': False,
+                    'configRowCount': rowCount + 2,
+                    'oldDescription': oldDescription,
+                    'description': new_description,
+                    'function_library': new_function_library,
+                    'function_name': new_function_name,
+                    'function_parameters': new_function_parameters,
+                }
+            else:
+                duplicateDescriptionkeys.append(f"{oldDescription} - [row: {rowCount+2}]")
 
 
     return conversionMap, duplicateDescriptionkeys
@@ -82,7 +86,7 @@ def getTeststepsWithEmptyFields(conversion_map):
             if cleandedOldDescription.startswith('empty_description_key'):
                 description = cleandedOldDescription
             else:
-                description = f"{mapping['oldDescription']} - [row: {mapping['excelRowCount']}]"
+                description = f"{mapping['oldDescription']} - [row: {mapping['configRowCount']}]"
 
             teststeps_with_empty_field.append({
                 'description': description,
@@ -94,31 +98,24 @@ def getTeststepsWithEmptyFields(conversion_map):
 
 def handleXlsxUpdate(configData, xlsxInFile, xlsxOutFile):
 
-    # Load excel file with openpyxl load_workbook
+    #* Load excel file with openpyxl load_workbook
     workbook = load_workbook(filename=xlsxInFile)
     sheet = workbook.active
+    
+    #* Update config excel with the new mapping data generated from the application UI
+    for configRowCount, mapping in configData.items():
+        #* Update config excel column B, C, D, E with new data
+        cell = sheet['C' + str(configRowCount)]
+        cell.value = mapping['description']
 
-    # Convert excel sheet into a list of dictionary with header:value pairs
-    reader = ExcelDictReader(sheet)
+        cell = sheet['D' + str(configRowCount)]
+        cell.value = mapping['function_library']
 
-    for rowIndex, row in enumerate(reader): # Rows starts from 2
-        oldDescription = row['old teststep description']
-        cleanedDescription = removeWhiteSpace(oldDescription.lower())
+        cell = sheet['E' + str(configRowCount)]
+        cell.value = mapping['function_name']
 
-        data = configData.get(cleanedDescription, None)
-        if data:
-            #* Update config excel column B, C, D, E with new data
-            cell = sheet['B' + str(rowIndex+2)]
-            cell.value = data['description']
-
-            cell = sheet['C' + str(rowIndex+2)]
-            cell.value = data['function_library']
-
-            cell = sheet['D' + str(rowIndex+2)]
-            cell.value = data['function_name']
-
-            cell = sheet['E' + str(rowIndex+2)]
-            cell.value = '\n'.join(data['function_params'])
+        cell = sheet['F' + str(configRowCount)]
+        cell.value = '\n'.join(mapping['function_params'])
 
     workbook.save(xlsxOutFile)
 
@@ -178,6 +175,7 @@ def getTestStepData(xmlInFile, conversionMap):
                 'parentId': childParentMap[teststep].get('id'),
                 'parentType': childParentMap[teststep].tag,
                 'parentName': childParentMap[teststep].get('name'),
+                'configRowCount': conversionMap[cleanedOldDescription]['configRowCount'],
                 'old': oldTestStepData,
                 'new': newTestStepData,
             })
@@ -249,16 +247,25 @@ id: {teststep['id']}
 
 #********************************************************* Test functions ********************************************************#
 def testHandleXlsx():
-    xlsxFile = os.path.join(baseDir, 'testdata/config.xlsx')
+    xlsxFile = os.path.join(baseDir, 'samples/config_v2.xlsx')
 
-    conversionMap = handleXlsx(xlsxFile)
-    for key, value in conversionMap.items():
-        print(key)
+    conversionMap, duplicateKeys = handleXlsx(xlsxFile)
+
+
+
+    for index, (key, value) in enumerate(conversionMap.items()):
+        print(f"{index+1}: Classic key: {key}")
+        print('------------------------------')
         for key, value in value.items():
             print(f'{key}: {value}')
-            print()
+        print()
 
-        break
+    print()
+
+    for item in duplicateKeys:
+        print(item)
+
+
 
 
 def testHandleConvertXML():

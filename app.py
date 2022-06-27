@@ -102,9 +102,10 @@ class MainWindow(qtw.QMainWindow):
         self.ui.configFilePath_display.setText(self.xlsxInFile)
         self.ui.xmlFilePath_display.setText(self.xmlInFile)
 
-        # Initialize conversionMap
+        # Initialize config attributes
         self.conversionMap = {}
         self.duplicateDescriptionKeys = []
+        self.getTeststepsWithEmptyFields = []
 
     # ************************* Signal Handler methods **************************** #
 
@@ -210,18 +211,13 @@ class MainWindow(qtw.QMainWindow):
             self.clearTestStepScrollArea()
 
     def handleXLSXProcess(self):
-        emptyFieldList = xmlParser.getTeststepsWithEmptyFields(self.conversionMap)
+        self.getTeststepsWithEmptyFields = xmlParser.getTeststepsWithEmptyFields(self.conversionMap)
 
-        # * If there are empty fields, display message box to warn user
-        if emptyFieldList:
-            # Create message box to display the error
-            msgBox = qtw.QMessageBox(self)
-            msgBox.setWindowTitle('Warning')
-            msgBox.setText('There are some issues with the config file.')
-
-            # * Create string list of empty fields and add to message
+        # * If there are empty fields, create string list of empty fields and add to message
+        emptyFieldMessage = ''
+        if self.getTeststepsWithEmptyFields:
             emptyFieldMessageList = []
-            for index, item in enumerate(emptyFieldList):
+            for index, item in enumerate(self.getTeststepsWithEmptyFields):
                 # Create string of description and empty fields
                 descriptionWithEmptyFields = f"{index+1}: {item['description']:}"
                 emptyFields = '\n'.join(
@@ -229,27 +225,37 @@ class MainWindow(qtw.QMainWindow):
                 emptyFieldMessageList.append(
                     f"{descriptionWithEmptyFields}\n{emptyFields}")
 
-            # Join all empty fields into one string
-            emptyFieldMessageList = '\n\n'.join(emptyFieldMessageList)
+            # * Join all empty fields into one string
+            emptyFieldMessageList = '\n'.join(emptyFieldMessageList)
 
-            # Add empty fields to message
+            # * Add empty fields to message
             emptyFieldMessage = (
                 f"The following teststeps were found to have empty fields in your config file at \n{self.xlsxInFile}:\
                 \n--------------------------------------------------------\
-                \n{emptyFieldMessageList}"
+                \n{emptyFieldMessageList}\
+                \n\n"
             )
 
+        duplicateKeyMessage = ''
+        if self.duplicateDescriptionKeys:
             self.duplicateDescriptionKeys = [f"{index+1}: {item}" for index, item in enumerate(self.duplicateDescriptionKeys)]
             duplicateKeyList = '\n'.join(self.duplicateDescriptionKeys)
             duplicateKeyMessage = (
-                f"There were duplicates of the following classic test step description keys, only the first mapping will be used.\
+                f"There were duplicates of the following classic test step description keys, only the mapping from the first occurence of the key will be used.\
                 \n--------------------------------------------------------\
                 \nDuplicates:\
                 \n{duplicateKeyList}"
             )
+        
+        # * Create message box with warning message if any message is genereated
+        if emptyFieldMessage or duplicateKeyMessage:
+            #* Create message box to display the error
+            msgBox = qtw.QMessageBox(self)
+            msgBox.setWindowTitle('Warning')
+            msgBox.setText('There are some issues with the config file.')
 
             # * Add message to message box detailed text
-            msgBox.setDetailedText(emptyFieldMessage + '\n\n' + duplicateKeyMessage)
+            msgBox.setDetailedText(emptyFieldMessage + duplicateKeyMessage)
 
             # * Add buttons and icons to message box
             msgBox.setStandardButtons(qtw.QMessageBox.Ok)
@@ -314,6 +320,7 @@ class MainWindow(qtw.QMainWindow):
                         'id': teststep['id'],
                         'parentType': teststep['parentType'],
                         'parentName': teststep['parentName'],
+                        'configRowCount': teststep['configRowCount'],
                         'old': teststep['old'],
                         'new': teststep['new']
                     }]
@@ -322,6 +329,7 @@ class MainWindow(qtw.QMainWindow):
                         'id': teststep['id'],
                         'parentType': teststep['parentType'],
                         'parentName': teststep['parentName'],
+                        'configRowCount': teststep['configRowCount'],
                         'old': teststep['old'],
                         'new': teststep['new']
                     })
@@ -751,7 +759,7 @@ class MainWindow(qtw.QMainWindow):
         changedText = item.text()
         widget = item.tableWidget() if isTableWidget else item.listWidget()
         position = widget.column(item) if isTableWidget else widget.row(item)
-        sourceCleanedDescription = teststepBox.data['old']['cleanedDescription']
+        sourceConfigRowCount = teststepBox.data['configRowCount']
 
         # * Iterate through all teststeps with the same classic description and propagate the changed text
         for teststeps in self.testCaseBoxList.values():
@@ -759,10 +767,10 @@ class MainWindow(qtw.QMainWindow):
             for teststep in teststeps:
 
                 # Get the target cleaned description for matching purpose
-                targetCleanedDescription = teststep.data['old']['cleanedDescription']
+                targetConfigRowCount = teststep.data['configRowCount']
 
                 # If matched, propagate changes to target
-                if sourceCleanedDescription == targetCleanedDescription:
+                if sourceConfigRowCount == targetConfigRowCount:
                     # Get target table widget
                     widget = teststep.newDataTableWidget if isTableWidget else teststep.newDataListWidget
 
@@ -781,7 +789,7 @@ class MainWindow(qtw.QMainWindow):
 
     def handleRowsInserted(self, modelIndex, first, last, teststepBox, listWidget):
         item = listWidget.item(first)
-        sourceCleanedDescription = teststepBox.data['old']['cleanedDescription']
+        sourceConfigRowCount = teststepBox.data['configRowCount']
         sourceId = teststepBox.id
 
         for teststeps in self.testCaseBoxList.values():
@@ -789,11 +797,11 @@ class MainWindow(qtw.QMainWindow):
             for teststep in teststeps:
 
                 # Get the target cleaned description for matching purpose
-                targetCleanedDescription = teststep.data['old']['cleanedDescription']
+                targetConfigRowCount = teststep.data['configRowCount']
                 targetId = teststep.id
 
                 # If matched, propagate changes to target
-                if sourceCleanedDescription == targetCleanedDescription and sourceId != targetId:
+                if sourceConfigRowCount == targetConfigRowCount and sourceId != targetId:
                     # Get target list widget
                     listWidget = teststep.newDataListWidget
 
@@ -815,7 +823,7 @@ class MainWindow(qtw.QMainWindow):
                     listWidget.blockSignals(False)
 
     def handleRowsRemoved(self, modelIndex, first, last, teststepBox, listWidget):
-        sourceCleanedDescription = teststepBox.data['old']['cleanedDescription']
+        sourceConfigRowCount = teststepBox.data['configRowCount']
         sourceId = teststepBox.id
 
         for teststeps in self.testCaseBoxList.values():
@@ -823,11 +831,11 @@ class MainWindow(qtw.QMainWindow):
             for teststep in teststeps:
 
                 # Get the target cleaned description for matching purpose
-                targetCleanedDescription = teststep.data['old']['cleanedDescription']
+                targetConfigRowCount = teststep.data['configRowCount']
                 targetId = teststep.id
 
                 # If matched, propagate changes to target
-                if sourceCleanedDescription == targetCleanedDescription and sourceId != targetId:
+                if sourceConfigRowCount == targetConfigRowCount and sourceId != targetId:
                     # Get target list widget
                     listWidget = teststep.newDataListWidget
 
@@ -853,10 +861,9 @@ class MainWindow(qtw.QMainWindow):
             for teststep in teststeps:
 
                 # Get cleaned teststep description
-                cleanedDescription = utils.removeWhiteSpace(
-                    teststep.searchKey.lower())
+                configRowCount = teststep.data['configRowCount']
 
-                if cleanedDescription in configData:
+                if configRowCount in configData:
                     continue
 
                 # New table data
@@ -871,7 +878,7 @@ class MainWindow(qtw.QMainWindow):
                     param = teststep.newDataListWidget.item(i).text()
                     function_parameters.append(param)
 
-                configData[cleanedDescription] = {
+                configData[configRowCount] = {
                     'description': description,
                     'function_name': function_name,
                     'function_library': function_library,

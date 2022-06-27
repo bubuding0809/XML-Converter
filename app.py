@@ -137,8 +137,6 @@ class MainWindow(qtw.QMainWindow):
         # * parse XML with conversion map
         if self.conversionMap and self.xmlInFile:
             self.handleDataLoad()
-            self.ui.xml_refreshData_btn.setEnabled(True)
-
     def handleXMLUpload(self):
         # * Retrieve atp xml file path from file dialog
         fileDialog = qtw.QFileDialog(self)
@@ -157,8 +155,6 @@ class MainWindow(qtw.QMainWindow):
         # * Enable load xml data if both xlsx and xml inputs exists
         if self.conversionMap and self.xmlInFile:
             self.handleDataLoad()
-            self.ui.xml_refreshData_btn.setEnabled(True)
-
     def handleConversionMapGenerate(self):
         self.conversionMap.clear()
         self.duplicateDescriptionKeys.clear()
@@ -394,6 +390,7 @@ class MainWindow(qtw.QMainWindow):
 
                 vlayout.addStretch()
                 box.setContentLayout(vlayout)
+                box.setVisible(True)
                 self.testCaseBoxList[box] = teststepBoxList
         else:
 
@@ -508,6 +505,9 @@ class MainWindow(qtw.QMainWindow):
 
         # Enable update config button
         self.ui.configFileUpdate_btn.setEnabled(True)
+
+        # Enable refresh data button
+        self.ui.xml_refreshData_btn.setEnabled(True)
 
     def handleToggleAllDropDownBtn(self):
         eventSender = self.sender()
@@ -1001,6 +1001,9 @@ class MainWindow(qtw.QMainWindow):
 
         # * Disable update config button
         self.ui.configFileUpdate_btn.setEnabled(False)
+
+        # * Disable filter group box
+        self.ui.scrollAreaFilterBox_widget.setEnabled(False)
 
     def centerWindowOnScreen(self):
         screenGeo = qtw.QDesktopWidget().screenGeometry()

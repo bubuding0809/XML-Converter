@@ -1,5 +1,4 @@
 import pytest
-import time
 from app import MainWindow
 from PyQt5 import (
     QtCore as qtc,
@@ -17,33 +16,37 @@ def window(qtbot):
     window.ui.configFilePath_display.setText(window.xlsxInFile)
     window.ui.xmlFilePath_display.setText(window.xmlInFile)
     qtbot.addWidget(window)
+    window.show()
 
-    return window
-    
-def test_data_load(window, qtbot):
-    
+    # * Set test file paths and handle closing of message boxes
     def handle_message_box():
         message_box = qtw.QApplication.activeWindow()
         if message_box != window:
             qtbot.keyPress(message_box, qtc.Qt.Key_Return)
+
+    qtc.QTimer.singleShot(200, handle_message_box)
             
     # * Try to process xlsx file and generate conversion map
     window.handleConversionMapGenerate()
     
-    qtc.QTimer.singleShot(0, handle_message_box)
+    qtc.QTimer.singleShot(200, handle_message_box)
 
     # * If conversionMap has been generated, conduct checks on config file
     window.handleXLSXProcess()
     
-    qtc.QTimer.singleShot(0, handle_message_box)
+    qtc.QTimer.singleShot(200, handle_message_box)
     
     # * Parse xml data with config mapping, raise messagebox if there are unmatched teststeps
     window.handleDataLoad()
+
+    return window
     
+def test_data_load(window, qtbot):
     datagrid_layout = window.ui.verticalLayout_3
     test_case_boxes = [datagrid_layout.itemAt(i).widget() for i in range(datagrid_layout.count()) if datagrid_layout.itemAt(i).widget()]
 
-    teststepCount = 0
+    # * Check if visible testcase count is correct for both filter
+    visible_teststep_count = 0
     for test_case in test_case_boxes:
         
         content_area_layout = test_case.content_area.layout()
@@ -52,100 +55,86 @@ def test_data_load(window, qtbot):
             
             widget = content_area_layout.itemAt(i).widget()
             if not widget: continue
-            if widget: teststepCount += 1
+            if widget: visible_teststep_count += 1
     
-    assert teststepCount == 9
+    assert visible_teststep_count == 9
     
-    # * Apply function only filter
-    qtbot.mouseClick(window.ui.filterBoth_btn, qtc.Qt.LeftButton)
-    
-    # * Get scroll area layout widgets
-    datagrid_layout = window.ui.verticalLayout_3
-    
-    visible_count = 0
+    # * Check if visible testcase count is correct for both filter
+    visible_testcase_count = 0
     for i in range(datagrid_layout.count()):
         widget = datagrid_layout.itemAt(i).widget()
         
         if not widget:
             continue
         
-        if not widget.isHidden(): visible_count += 1
+        if not widget.isHidden(): visible_testcase_count += 1
         
-    assert visible_count == 3
+    assert visible_testcase_count == 3
     
-         
 def test_filter_function_only(window, qtbot):
-    
-    def handle_message_box():
-            message_box = qtw.QApplication.activeWindow()
-            if message_box != window:
-                qtbot.keyPress(message_box, qtc.Qt.Key_Return)
-                
-    # * Try to process xlsx file and generate conversion map
-    window.handleConversionMapGenerate()
-    
-    qtc.QTimer.singleShot(50, handle_message_box)
+    # * Get scroll area layout widgets
+    datagrid_layout = window.ui.verticalLayout_3
+    test_case_boxes = [datagrid_layout.itemAt(i).widget() for i in range(datagrid_layout.count()) if datagrid_layout.itemAt(i).widget()]
 
-    # * If conversionMap has been generated, conduct checks on config file
-    window.handleXLSXProcess()
-    
-    qtc.QTimer.singleShot(50, handle_message_box)
-    
-    # * Parse xml data with config mapping, raise messagebox if there are unmatched teststeps
-    window.handleDataLoad()
-    
     # * Apply function only filter
     qtbot.mouseClick(window.ui.filterFunctionOnly_btn, qtc.Qt.LeftButton)
+
+    # * Check if visible teststep count is correct for function only filter
+    visible_teststep_count = 0
+    for test_case in test_case_boxes:
+        
+        content_area_layout = test_case.content_area.layout()
+        
+        for i in range(content_area_layout.count()):
+            
+            widget = content_area_layout.itemAt(i).widget()
+            if not widget: continue
+            if widget.isVisible(): visible_teststep_count += 1
     
-    # * Get scroll area layout widgets
-    datagrid_layout = window.ui.verticalLayout_3
-    
-    visible_count = 0
+    assert visible_teststep_count == 2
+
+    # * Check if visible teststep count is correct for function only filter
+    visible_testcase_count = 0
     for i in range(datagrid_layout.count()):
         widget = datagrid_layout.itemAt(i).widget()
         
         if not widget:
             continue
         
-        print(widget)
-        print(widget.isHidden())
+        if not widget.isHidden(): visible_testcase_count += 1
         
-        if not widget.isHidden(): visible_count += 1
-        
-    assert visible_count == 1
+    assert visible_testcase_count == 1
 
 def test_filter_testcase_only(window, qtbot):
-    def handle_message_box():
-            message_box = qtw.QApplication.activeWindow()
-            if message_box != window:
-                qtbot.keyPress(message_box, qtc.Qt.Key_Return)
-                
-    # * Try to process xlsx file and generate conversion map
-    window.handleConversionMapGenerate()
-    
-    qtc.QTimer.singleShot(0, handle_message_box)
-
-    # * If conversionMap has been generated, conduct checks on config file
-    window.handleXLSXProcess()
-    
-    qtc.QTimer.singleShot(0, handle_message_box)
-    
-    # * Parse xml data with config mapping, raise messagebox if there are unmatched teststeps
-    window.handleDataLoad()
-    
-    # * Apply function only filter
-    qtbot.mouseClick(window.ui.filterTestcaseOnly_btn, qtc.Qt.LeftButton)
-    
     # * Get scroll area layout widgets
     datagrid_layout = window.ui.verticalLayout_3
+    test_case_boxes = [datagrid_layout.itemAt(i).widget() for i in range(datagrid_layout.count()) if datagrid_layout.itemAt(i).widget()]
+
+    # * Apply function only filter
+    qtbot.mouseClick(window.ui.filterTestcaseOnly_btn, qtc.Qt.LeftButton)
+
+    # * Check if visible teststep count is correct for testcase only filter
+    visible_teststep_count = 0
+    for test_case in test_case_boxes:
+        
+        content_area_layout = test_case.content_area.layout()
+        
+        for i in range(content_area_layout.count()):
+            
+            widget = content_area_layout.itemAt(i).widget()
+            if not widget: continue
+            if widget.isVisible(): visible_teststep_count += 1
     
-    visible_count = 0
+    assert visible_teststep_count == 7
+    
+    # * Check if visible testcase count is correct for testcase only filter
+    visible_testcase_count = 0
     for i in range(datagrid_layout.count()):
         widget = datagrid_layout.itemAt(i).widget()
 
         if not widget:
             continue
         
-        if not widget.isHidden(): visible_count += 1
+        if not widget.isHidden(): visible_testcase_count += 1
         
-    assert visible_count == 2
+    assert visible_testcase_count == 2

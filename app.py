@@ -211,30 +211,7 @@ class MainWindow(qtw.QMainWindow):
             self.clearTestStepScrollArea()
 
     def handleXLSXProcess(self):
-        emptyFieldList = []
-
-        for index, (oldDescription, mapping) in enumerate(self.conversionMap.items()):
-            teststepEmptyField = []
-
-            # Check if old description is empty
-            if not len(oldDescription):
-                teststepEmptyField.append('old teststep description')
-
-            # Check if there are any empty fields in the teststep
-            for tag, value in mapping.items():
-
-                if tag == 'isMatched' or tag == 'oldDescription':
-                    continue
-
-                if not len(value):
-                    teststepEmptyField.append(tag)
-
-            # If all fields are not filled, add to list
-            if teststepEmptyField:
-                emptyFieldList.append({
-                    'description': f"{mapping['oldDescription'] if len(oldDescription) else 'Missing old teststep description'} - [row: {index+2}]",
-                    'emptyFields': teststepEmptyField
-                })
+        emptyFieldList = xmlParser.getTeststepsWithEmptyFields(self.conversionMap)
 
         # * If there are empty fields, display message box to warn user
         if emptyFieldList:

@@ -17,14 +17,13 @@ def handleXlsx(xlsxFile):
     # Convert excel sheet into a list of dictionary with header:value pairs
     reader = ExcelDictReader(sheet)
 
-    # Convert dictionary list into conversionMap
     conversionMap = {}
     duplicateDescriptionkeys = []
 
     for rowCount, row in enumerate(reader):
         # Create mapping based on each row
         # Convert old description to lower case to ensure case insensitive matching
-        oldDescription = row['old teststep description']
+        oldDescription = row['old teststep description'].strip()
         cleanedOldDescription = removeWhiteSpace(
             row['old teststep description'].lower())
         new_description = row['new teststep description'].strip()
@@ -43,11 +42,12 @@ def handleXlsx(xlsxFile):
                 })
 
         if not cleanedOldDescription:
-            continue
+            cleanedOldDescription = f"empty_description_key - [row: {rowCount+2}]"
 
         if cleanedOldDescription not in conversionMap:
             conversionMap[cleanedOldDescription] = {
                 'isMatched': False,
+                'excelRowCount': rowCount + 2,
                 'oldDescription': oldDescription,
                 'description': new_description,
                 'function_library': new_function_library,
@@ -55,10 +55,41 @@ def handleXlsx(xlsxFile):
                 'function_parameters': new_function_parameters,
             }
         else:
-            duplicateDescriptionkeys.append(f"{oldDescription} - [row: {rowCount + 2}]")
+            duplicateDescriptionkeys.append(f"{oldDescription} - [row: {rowCount+2}]")
 
 
     return conversionMap, duplicateDescriptionkeys
+
+
+def getTeststepsWithEmptyFields(conversion_map):
+    teststeps_with_empty_field = []
+
+    for index, (cleandedOldDescription, mapping) in enumerate(conversion_map.items()):
+        empty_fields = []
+
+        # Check if there are any empty fields in the teststep
+        for tag, value in mapping.items():
+
+            if tag == 'isMatched':
+                continue
+            
+            if not value:
+                empty_fields.append(tag)
+
+        # If there are empty fields for the teststep, create obj with description and empty fields then add to list
+        if empty_fields:
+
+            if cleandedOldDescription.startswith('empty_description_key'):
+                description = cleandedOldDescription
+            else:
+                description = f"{mapping['oldDescription']} - [row: {mapping['excelRowCount']}]"
+
+            teststeps_with_empty_field.append({
+                'description': description,
+                'emptyFields': empty_fields
+            })    
+    
+    return teststeps_with_empty_field
 
 
 def handleXlsxUpdate(configData, xlsxInFile, xlsxOutFile):

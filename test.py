@@ -9,7 +9,6 @@ import sys
 
 # * Test functions
 
-
 @pytest.fixture
 def window(qtbot):
     window = MainWindow()

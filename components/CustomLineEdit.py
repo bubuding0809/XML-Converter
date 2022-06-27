@@ -26,8 +26,10 @@ class CustomLineEdit(QtWidgets.QLineEdit):
 
     def resizeEvent(self, event):
         iconSize = self.icon.sizeHint()
-        self.icon.move(self.rect().left() + 5,
-                         (self.rect().bottom() - iconSize.height() + 1)/2)
+        self.icon.move(
+            self.rect().left() + 5,
+            int((self.rect().bottom()-iconSize.height()+1) / 2)
+        )
         super(CustomLineEdit, self).resizeEvent(event)
 
 

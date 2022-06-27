@@ -45,8 +45,6 @@ QPushButton:default {
 QPushButton#IconOnlyButton {
   transition: all .5s ease;
   color: #fff;
-  font-family:'Montserrat', sans-serif;
-  text-transform: uppercase;
   text-align: center;
   line-height: 1;
   font-size: 17px;

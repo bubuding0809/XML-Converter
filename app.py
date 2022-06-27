@@ -88,7 +88,7 @@ class MainWindow(qtw.QMainWindow):
 
         # * Global variables
         # testfiles.CONFIG_PATH_WIN32 if sys.platform == 'win32' else testfiles.CONFIG_PATH_DARWIN
-        self.xlsxInFile = ''
+        self.xlsxInFile = '' 
         # testfiles.INPUT_PATH_WIN32 if sys.platform == 'win32' else testfiles.INPUT_PATH_DARWIN
         self.xmlInFile = ''
 
@@ -103,9 +103,8 @@ class MainWindow(qtw.QMainWindow):
         self.ui.xmlFilePath_display.setText(self.xmlInFile)
 
         # Initialize conversionMap
-        self.conversionMap = {}  # xmlParser.handleXlsx(self.xlsxInFile)
+        self.conversionMap = {}
         self.duplicateDescriptionKeys = []
-        # self.handleDataLoad()
 
     # ************************* Signal Handler methods **************************** #
 
@@ -804,7 +803,7 @@ class MainWindow(qtw.QMainWindow):
                                      qtc.Qt.ItemIsDragEnabled | qtc.Qt.ItemIsEnabled)
 
                     # Block signals from table model widget to prevent repeated calls to table item inserted event
-                    # Propagate insertion of new item
+                    # Propagate insertion of new item                    
                     listWidget.model().blockSignals(True)
                     listWidget.insertItem(first, newItem)
                     listWidget.model().blockSignals(False)

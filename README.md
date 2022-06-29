@@ -66,7 +66,7 @@
 
 - [x] Add multiple classic ATP test step description mapping for a single teststep.
   - ![config image](media\images\config_classicATP.png "config image")
-- [ ] Add keyword column in excel config file for users to define must have keywords for match. keywords are seperated by a newline(\n) which indicates an AND relation.
+- [x] Add keyword column in excel config file for users to define must have keywords for match. keywords are seperated by a newline(\n) which indicates an AND relation.
   - ![config image](media\images\config_keywords.png "config image")
 - [x] Catch multiple classic description key error
 - [ ] Implement parameter referencing in the config excel

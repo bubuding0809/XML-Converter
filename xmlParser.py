@@ -1,4 +1,6 @@
 import xml.etree.ElementTree as ET
+
+from pyparsing import empty
 from utils import removeWhiteSpace, ExcelDictReader
 from openpyxl import load_workbook
 import os
@@ -60,21 +62,40 @@ def handleXlsx(xlsxFile):
                     "text": param_name_text[1]
                 })
 
+        # * Generate conversionMap and duplicate description key data
         # * If classic description field is empty, append a empty_description_key
         if not cleanedOldDescriptions:
-            cleanedOldDescriptions.append(
-                f"empty_description_key - [row: {rowCount+2}]"
-            )
-            # continue
+            cleanedOldDescriptions.append(f"empty_description_key - [row: {rowCount+2}]")
+            oldDescriptions.append(f"empty_description_key - [row: {rowCount+2}]")
 
         # * Iterate through cleanded and original description together, add first instance of mapping to conversionMap
         # * else append it to the duplicate description keys list
-        for cleanedOldDescription, oldDescription in zip(
-            cleanedOldDescriptions, oldDescriptions
-        ):
+        for cleanedOldDescription, oldDescription in zip(cleanedOldDescriptions, oldDescriptions):
 
+            # * Check if classic description key has not been matched if true, add to conversionMap
             if cleanedOldDescription not in conversionMap:
                 conversionMap[cleanedOldDescription] = {
+                    "isMatched": True,  # matching flag to check if mapping has been matched in the xml input
+                    "configRowCount": rowCount + 2,  # Store excel row number of mapping
+                    "oldDescription": oldDescription,
+                    "description": new_description,
+                    "function_library": new_function_library,
+                    "function_name": new_function_name,
+                    "function_parameters": new_function_parameters,
+                }
+            # * Else add duplicate classic key to duplicateDescriptionKeys for alert
+            else:
+                duplicateDescriptionkeys.append(
+                    f"{oldDescription} - [row: {rowCount+2}]"
+                )
+
+        # * If there are keywords specified 
+        # * Generate keyword map and duplicate key word data
+        if keywords:
+            # * Add first instance of keyword tuple to keywordMap
+            # * else if keyword tuple already exist, append it to duplicate keyword list
+            if keywords not in keywordMap:
+                keywordMap[keywords] = {
                     "isMatched": False,  # matching flag to check if mapping has been matched in the xml input
                     "configRowCount": rowCount + 2,  # Store excel row number of mapping
                     "oldDescription": oldDescription,
@@ -84,37 +105,23 @@ def handleXlsx(xlsxFile):
                     "function_parameters": new_function_parameters,
                 }
             else:
-                duplicateDescriptionkeys.append(
-                    f"{oldDescription} - [row: {rowCount+2}]"
+                duplicateKeywords.append(
+                    f"{keywords} - [row: {rowCount+2}]"
                 )
-
-        if not keywords:
-            continue
-
-        if keywords not in keywordMap:
-            keywordMap[keywords] = {
-                "isMatched": False,  # matching flag to check if mapping has been matched in the xml input
-                "configRowCount": rowCount + 2,  # Store excel row number of mapping
-                "oldDescription": oldDescription,
-                "description": new_description,
-                "function_library": new_function_library,
-                "function_name": new_function_name,
-                "function_parameters": new_function_parameters,
-            }
-        else:
-            duplicateKeywords.append(
-                f"{keywords} - [row: {rowCount+2}]"
-            )
 
     return (conversionMap, duplicateDescriptionkeys,
             keywordMap, duplicateKeywords)
 
-
 def getTeststepsWithEmptyFields(conversion_map):
     teststeps_with_empty_field = []
 
-    for cleandedOldDescription, mapping in conversion_map.items():
+    # * Iterate through conversion mapping
+    #* 
+    for cleanedOldDescription, mapping in conversion_map.items():
         empty_fields = []
+
+        if cleanedOldDescription.startswith('empty_description_key'):
+            empty_fields.append('empty description key')
 
         # * Check if there are any empty fields in the teststep
         for tag, value in mapping.items():
@@ -128,12 +135,10 @@ def getTeststepsWithEmptyFields(conversion_map):
         # * If there are empty fields for the teststep, create obj with description and empty fields then add to list
         if empty_fields:
 
-            if cleandedOldDescription.startswith("empty_description_key"):
-                description = cleandedOldDescription
+            if cleanedOldDescription.startswith("empty_description_key"):
+                description = cleanedOldDescription
             else:
-                description = (
-                    f"{mapping['oldDescription']} - [row: {mapping['configRowCount']}]"
-                )
+                description = (f"{mapping['oldDescription']} - [row: {mapping['configRowCount']}]")
 
             teststeps_with_empty_field.append(
                 {"description": description, "emptyFields": empty_fields}
@@ -141,32 +146,16 @@ def getTeststepsWithEmptyFields(conversion_map):
 
     return teststeps_with_empty_field
 
+def getUnmatchedClassicDescriptions(conversion_map):
+    unmatchedClassicDescriptions = []
 
-def handleXlsxUpdate(configData, xlsxInFile, xlsxOutFile):
+    for index, (key, mapping) in enumerate(conversion_map.items()):
+        if mapping['isMatched'] == False and not key.startswith('empty_description_key'):
+            unmatchedClassicDescriptions.append(f"{mapping['oldDescription']} - [row: {index+2}]")
+    
+    return unmatchedClassicDescriptions
 
-    # * Load excel file with openpyxl load_workbook
-    workbook = load_workbook(filename=xlsxInFile)
-    sheet = workbook.active
-
-    # * Update config excel with the new mapping data generated from the application UI
-    for configRowCount, mapping in configData.items():
-        # * Update config excel column B, C, D, E with new data
-        cell = sheet["C" + str(configRowCount)]
-        cell.value = mapping["description"]
-
-        cell = sheet["D" + str(configRowCount)]
-        cell.value = mapping["function_library"]
-
-        cell = sheet["E" + str(configRowCount)]
-        cell.value = mapping["function_name"]
-
-        cell = sheet["F" + str(configRowCount)]
-        cell.value = "\n".join(mapping["function_params"])
-
-    workbook.save(xlsxOutFile)
-
-
-def getTestStepData(xmlInFile, conversionMap, keywordMap):
+def getXmlData(xmlInFile, conversionMap, keywordMap):
     tree = ET.parse(xmlInFile)
     root = tree.getroot()
     childParentMap = {child: parent for parent in root.iter()
@@ -185,56 +174,15 @@ def getTestStepData(xmlInFile, conversionMap, keywordMap):
         # * If teststep description matches a mapping in conversionMap, generate data object and append to xmlData
         if cleanedOldDescription in conversionMap:
             # If teststep description finds match in conversionMap - set isMatched to True
-            conversionMap[cleanedOldDescription]["isMatched"] = True
+            mapping = conversionMap[cleanedOldDescription]
+            mapping["isMatched"] = True
 
-            # Get all teststep children
-            oldFunctionLibrary = teststep.find("function_library").text
-            oldFunctionName = teststep.find("function_name").text
-            oldFunctionParams = teststep.find(
-                "function_parameters").iter("param")
-
-            # Create old data object
-            oldTestStepData = {
-                "cleanedDescription": cleanedOldDescription,
-                "description": oldDescription,
-                "function_library": oldFunctionLibrary,
-                "function_name": oldFunctionName,
-                "function_parameters": [
-                    {"name": param.get("name"),
-                     "text": param.text.strip("\n ")}
-                    for param in oldFunctionParams
-                ],
-            }
-
-            # Create new data object
-            newTestStepData = {
-                "description": conversionMap[cleanedOldDescription]["description"],
-                "function_library": conversionMap[cleanedOldDescription][
-                    "function_library"
-                ],
-                "function_name": conversionMap[cleanedOldDescription]["function_name"],
-                "function_parameters": [
-                    {"name": param["name"].strip(
-                    ), "text": param["text"].strip("\n ")}
-                    for param in conversionMap[cleanedOldDescription][
-                        "function_parameters"
-                    ]
-                ],
-            }
-
-            # Append to teststep data list
             xmlData.append(
-                {
-                    "id": index + 1,
-                    "parentId": childParentMap[teststep].get("id"),
-                    "parentType": childParentMap[teststep].tag,
-                    "parentName": childParentMap[teststep].get("name"),
-                    "configRowCount": conversionMap[cleanedOldDescription][
-                        "configRowCount"
-                    ],
-                    "old": oldTestStepData,
-                    "new": newTestStepData,
-                }
+                generateTeststepData(
+                    index, teststep, mapping, 
+                    cleanedOldDescription, oldDescription, 
+                    childParentMap
+                )
             )
 
         # * If a teststep description matches a particular set of keywords, generate data object and append to xmlData
@@ -246,55 +194,25 @@ def getTestStepData(xmlInFile, conversionMap, keywordMap):
                 if key not in cleanedOldDescription:
                     isAllMatched = False
 
-            if not isAllMatched: continue
+            # if there keywords does not match, skip generation of teststep data
+            if not isAllMatched: 
+                continue
 
-            oldFunctionLibrary = teststep.find("function_library").text
-            oldFunctionName = teststep.find("function_name").text
-            oldFunctionParams = teststep.find(
-                "function_parameters").iter("param")
+            # or if teststep data is already generate, skip generation of teststep data
+            if next((item for item in xmlData if item['id'] == index+1), None) is not None:
+                continue
 
-            # Create old data object
-            oldTestStepData = {
-                "cleanedDescription": cleanedOldDescription,
-                "description": oldDescription,
-                "function_library": oldFunctionLibrary,
-                "function_name": oldFunctionName,
-                "function_parameters": [
-                    {"name": param.get("name"),
-                     "text": param.text.strip("\n ")}
-                    for param in oldFunctionParams
-                ],
-            }
-
-            # Create new data object
-            newTestStepData = {
-                "description": mapping["description"],
-                "function_library": mapping["function_library"],
-                "function_name": mapping["function_name"],
-                "function_parameters": [
-                    {"name": param["name"].strip(
-                    ), "text": param["text"].strip("\n ")}
-                    for param in mapping["function_parameters"]
-                ],
-            }
-
-            # Append to teststep xmlData if teststep id has not been matched yet
-            if next((item for item in xmlData if item['id'] == index+1), None) is None:
-                
-                xmlData.append({
-                    "id": index + 1,
-                    "parentId": childParentMap[teststep].get("id"),
-                    "parentType": childParentMap[teststep].tag,
-                    "parentName": childParentMap[teststep].get("name"),
-                    "configRowCount": mapping["configRowCount"],
-                    "old": oldTestStepData,
-                    "new": newTestStepData,
-                })
+            xmlData.append(
+                generateTeststepData(
+                    index, teststep, mapping, 
+                    cleanedOldDescription, oldDescription, 
+                    childParentMap
+                )
+            )
 
     return xmlData, conversionMap
 
-
-def convertXml(filteredIds, xmlInFile, xmlOutFile, conversionMap):
+def handleConvertXml(filteredIds, xmlInFile, xmlOutFile, conversionMap):
     tree = ET.parse(xmlInFile)
     root = tree.getroot()
     counter = 0
@@ -360,6 +278,77 @@ id: {teststep['id']}
     # Write modified xml file to specificed file location
     tree.write(xmlOutFile)
 
+def handleXlsxUpdate(configData, xlsxInFile, xlsxOutFile):
+
+    # * Load excel file with openpyxl load_workbook
+    workbook = load_workbook(filename=xlsxInFile)
+    sheet = workbook.active
+
+    # * Update config excel with the new mapping data generated from the application UI
+    for configRowCount, mapping in configData.items():
+        # * Update config excel column B, C, D, E with new data
+        cell = sheet["C" + str(configRowCount)]
+        cell.value = mapping["description"]
+
+        cell = sheet["D" + str(configRowCount)]
+        cell.value = mapping["function_library"]
+
+        cell = sheet["E" + str(configRowCount)]
+        cell.value = mapping["function_name"]
+
+        cell = sheet["F" + str(configRowCount)]
+        cell.value = "\n".join(mapping["function_params"])
+
+    workbook.save(xlsxOutFile)
+
+# ********************************************************* Helper functions ********************************************************#
+
+def generateTeststepData(index, teststep, mapping, cleanedOldDescription, oldDescription, childParentMap):
+    # Get all teststep information
+    oldFunctionLibrary = teststep.find("function_library").text
+    oldFunctionName = teststep.find("function_name").text
+    oldFunctionParams = teststep.find(
+        "function_parameters").iter("param")
+
+    # Create old data object
+    oldTestStepData = {
+        "cleanedDescription": cleanedOldDescription,
+        "description": oldDescription,
+        "function_library": oldFunctionLibrary,
+        "function_name": oldFunctionName,
+        "function_parameters": [
+            {"name": param.get("name"),
+                "text": param.text.strip("\n ")}
+            for param in oldFunctionParams
+        ],
+    }
+
+    # Create new data object
+    newTestStepData = {
+        "description": mapping["description"],
+        "function_library": mapping["function_library"],
+        "function_name": mapping["function_name"],
+        "function_parameters": [
+            {"name": param["name"].strip(
+            ), "text": param["text"].strip("\n ")}
+            for param in mapping["function_parameters"]
+        ],
+    }
+
+    # Append to teststep xmlData if teststep id has not been matched yet
+        
+    teststepData = {
+        "id": index + 1,
+        "parentId": childParentMap[teststep].get("id"),
+        "parentType": childParentMap[teststep].tag,
+        "parentName": childParentMap[teststep].get("name"),
+        "configRowCount": mapping["configRowCount"],
+        "old": oldTestStepData,
+        "new": newTestStepData,
+    }
+    
+    print(teststepData['id'])
+    return teststepData
 
 # ********************************************************* Test functions ********************************************************#
 
@@ -404,7 +393,7 @@ def testHandleConvertXML():
     xmlFile = "./testdata/input.xml"
 
     conversionMap = handleXlsx(xlsxFile)
-    convertXml(xmlFile, "./testdata/output.xml", conversionMap)
+    handleConvertXml(xmlFile, "./testdata/output.xml", conversionMap)
 
 
 def testHandleGetTestStepData():
@@ -423,5 +412,4 @@ def testHandleGetTestStepData():
 
 
 if __name__ == "__main__":
-    #testHandleXlsx()
-    pass
+    testHandleXlsx()

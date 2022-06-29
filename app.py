@@ -251,18 +251,31 @@ class MainWindow(qtw.QMainWindow):
                 f"There were duplicates of the following classic test step description keys, only the mapping from the first occurence of the key will be used.\
                 \n--------------------------------------------------------\
                 \nDuplicates:\
-                \n{duplicateKeyList}"
+                \n{duplicateKeyList}\
+                \n\n"
+            )
+        
+        duplicateKeywordMessage = ''
+        if self.duplicateKeywords:
+            self.duplicateKeywords = [f"{index+1}: {item}" for index, item in enumerate(self.duplicateKeywords)]
+            duplicateKeywordList = '\n'.join(self.duplicateKeywords)
+            duplicateKeywordMessage = (
+                f"There were duplicates of the following keyword sets, only the mapping from the first occurence of the set will be used.\
+                \n--------------------------------------------------------\
+                \nDuplicates:\
+                \n{duplicateKeywordList}\
+                \n\n"
             )
         
         # * Create message box with warning message if any message is genereated
-        if emptyFieldMessage or duplicateKeyMessage:
+        if emptyFieldMessage or duplicateKeyMessage or duplicateKeywordMessage:
             #* Create message box to display the error
             msgBox = qtw.QMessageBox(self)
             msgBox.setWindowTitle('Warning')
             msgBox.setText('There are some issues with the config file.')
 
             # * Add message to message box detailed text
-            msgBox.setDetailedText(emptyFieldMessage + duplicateKeyMessage)
+            msgBox.setDetailedText(emptyFieldMessage + duplicateKeyMessage + duplicateKeywordMessage)
 
             # * Add buttons and icons to message box
             msgBox.setStandardButtons(qtw.QMessageBox.Ok)
@@ -294,7 +307,7 @@ class MainWindow(qtw.QMainWindow):
         # * Get parsed xml data and updated conversion map
         try:
             # Catch errors thrown from xml processing
-            xmlData, self.conversionMap = xmlParser.getTestStepData(
+            xmlData, self.conversionMap = xmlParser.getXmlData(
                 self.xmlInFile, self.conversionMap, self.keywordMap)
 
         except Exception as ex:
@@ -404,22 +417,16 @@ class MainWindow(qtw.QMainWindow):
                 box.setVisible(True)
                 self.testCaseBoxList[box] = teststepBoxList
         else:
-
             emptyLabel = qtw.QLabel('No test steps matched in XML file')
             self.ui.verticalLayout_3.addWidget(emptyLabel)
-
         self.ui.verticalLayout_3.addStretch()
 
         # * Alert user if there are unmatched teststeps
-        # Create list of unmatched teststeps
-        unmatchedTeststeps = []
-        for index, mapping in enumerate(self.conversionMap.values()):
-            if mapping['isMatched'] == False:
-                unmatchedTeststeps.append(
-                    f"{mapping['oldDescription']} - [row: {index+2}]")
+        # get list of unmatched classic description keys
+        unmatchedClassicDescriptions = xmlParser.getUnmatchedClassicDescriptions(self.conversionMap)
 
         # If there are unmatched teststeps, alert user with a message box with the list of unmatched teststeps
-        if unmatchedTeststeps:
+        if unmatchedClassicDescriptions:
 
             # Create message box to display the warning
             msgBox = qtw.QMessageBox(self)
@@ -428,14 +435,14 @@ class MainWindow(qtw.QMainWindow):
                 f"There are unmatched teststeps descriptions in your config file.")
 
             # Create string list of unmatched teststeps and to message
-            unmatchedTeststeps = '\n'.join(
+            unmatchedClassicDescriptions = '\n'.join(
                 [f"{index+1}: {teststep}" for index,
-                    teststep in enumerate(unmatchedTeststeps)]
+                    teststep in enumerate(unmatchedClassicDescriptions)]
             )
             noMatchMessage = (
                 f"The following teststeps descriptions at {self.xlsxInFile} had no match in the xml file:\
                 \n--------------------------------------------------------\
-                \n\n{unmatchedTeststeps}"
+                \n\n{unmatchedClassicDescriptions}"
             )
 
             # Merge message and set message box detailed text
@@ -651,7 +658,7 @@ class MainWindow(qtw.QMainWindow):
 
         # * Try to execute Execute XML conversion
         try:
-            xmlParser.convertXml(
+            xmlParser.handleConvertXml(
                 self.filteredTeststepIds, self.xmlInFile,
                 xmlOutFile, conversionMap
             )

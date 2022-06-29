@@ -102,6 +102,8 @@ class MainWindow(qtw.QMainWindow):
         self.ui.xmlFilePath_display.setText(self.xmlInFile)
 
         # Initialize config attributes
+        self.referenceMap = {}
+        self.duplicateReferences = []
         self.conversionMap = {}
         self.duplicateDescriptionKeys = []
         self.keywordMap = {}
@@ -175,7 +177,8 @@ class MainWindow(qtw.QMainWindow):
 
         try:
             # Read xlsx file and generate conversion map
-            self.conversionMap, self.duplicateDescriptionKeys, self.keywordMap, self.duplicateKeywords = xmlParser.handleXlsx(self.xlsxInFile)
+            self.referenceMap, self.duplicateReferences = xmlParser.handleReferenceData(self.xlsxInFile)
+            self.conversionMap, self.duplicateDescriptionKeys, self.keywordMap, self.duplicateKeywords = xmlParser.handleMappingData(self.xlsxInFile, self.referenceMap)
         except Exception as ex:
             # Catch exceptions and handle them
             exception = f"There is an error in the xlsx file.\

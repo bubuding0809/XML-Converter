@@ -1,6 +1,6 @@
 import xml.etree.ElementTree as ET
-
-from pyparsing import empty
+import collections
+from py import process
 from utils import removeWhiteSpace, ExcelDictReader
 from openpyxl import load_workbook
 import os
@@ -9,10 +9,10 @@ baseDir = os.path.dirname(__file__)
 
 # ********************************************************* Application functions ********************************************************#
 
-def handleXlsx(xlsxFile):
+def handleMappingData(xlsxFile, referenceMap):
     # Load excel file with openpyxl load_workbook
     workbook = load_workbook(filename=xlsxFile)
-    sheet = workbook.active
+    sheet = workbook['mapping']
 
     # Convert excel sheet into a list of dictionary with header:value pairs
     reader = ExcelDictReader(sheet)
@@ -55,12 +55,18 @@ def handleXlsx(xlsxFile):
             if param
         ]
         for param in funcParams:
-            param_name_text = [item.strip() for item in param.split("=")]
-            if len(param_name_text) == 2:
+            param_data = [item.strip() for item in param.split("=")]
+            if len(param_data) == 2:
                 new_function_parameters.append({
-                    "name": param_name_text[0],
-                    "text": param_name_text[1]
+                    "name": param_data[0],
+                    "text": param_data[1]
                 })
+            elif param_data[0].startswith('##') and param_data[0].endswith('##'):
+                referenceKey = removeWhiteSpace(param_data[0].strip('#').lower())
+                referenceData = referenceMap[referenceKey]
+
+                for data in referenceData:
+                    new_function_parameters.append(data)
 
         # * Generate conversionMap and duplicate description key data
         # * If classic description field is empty, append a empty_description_key
@@ -111,6 +117,42 @@ def handleXlsx(xlsxFile):
 
     return (conversionMap, duplicateDescriptionkeys,
             keywordMap, duplicateKeywords)
+
+def handleReferenceData(xlsxFile):
+    # Load excel file with openpyxl load_workbook
+    workbook = load_workbook(filename=xlsxFile)
+    sheet = workbook['parameter references']
+
+    # Convert excel sheet into a list of dictionary with header:value pairs
+    reader = ExcelDictReader(sheet)
+
+    # generate reference map by iterating through each row of key and values
+    referenceMap = {}
+    duplicateReferences = []
+
+    for row in reader:
+        key = removeWhiteSpace(row['key'].lower())
+        values = [item.strip() for item in row['values'].split('\n') if item]
+
+        processedValues = []
+        for value in values:
+            value = [item.strip() for item in value.split("=")]
+            if len(value) == 2:
+                processedValues. append({
+                    "name": value[0],
+                    "text": value[1]
+                })
+            else:
+                processedValues.append(value[0])
+
+
+        if key not in referenceMap:
+            referenceMap[key] = processedValues
+        else:
+            duplicateReferences.append(key)
+    
+    print(processedValues)
+    return referenceMap, duplicateReferences
 
 def getTeststepsWithEmptyFields(conversion_map):
     teststeps_with_empty_field = []
@@ -332,6 +374,7 @@ def generateTeststepData(index, teststep, mapping, cleanedOldDescription, oldDes
             {"name": param["name"].strip(
             ), "text": param["text"].strip("\n ")}
             for param in mapping["function_parameters"]
+            if isinstance(param, collections.Mapping)
         ],
     }
 
@@ -355,7 +398,7 @@ def generateTeststepData(index, teststep, mapping, cleanedOldDescription, oldDes
 def testHandleXlsx():
     xlsxFile = os.path.join(baseDir, "samples/configTest_v2.xlsx")
 
-    conversionMap, duplicateKeys, keywordMap, duplicateKeywords = handleXlsx(
+    conversionMap, duplicateKeys, keywordMap, duplicateKeywords = handleMappingData(
         xlsxFile)
 
     print('_____________________Conversion map____________________')
@@ -387,22 +430,20 @@ def testHandleXlsx():
         print(item)
     print()
 
-
 def testHandleConvertXML():
     xlsxFile = "./testdata/config.xlsx"
     xmlFile = "./testdata/input.xml"
 
-    conversionMap = handleXlsx(xlsxFile)
+    conversionMap = handleMappingData(xlsxFile)
     handleConvertXml(xmlFile, "./testdata/output.xml", conversionMap)
-
 
 def testHandleGetTestStepData():
     xlsxFile = "./samples/config.xlsx"
     xmlFile = "./samples/input.xml"
 
-    conversionMap = handleXlsx(xlsxFile)
+    conversionMap = handleMappingData(xlsxFile)
 
-    for item in getTestStepData(xmlFile, conversionMap):
+    for item in getXmlData(xmlFile, conversionMap):
         for key, value in item.items():
             print(f"{key}: {value}")
             print()
@@ -410,6 +451,9 @@ def testHandleGetTestStepData():
             "___________________________________________________________________________________________"
         )
 
+def testHandleReferenceData():
+    xlsxFile = os.path.join(baseDir, "samples/configTest_v2.xlsx")
+    handleReferenceData(xlsxFile)
 
 if __name__ == "__main__":
-    testHandleXlsx()
+    testHandleReferenceData()

@@ -3,7 +3,6 @@ from components.UiMainWindow import Ui_MainWindow
 from components.SummaryDialogWidget import SummaryDialog
 from components.TeststepGroupBoxWidget import TeststepGroupBoxWidget
 from components.CollapsibleTestcaseWidget import CollapsibleTestcaseWidget
-from components.CustomButton import ButtonWithIcon
 from components.CustomLineEdit import CustomLineEdit
 from components.FileFilterProxyModel import FileFilterProxyModel
 from PyQt5 import (
@@ -75,7 +74,7 @@ class MainWindow(qtw.QMainWindow):
         self.ui.showAll_btn.pressed.connect(self.handleToggleAllDropDownBtn)
         self.ui.hideAll_btn.pressed.connect(self.handleToggleAllDropDownBtn)
         self.ui.xml_clearTeststeps_btn.clicked.connect(
-            self.clearTestStepScrollArea)
+            self.resetAllXmlData)
         self.ui.selectAll_checkBox.stateChanged.connect(
             self.handleSelectAllCheckBox)
         self.ui.mainSearchBar_lineEdit.textChanged.connect(
@@ -105,7 +104,9 @@ class MainWindow(qtw.QMainWindow):
         # Initialize config attributes
         self.conversionMap = {}
         self.duplicateDescriptionKeys = []
-        self.getTeststepsWithEmptyFields = []
+        self.keywordMap = {}
+        self.duplicateKeywords = []
+        self.teststepsWithEmptyFields = []
 
     # ************************* Signal Handler methods **************************** #
 
@@ -137,6 +138,7 @@ class MainWindow(qtw.QMainWindow):
         # * parse XML with conversion map
         if self.conversionMap and self.xmlInFile:
             self.handleDataLoad()
+
     def handleXMLUpload(self):
         # * Retrieve atp xml file path from file dialog
         fileDialog = qtw.QFileDialog(self)
@@ -152,16 +154,28 @@ class MainWindow(qtw.QMainWindow):
         else:
             return
 
+        # * Try to process xlsx file and generate conversion map
+        if len(self.xlsxInFile):
+            self.handleConversionMapGenerate()
+
+        # * If conversionMap has been generated, conduct checks on config file
+        if self.conversionMap:
+            self.handleXLSXProcess()
+
         # * Enable load xml data if both xlsx and xml inputs exists
         if self.conversionMap and self.xmlInFile:
             self.handleDataLoad()
+
     def handleConversionMapGenerate(self):
+        # * Clear all mappings and duplicate warning data
         self.conversionMap.clear()
         self.duplicateDescriptionKeys.clear()
+        self.keywordMap.clear()
+        self.duplicateKeywords.clear()
 
         try:
             # Read xlsx file and generate conversion map
-            self.conversionMap, self.duplicateDescriptionKeys = xmlParser.handleXlsx(self.xlsxInFile)
+            self.conversionMap, self.duplicateDescriptionKeys, self.keywordMap, self.duplicateKeywords = xmlParser.handleXlsx(self.xlsxInFile)
         except Exception as ex:
             # Catch exceptions and handle them
             exception = f"There is an error in the xlsx file.\
@@ -203,17 +217,14 @@ class MainWindow(qtw.QMainWindow):
                 elif sys.platform == 'win32':
                     os.startfile(self.xlsxInFile)
 
-            # Clear xml data in scroll area
-            self.clearTestStepScrollArea()
-
     def handleXLSXProcess(self):
-        self.getTeststepsWithEmptyFields = xmlParser.getTeststepsWithEmptyFields(self.conversionMap)
+        self.teststepsWithEmptyFields = xmlParser.getTeststepsWithEmptyFields(self.conversionMap)
 
         # * If there are empty fields, create string list of empty fields and add to message
         emptyFieldMessage = ''
-        if self.getTeststepsWithEmptyFields:
+        if self.teststepsWithEmptyFields:
             emptyFieldMessageList = []
-            for index, item in enumerate(self.getTeststepsWithEmptyFields):
+            for index, item in enumerate(self.teststepsWithEmptyFields):
                 # Create string of description and empty fields
                 descriptionWithEmptyFields = f"{index+1}: {item['description']:}"
                 emptyFields = '\n'.join(
@@ -273,8 +284,8 @@ class MainWindow(qtw.QMainWindow):
                     os.startfile(self.xlsxInFile)
 
     def handleDataLoad(self):
-        # * Clear data grid of and old data
-        self.clearTestStepScrollArea()
+        # * Reset all xml data
+        self.resetAllXmlData()
 
         # * Reset all isMatch flags in conversion map to False
         for mapping in self.conversionMap.values():
@@ -284,7 +295,7 @@ class MainWindow(qtw.QMainWindow):
         try:
             # Catch errors thrown from xml processing
             xmlData, self.conversionMap = xmlParser.getTestStepData(
-                self.xmlInFile, self.conversionMap)
+                self.xmlInFile, self.conversionMap, self.keywordMap)
 
         except Exception as ex:
             # Catch exceptions and handle them
@@ -969,8 +980,11 @@ class MainWindow(qtw.QMainWindow):
 
     #*************************** Utility functions ******************************* #
 
-    def clearTestStepScrollArea(self):
-        # Empty global list of testcaseBoxes
+    def resetAllXmlData(self):
+        # clear set of filtered Ids
+        self.filteredTeststepIds.clear()
+
+        # Empty list of testcaseBoxes
         self.testCaseBoxList.clear()
 
         # Remove all widgets inside scroll area

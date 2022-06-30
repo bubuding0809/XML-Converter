@@ -189,6 +189,27 @@ def test_search_results(window, qtbot):
     # Check if visible testcase count is correct for both filter
     assert_testcase_count(datagrid_layout, 2)
 
+    # * Select both filter and check if search function operates properly
+    qtbot.mouseClick(window.ui.filterTestcaseOnly_btn, qtc.Qt.LeftButton)
+    assert searchbar.isEnabled()
+    qtbot.keyClicks(searchbar, 'vbatt')
+
+    # Check if visible teststep count is correct for both filter
+    assert_teststep_count(test_case_boxes, 1)
+
+    # Check if visible testcase count is correct for both filter
+    assert_testcase_count(datagrid_layout, 1)
+
+    # * Select both filter and check if search function operates properly
+    qtbot.mouseClick(window.ui.filterTestcaseOnly_btn, qtc.Qt.LeftButton)
+    assert searchbar.isEnabled()
+    qtbot.keyClicks(searchbar, 'battery')
+
+    # Check if visible teststep count is correct for both filter
+    assert_teststep_count(test_case_boxes, 0)
+
+    # Check if visible testcase count is correct for both filter
+    assert_testcase_count(datagrid_layout, 0)
 
 # * Helper functions
 

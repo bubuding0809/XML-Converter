@@ -16,6 +16,7 @@ import os
 import subprocess
 import xmlParser
 import subprocess
+import collections
 from components.resources import bootstrap_rc
 from samples import testFilePaths as testfiles
 
@@ -108,6 +109,7 @@ class MainWindow(qtw.QMainWindow):
         self.duplicateDescriptionKeys = []
         self.keywordMap = {}
         self.duplicateKeywords = []
+        self.invalidReferenceKeys = []
         self.teststepsWithEmptyFields = []
 
     # ************************* Signal Handler methods **************************** #
@@ -176,9 +178,13 @@ class MainWindow(qtw.QMainWindow):
         self.duplicateKeywords.clear()
 
         try:
-            # Read xlsx file and generate conversion map
+            # parse config excel and generate mappings
             self.referenceMap, self.duplicateReferences = xmlParser.handleReferenceData(self.xlsxInFile)
-            self.conversionMap, self.duplicateDescriptionKeys, self.keywordMap, self.duplicateKeywords = xmlParser.handleMappingData(self.xlsxInFile, self.referenceMap)
+            (self.conversionMap, 
+            self.duplicateDescriptionKeys,
+            self.keywordMap, 
+            self.duplicateKeywords, 
+            self.invalidReferenceKeys) = xmlParser.handleMappingData(self.xlsxInFile, self.referenceMap)
         except Exception as ex:
             # Catch exceptions and handle them
             exception = f"There is an error in the xlsx file.\
@@ -211,6 +217,7 @@ class MainWindow(qtw.QMainWindow):
             if msgBox.clickedButton() == retryBtn:
                 self.handleConfigUpload()
                 return
+
             # IF user clicks on edit config, open up config file in Excel
             if msgBox.clickedButton() == editConfig:
                 # macOS
@@ -310,9 +317,8 @@ class MainWindow(qtw.QMainWindow):
         # * Get parsed xml data and updated conversion map
         try:
             # Catch errors thrown from xml processing
-            xmlData, self.conversionMap = xmlParser.getXmlData(
+            testcaseSortedXmlData, self.conversionMap = xmlParser.getXmlData(
                 self.xmlInFile, self.conversionMap, self.keywordMap)
-
         except Exception as ex:
             # Catch exceptions and handle them
             exception = f"An exception of type {type(ex)} occurred."
@@ -331,35 +337,11 @@ class MainWindow(qtw.QMainWindow):
             msgBox.setIcon(qtw.QMessageBox.Critical)
             ret = msgBox.exec()
 
-            return
-
-        # * Filter teststeps into their respective testcases
-        testCaseList = {}
-        if xmlData:
-            # Filter each teststep into their respect testcases
-            for teststep in xmlData:
-                if teststep['parentId'] not in testCaseList:
-                    testCaseList[teststep['parentId']] = [{
-                        'id': teststep['id'],
-                        'parentType': teststep['parentType'],
-                        'parentName': teststep['parentName'],
-                        'configRowCount': teststep['configRowCount'],
-                        'old': teststep['old'],
-                        'new': teststep['new']
-                    }]
-                else:
-                    testCaseList[teststep['parentId']].append({
-                        'id': teststep['id'],
-                        'parentType': teststep['parentType'],
-                        'parentName': teststep['parentName'],
-                        'configRowCount': teststep['configRowCount'],
-                        'old': teststep['old'],
-                        'new': teststep['new']
-                    })
+            return  
 
         # * Create mapped data boxes and insert into the vertical scroll layout area
-        if testCaseList:
-            for index, (testcase, teststeps) in enumerate(testCaseList.items()):
+        if testcaseSortedXmlData:
+            for index, (testcase, teststeps) in enumerate(testcaseSortedXmlData.items()):
 
                 # Create testcase data obj to be passed into the CollapsibleBox widget
                 testcaseData = {
@@ -666,25 +648,6 @@ class MainWindow(qtw.QMainWindow):
                 xmlOutFile, conversionMap
             )
 
-            # * Create success message box
-            msgBox = qtw.QMessageBox()
-            msgBox.setWindowTitle("Success")
-            msgBox.setText("Successfully converted ATP XML file")
-            msgBox.setIcon(qtw.QMessageBox.Information)
-            checkbox = qtw.QCheckBox('Show file in explorer', msgBox)
-            checkbox.setChecked(True)
-            msgBox.setCheckBox(checkbox)
-            ret = msgBox.exec_()
-
-            # * Open file in explorer/finder if option is checked
-            if checkbox.isChecked():
-                if sys.platform == 'win32':
-                    xmlOutFile = xmlOutFile.replace('/', '\\')
-                    subprocess.Popen(f'explorer /select,{xmlOutFile}')
-
-                elif sys.platform == 'darwin':
-                    subprocess.call(['open', '-R', xmlOutFile])
-
         except Exception as ex:
             # If exception caught is Permission Error set specific exception text
             if type(ex) == PermissionError:
@@ -718,6 +681,26 @@ class MainWindow(qtw.QMainWindow):
 
             if msgBox.clickedButton() == retryBtn:
                 self.handleXMLConvert()
+            return 
+
+        # * Create success message box
+        msgBox = qtw.QMessageBox()
+        msgBox.setWindowTitle("Success")
+        msgBox.setText("Successfully converted ATP XML file")
+        msgBox.setIcon(qtw.QMessageBox.Information)
+        checkbox = qtw.QCheckBox('Show file in explorer', msgBox)
+        checkbox.setChecked(True)
+        msgBox.setCheckBox(checkbox)
+        ret = msgBox.exec_()
+
+        # * Open file in explorer/finder if option is checked
+        if checkbox.isChecked():
+            if sys.platform == 'win32':
+                xmlOutFile = xmlOutFile.replace('/', '\\')
+                subprocess.Popen(f'explorer /select,{xmlOutFile}')
+
+            elif sys.platform == 'darwin':
+                subprocess.call(['open', '-R', xmlOutFile])
 
     def handleExitApp(self):
         msgBox = qtw.QMessageBox()
@@ -903,7 +886,7 @@ class MainWindow(qtw.QMainWindow):
                     'description': description,
                     'function_name': function_name,
                     'function_library': function_library,
-                    'function_params': function_parameters
+                    'function_parameters': function_parameters
                 }
 
         # * Open file dialog box for user to save new config file

@@ -1,6 +1,6 @@
 import xml.etree.ElementTree as ET
+import re
 import collections
-from py import process
 from utils import removeWhiteSpace, ExcelDictReader
 from openpyxl import load_workbook
 import os
@@ -21,6 +21,7 @@ def handleMappingData(xlsxFile, referenceMap):
     keywordMap = {}
     duplicateDescriptionkeys = []
     duplicateKeywords = []
+    invalidReferenceKeys = []
 
     # * Create mapping based on each row
     for rowCount, row in enumerate(reader):
@@ -49,24 +50,35 @@ def handleMappingData(xlsxFile, referenceMap):
         new_function_library = row["DD2 function_library"].strip()
         new_function_name = row["DD2 function_name"].strip()
         new_function_parameters = []
+
+        # Create a list of name to text function parameters
         funcParams = [
             param.strip()
             for param in row["DD2 function_parameters"].split("\n")
             if param
         ]
+
+        # * Iterate through list of function parameters and split name to text by '='
+        
         for param in funcParams:
             param_data = [item.strip() for item in param.split("=")]
+
+            # * If name and text is unpacked, create function parameter obj and append to new function parameter list
             if len(param_data) == 2:
                 new_function_parameters.append({
                     "name": param_data[0],
                     "text": param_data[1]
                 })
-            elif param_data[0].startswith('##') and param_data[0].endswith('##'):
+            # * If only 1 value is unpacked, check if value is a reference which startswith and endswith '##'
+            elif re.match(r'^#{2}.+#{2}$', param_data[0]):
                 referenceKey = removeWhiteSpace(param_data[0].strip('#').lower())
-                referenceData = referenceMap[referenceKey]
+                referenceData = referenceMap.get(referenceKey)
 
-                for data in referenceData:
-                    new_function_parameters.append(data)
+                if referenceData:
+                    for data in referenceData:
+                        new_function_parameters.append(data)
+                else:
+                    invalidReferenceKeys.append(referenceKey)
 
         # * Generate conversionMap and duplicate description key data
         # * If classic description field is empty, append a empty_description_key
@@ -116,7 +128,7 @@ def handleMappingData(xlsxFile, referenceMap):
                 )
 
     return (conversionMap, duplicateDescriptionkeys,
-            keywordMap, duplicateKeywords)
+            keywordMap, duplicateKeywords, invalidReferenceKeys)
 
 def handleReferenceData(xlsxFile):
     # Load excel file with openpyxl load_workbook
@@ -132,26 +144,24 @@ def handleReferenceData(xlsxFile):
 
     for row in reader:
         key = removeWhiteSpace(row['key'].lower())
+        if not key: continue
+
         values = [item.strip() for item in row['values'].split('\n') if item]
 
         processedValues = []
         for value in values:
             value = [item.strip() for item in value.split("=")]
             if len(value) == 2:
-                processedValues. append({
+                processedValues.append({
                     "name": value[0],
                     "text": value[1]
                 })
-            else:
-                processedValues.append(value[0])
-
 
         if key not in referenceMap:
             referenceMap[key] = processedValues
         else:
             duplicateReferences.append(key)
-    
-    print(processedValues)
+
     return referenceMap, duplicateReferences
 
 def getTeststepsWithEmptyFields(conversion_map):
@@ -252,7 +262,14 @@ def getXmlData(xmlInFile, conversionMap, keywordMap):
                 )
             )
 
-    return xmlData, conversionMap
+    # * Filter teststeps into their respective testcases
+    testcaseSortedXmlData = collections.defaultdict(lambda: [])
+    if xmlData:
+        # Filter each teststep into their respect testcases
+        for teststep in xmlData:
+            testcaseSortedXmlData[teststep['parentId']].append(teststep)
+
+    return testcaseSortedXmlData, conversionMap
 
 def handleConvertXml(filteredIds, xmlInFile, xmlOutFile, conversionMap):
     tree = ET.parse(xmlInFile)
@@ -297,10 +314,10 @@ def handleConvertXml(filteredIds, xmlInFile, xmlOutFile, conversionMap):
                 oldFunctionParams.remove(param)
 
             # create new param elements and append to function_parameters
-            for param in matchedConfig["function_parameters"]:
+            for name, text in matchedConfig["function_parameters"].items():
                 newParam = ET.SubElement(oldFunctionParams, "param")
-                newParam.set("name", param["name"])
-                newParam.text = param["text"]
+                newParam.set("name", name)
+                newParam.text = text
 
             # Debug print
             print(
@@ -339,7 +356,7 @@ def handleXlsxUpdate(configData, xlsxInFile, xlsxOutFile):
         cell.value = mapping["function_name"]
 
         cell = sheet["F" + str(configRowCount)]
-        cell.value = "\n".join(mapping["function_params"])
+        cell.value = "\n".join(mapping["function_parameters"])
 
     workbook.save(xlsxOutFile)
 
@@ -352,34 +369,37 @@ def generateTeststepData(index, teststep, mapping, cleanedOldDescription, oldDes
     oldFunctionParams = teststep.find(
         "function_parameters").iter("param")
 
+    old_function_parameters = {
+        param.get('name'): param.text.strip('\n ')
+        for param in oldFunctionParams
+    }
+
     # Create old data object
     oldTestStepData = {
         "cleanedDescription": cleanedOldDescription,
         "description": oldDescription,
         "function_library": oldFunctionLibrary,
         "function_name": oldFunctionName,
-        "function_parameters": [
-            {"name": param.get("name"),
-                "text": param.text.strip("\n ")}
-            for param in oldFunctionParams
-        ],
+        "function_parameters": old_function_parameters,
     }
 
     # Create new data object
+    new_function_parameters = {}
+    for param in mapping['function_parameters']:
+        if re.match(r'^@{2}.+@{2}$', param['text']):
+            referencedValue = old_function_parameters.get(param['text'].strip('@'), '')
+            new_function_parameters[param['name']] = referencedValue
+        else:
+            new_function_parameters[param['name']] = param['text']
+            
     newTestStepData = {
         "description": mapping["description"],
         "function_library": mapping["function_library"],
         "function_name": mapping["function_name"],
-        "function_parameters": [
-            {"name": param["name"].strip(
-            ), "text": param["text"].strip("\n ")}
-            for param in mapping["function_parameters"]
-            if isinstance(param, collections.Mapping)
-        ],
+        "function_parameters": new_function_parameters,
     }
 
     # Append to teststep xmlData if teststep id has not been matched yet
-        
     teststepData = {
         "id": index + 1,
         "parentId": childParentMap[teststep].get("id"),
@@ -390,7 +410,6 @@ def generateTeststepData(index, teststep, mapping, cleanedOldDescription, oldDes
         "new": newTestStepData,
     }
     
-    print(teststepData['id'])
     return teststepData
 
 # ********************************************************* Test functions ********************************************************#

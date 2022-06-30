@@ -267,9 +267,9 @@ class TeststepGroupBoxWidget(qtw.QGroupBox):
         self.oldDataListWidget.setFont(font)
         self.oldDataListWidget.setObjectName("oldDataListWidget")
         
-        for param in data['old']['function_parameters']:
+        for name, text in data['old']['function_parameters'].items():
             item = qtw.QListWidgetItem()
-            item.setText(f"{param['name']}={param['text']}")
+            item.setText(f"{name}={text}")
             self.oldDataListWidget.addItem(item)
         
         # Add Function parameter list to old data box
@@ -372,10 +372,10 @@ class TeststepGroupBoxWidget(qtw.QGroupBox):
         self.newDataListWidget.setFont(font)
         self.newDataListWidget.setObjectName("newDataListWidget")
         
-        for param in data['new']['function_parameters']:
+        for name, text in data['new']['function_parameters'].items():
             item = qtw.QListWidgetItem()
             item.setFlags(qtc.Qt.ItemIsSelectable | qtc.Qt.ItemIsEditable| qtc.Qt.ItemIsDragEnabled | qtc.Qt.ItemIsEnabled)
-            item.setText(f"{param['name']}={param['text']}")
+            item.setText(f"{name}={text}")
             self.newDataListWidget.addItem(item)
         
         # Add Function parameter list to new data box
@@ -400,15 +400,13 @@ class TeststepGroupBoxWidget(qtw.QGroupBox):
             paramStringList.append(self.newDataListWidget.item(i).text())
         
         #* Parse the parameter strings into a obj readable by xmlParser
-        function_parameters = []
+        function_parameters = {}
         
         # Loop through the parameter strings and if the string contains a = then split it into a key and value
         for param in paramStringList:
-            if len(param.split('=')) == 2:
-                function_parameters.append({
-                    'name': param.split('=')[0],
-                    'text': param.split('=')[1]
-                })
+            param_data = param.split('=')
+            if len(param_data) == 2 and param_data[0]:
+                function_parameters[param_data[0]] = param_data[1]
 
         #* Create updated teststep conversion mapping
         newTeststepMap = {

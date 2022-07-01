@@ -7,6 +7,13 @@ import os
 
 baseDir = os.path.dirname(__file__)
 
+HEADER_COLUMN_MAP = {
+    'description': 'C',
+    'function_library': 'D',
+    'function_name': 'E',
+    'function_parameters': 'F'
+}
+
 # ********************************************************* Application functions ********************************************************#
 
 def handleMappingData(xlsxFile, referenceMap):
@@ -19,9 +26,27 @@ def handleMappingData(xlsxFile, referenceMap):
 
     conversionMap = {}
     keywordMap = {}
-    duplicateDescriptionkeys = []
-    duplicateKeywords = []
-    invalidReferenceKeys = []
+    duplicateDescriptionkeys = {
+        'title': 'Duplicate description keys',
+        'description': 'There were duplicate classic teststep descriptions found in your config file, \
+only the DD2.0 translations from the first occurence of the descripton will be used, the rest will be ignored',
+        'worksheet': 'mappings',
+        'data': {}
+    }
+    duplicateKeywords = {
+        'title': 'Duplicate keyword set',
+        'description': 'There were duplicate keyword sets found in your config file, \
+only the DD2.0 translations from the first occurence of the keyword set will be used, the rest will be ignored',
+        'worksheet': 'mappings',
+        'data': {}
+    }
+    invalidReferenceKeys = {
+        'title': 'Invalid reference key',
+        'description': 'There were invalid reference keys used which did not match any reference defined in the paramter reference sheet \
+Do double check if all reference keys has been entered correctly.',
+        'worksheet': 'mappings',
+        'data': {}
+    }
 
     # * Create mapping based on each row
     for rowCount, row in enumerate(reader):
@@ -78,7 +103,7 @@ def handleMappingData(xlsxFile, referenceMap):
                     for data in referenceData:
                         new_function_parameters.append(data)
                 else:
-                    invalidReferenceKeys.append(referenceKey)
+                    invalidReferenceKeys['data'][f"##{referenceKey}##"] = 'F' + str(rowCount + 2)
 
         # * Generate conversionMap and duplicate description key data
         # * If classic description field is empty, append a empty_description_key
@@ -103,9 +128,7 @@ def handleMappingData(xlsxFile, referenceMap):
                 }
             # * Else add duplicate classic key to duplicateDescriptionKeys for alert
             else:
-                duplicateDescriptionkeys.append(
-                    f"{oldDescription} - [row: {rowCount+2}]"
-                )
+                duplicateDescriptionkeys['data'][oldDescription] = 'A' + str(rowCount + 2)
 
         # * If there are keywords specified 
         # * Generate keyword map and duplicate key word data
@@ -123,12 +146,20 @@ def handleMappingData(xlsxFile, referenceMap):
                     "function_parameters": new_function_parameters,
                 }
             else:
-                duplicateKeywords.append(
-                    f"{keywords} - [row: {rowCount+2}]"
-                )
+                duplicateKeywords['data'][str(keywords)] = 'A' + str(rowCount + 2)
 
-    return (conversionMap, duplicateDescriptionkeys,
-            keywordMap, duplicateKeywords, invalidReferenceKeys)
+    emptyFields = getEmptyFieldData(conversionMap)
+
+    return (
+        conversionMap, 
+        keywordMap, 
+        [
+            emptyFields,
+            duplicateDescriptionkeys,
+            duplicateKeywords, 
+            invalidReferenceKeys
+        ]
+    )
 
 def handleReferenceData(xlsxFile):
     # Load excel file with openpyxl load_workbook
@@ -140,10 +171,16 @@ def handleReferenceData(xlsxFile):
 
     # generate reference map by iterating through each row of key and values
     referenceMap = {}
-    duplicateReferences = []
+    duplicateReferences = {
+        'title': 'Duplicate reference keys',
+        'description': 'There were duplicate reference keys found in your config file, \
+only the reference values from the first occurence of the reference key will be used, the rest will be ignored.',
+        'worksheet': 'parameter references',
+        'data': {}
+    }
 
-    for row in reader:
-        key = removeWhiteSpace(row['key'].lower())
+    for rowCount, row in enumerate(reader):
+        key = removeWhiteSpace(row['key'].lower().strip('#'))
         if not key: continue
 
         values = [item.strip() for item in row['values'].split('\n') if item]
@@ -160,43 +197,39 @@ def handleReferenceData(xlsxFile):
         if key not in referenceMap:
             referenceMap[key] = processedValues
         else:
-            duplicateReferences.append(key)
+            duplicateReferences['data'][f"##{key}##"] = 'A' + str(rowCount + 2)
 
     return referenceMap, duplicateReferences
 
-def getTeststepsWithEmptyFields(conversion_map):
-    teststeps_with_empty_field = []
+def getEmptyFieldData(conversion_map):
+    emptyFieldData = {
+        'title': 'Empty fields',
+        'description': 'There are some empty DD2.0 translation fields in your config file, do double check if it is intentional.',
+        'worksheet': 'mappings',
+        'data': {}
+    }
 
     # * Iterate through conversion mapping
-    #* 
+    # * 
     for cleanedOldDescription, mapping in conversion_map.items():
-        empty_fields = []
-
-        if cleanedOldDescription.startswith('empty_description_key'):
-            empty_fields.append('empty description key')
-
+        row_location = conversion_map[cleanedOldDescription]['configRowCount']
+        
         # * Check if there are any empty fields in the teststep
+        emptyFields = {}
         for tag, value in mapping.items():
 
             if tag == "isMatched":
                 continue
 
-            if not value:
-                empty_fields.append(tag)
+            if str(value).startswith('empty_description_key'):
+                emptyFields['empty_description_key'] = f"A{row_location}"
+            elif not value:
+                emptyFields['DD2.0 ' + tag] = f"{HEADER_COLUMN_MAP[tag]}{row_location}"
+            
+        if emptyFields: 
+            emptyFieldData['data'][row_location] = emptyFields
 
-        # * If there are empty fields for the teststep, create obj with description and empty fields then add to list
-        if empty_fields:
-
-            if cleanedOldDescription.startswith("empty_description_key"):
-                description = cleanedOldDescription
-            else:
-                description = (f"{mapping['oldDescription']} - [row: {mapping['configRowCount']}]")
-
-            teststeps_with_empty_field.append(
-                {"description": description, "emptyFields": empty_fields}
-            )
-
-    return teststeps_with_empty_field
+    return emptyFieldData
 
 def getUnmatchedClassicDescriptions(conversion_map):
     unmatchedClassicDescriptions = []
@@ -211,7 +244,7 @@ def getXmlData(xmlInFile, conversionMap, keywordMap):
     tree = ET.parse(xmlInFile)
     root = tree.getroot()
     childParentMap = {child: parent for parent in root.iter()
-                      for child in parent}
+                      for child in parent}  
     allTestSteps = root.iter("teststep")
 
     # Initialize xmlData list
@@ -345,18 +378,15 @@ def handleXlsxUpdate(configData, xlsxInFile, xlsxOutFile):
 
     # * Update config excel with the new mapping data generated from the application UI
     for configRowCount, mapping in configData.items():
-        # * Update config excel column B, C, D, E with new data
-        cell = sheet["C" + str(configRowCount)]
-        cell.value = mapping["description"]
 
-        cell = sheet["D" + str(configRowCount)]
-        cell.value = mapping["function_library"]
+        # * Update config excel mapping translation with new data
+        for header, column in HEADER_COLUMN_MAP.items():
+            cell = sheet[column + str(configRowCount)]
 
-        cell = sheet["E" + str(configRowCount)]
-        cell.value = mapping["function_name"]
-
-        cell = sheet["F" + str(configRowCount)]
-        cell.value = "\n".join(mapping["function_parameters"])
+            if header == 'function_parameters':
+                cell.value = '\n'.join(mapping[header])
+            else:
+                cell.value = mapping[header]
 
     workbook.save(xlsxOutFile)
 

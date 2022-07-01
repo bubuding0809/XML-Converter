@@ -25,20 +25,7 @@ def window(qtbot):
         if message_box != window:
             qtbot.keyPress(message_box, qtc.Qt.Key_Return)
 
-    #qtc.QTimer.singleShot(0, handle_message_box)
-
-    # * Try to process xlsx file and generate conversion map
-    window.handleConversionMapGenerate()
-
-    #qtc.QTimer.singleShot(100, handle_message_box)
-
-    # * If conversionMap has been generated, conduct checks on config file
-    window.handleXLSXProcess()
-
-    #qtc.QTimer.singleShot(100, handle_message_box)
-
-    # * Parse xml data with config mapping, raise messagebox if there are unmatched teststeps
-    window.handleDataLoad()
+    window.handleDataProcessing()
 
     return window
 

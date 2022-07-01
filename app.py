@@ -1,5 +1,6 @@
 import logging
 from components.UiMainWindow import Ui_MainWindow
+from components.WarningDialogWidget import WarningDialog
 from components.SummaryDialogWidget import SummaryDialog
 from components.TeststepGroupBoxWidget import TeststepGroupBoxWidget
 from components.CollapsibleTestcaseWidget import CollapsibleTestcaseWidget
@@ -15,8 +16,6 @@ import sys
 import os
 import subprocess
 import xmlParser
-import subprocess
-import collections
 from components.resources import bootstrap_rc
 from samples import testFilePaths as testfiles
 
@@ -104,13 +103,8 @@ class MainWindow(qtw.QMainWindow):
 
         # Initialize config attributes
         self.referenceMap = {}
-        self.duplicateReferences = []
         self.conversionMap = {}
-        self.duplicateDescriptionKeys = []
         self.keywordMap = {}
-        self.duplicateKeywords = []
-        self.invalidReferenceKeys = []
-        self.teststepsWithEmptyFields = []
 
     # ************************* Signal Handler methods **************************** #
 
@@ -131,17 +125,7 @@ class MainWindow(qtw.QMainWindow):
             return
 
         # * Try to process xlsx file and generate conversion map
-        if len(self.xlsxInFile):
-            self.handleConversionMapGenerate()
-
-        # * If conversionMap has been generated, conduct checks on config file
-        if self.conversionMap:
-            self.handleXLSXProcess()
-
-        # * if conversion map is generated and xml file has been uploaded
-        # * parse XML with conversion map
-        if self.conversionMap and self.xmlInFile:
-            self.handleDataLoad()
+        self.handleDataProcessing()
 
     def handleXMLUpload(self):
         # * Retrieve atp xml file path from file dialog
@@ -158,36 +142,25 @@ class MainWindow(qtw.QMainWindow):
         else:
             return
 
-        # * Try to process xlsx file and generate conversion map
-        if len(self.xlsxInFile):
-            self.handleConversionMapGenerate()
-
-        # * If conversionMap has been generated, conduct checks on config file
-        if self.conversionMap:
-            self.handleXLSXProcess()
-
         # * Enable load xml data if both xlsx and xml inputs exists
         if self.conversionMap and self.xmlInFile:
             self.handleDataLoad()
 
-    def handleConversionMapGenerate(self):
+    def handleDataProcessing(self):
         # * Clear all mappings and duplicate warning data
+        self.referenceMap.clear()
         self.conversionMap.clear()
-        self.duplicateDescriptionKeys.clear()
         self.keywordMap.clear()
-        self.duplicateKeywords.clear()
 
         try:
             # parse config excel and generate mappings
-            self.referenceMap, self.duplicateReferences = xmlParser.handleReferenceData(self.xlsxInFile)
-            (self.conversionMap, 
-            self.duplicateDescriptionKeys,
-            self.keywordMap, 
-            self.duplicateKeywords, 
-            self.invalidReferenceKeys) = xmlParser.handleMappingData(self.xlsxInFile, self.referenceMap)
+            self.referenceMap, duplicateReferences = xmlParser.handleReferenceData(self.xlsxInFile)
+            self.conversionMap, self.keywordMap, self.warningData = xmlParser.handleMappingData(self.xlsxInFile, self.referenceMap)
+            self.warningData.append(duplicateReferences)
+        
         except Exception as ex:
             # Catch exceptions and handle them
-            exception = f"There is an error in the xlsx file.\
+            exception = f"There is an error with the xlsx config file.\
                 \n\nPlease try to upload a correct config file or edit the current config file."
 
             arguments = '\n'.join(
@@ -227,84 +200,28 @@ class MainWindow(qtw.QMainWindow):
                 elif sys.platform == 'win32':
                     os.startfile(self.xlsxInFile)
 
-    def handleXLSXProcess(self):
-        self.teststepsWithEmptyFields = xmlParser.getTeststepsWithEmptyFields(self.conversionMap)
-
-        # * If there are empty fields, create string list of empty fields and add to message
-        emptyFieldMessage = ''
-        if self.teststepsWithEmptyFields:
-            emptyFieldMessageList = []
-            for index, item in enumerate(self.teststepsWithEmptyFields):
-                # Create string of description and empty fields
-                descriptionWithEmptyFields = f"{index+1}: {item['description']:}"
-                emptyFields = '\n'.join(
-                    [f"   - {field}" for field in item['emptyFields']])
-                emptyFieldMessageList.append(
-                    f"{descriptionWithEmptyFields}\n{emptyFields}")
-
-            # * Join all empty fields into one string
-            emptyFieldMessageList = '\n'.join(emptyFieldMessageList)
-
-            # * Add empty fields to message
-            emptyFieldMessage = (
-                f"The following teststeps were found to have empty fields in your config file at \n{self.xlsxInFile}:\
-                \n--------------------------------------------------------\
-                \n{emptyFieldMessageList}\
-                \n\n"
-            )
-
-        duplicateKeyMessage = ''
-        if self.duplicateDescriptionKeys:
-            self.duplicateDescriptionKeys = [f"{index+1}: {item}" for index, item in enumerate(self.duplicateDescriptionKeys)]
-            duplicateKeyList = '\n'.join(self.duplicateDescriptionKeys)
-            duplicateKeyMessage = (
-                f"There were duplicates of the following classic test step description keys, only the mapping from the first occurence of the key will be used.\
-                \n--------------------------------------------------------\
-                \nDuplicates:\
-                \n{duplicateKeyList}\
-                \n\n"
-            )
+            self.resetAllXmlData()
         
-        duplicateKeywordMessage = ''
-        if self.duplicateKeywords:
-            self.duplicateKeywords = [f"{index+1}: {item}" for index, item in enumerate(self.duplicateKeywords)]
-            duplicateKeywordList = '\n'.join(self.duplicateKeywords)
-            duplicateKeywordMessage = (
-                f"There were duplicates of the following keyword sets, only the mapping from the first occurence of the set will be used.\
-                \n--------------------------------------------------------\
-                \nDuplicates:\
-                \n{duplicateKeywordList}\
-                \n\n"
-            )
-        
-        # * Create message box with warning message if any message is genereated
-        if emptyFieldMessage or duplicateKeyMessage or duplicateKeywordMessage:
-            #* Create message box to display the error
-            msgBox = qtw.QMessageBox(self)
-            msgBox.setWindowTitle('Warning')
-            msgBox.setText('There are some issues with the config file.')
+        else:
+            # * if config data is successfully parsed, proceed with config mapping validity checks
+            self.handleConfigChecks()
 
-            # * Add message to message box detailed text
-            msgBox.setDetailedText(emptyFieldMessage + duplicateKeyMessage + duplicateKeywordMessage)
+            # * Parse xml data with conversion map then display in UI
+            if self.xmlInFile: self.handleDataLoad()
 
-            # * Add buttons and icons to message box
-            msgBox.setStandardButtons(qtw.QMessageBox.Ok)
-            editConfig_btn = msgBox.addButton(
-                'Edit config', qtw.QMessageBox.AcceptRole)
-            msgBox.setIcon(qtw.QMessageBox.Warning)
-            msgBox.setWindowModality(qtc.Qt.WindowModal)
+    def handleConfigChecks(self):
+        # * If there are any warning data generated from checking the config file
+        # * Create and show a warning dialog widget to display the warning information
+        for warning in self.warningData:
+            if warning['data']:
+                break
+        # * If there are no warnings, do nothing
+        else:
+            return
 
-            # * execute message box
-            ret = msgBox.exec()
-
-            # * If user clicks edit config button, open config file in default program
-            if msgBox.clickedButton() == editConfig_btn:
-                # macOS
-                if sys.platform == 'darwin':
-                    subprocess.call(('open', self.xlsxInFile))
-                # Windows
-                elif sys.platform == 'win32':
-                    os.startfile(self.xlsxInFile)
+        # * Create warning dialog widget and show
+        warningDialog = WarningDialog(self, self.xlsxInFile, self.warningData)
+        warningDialog.show()
 
     def handleDataLoad(self):
         # * Reset all xml data
@@ -961,13 +878,8 @@ class MainWindow(qtw.QMainWindow):
 
     def handleXMLRefresh(self):
         if self.xlsxInFile and self.xmlInFile:
-            # Regenerate conversion mapping
-            self.handleConversionMapGenerate()
-
-            # Reprocess config excel and parse xml data
-            if self.conversionMap:
-                self.handleXLSXProcess()
-                self.handleDataLoad()
+            # Reprocess config and xml data
+            self.handleDataProcessing()
 
             self.ui.xml_refreshData_btn.setEnabled(True)
 

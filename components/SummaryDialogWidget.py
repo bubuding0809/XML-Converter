@@ -1,4 +1,3 @@
-from turtle import Turtle
 from PyQt5 import (
     QtWidgets as qtw,
     QtCore as qtc,

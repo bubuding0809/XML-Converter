@@ -23,7 +23,7 @@ class WarningTab(qtw.QWidget):
         header.setSectionResizeMode(qtw.QHeaderView.ResizeToContents)
 
         # * Populate warning tab with warning information
-        self.ui.warningDescription_label.setText(self.data['description'])
+        self.ui.warningDescription_label.setText(self.data['warning'])
         if data['title'] == 'Empty fields':
             self.handlePopulateEmptyFieldsWarning()
         else:

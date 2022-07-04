@@ -3,7 +3,11 @@ import re
 import collections
 from utils import removeWhiteSpace, ExcelDictReader
 from openpyxl import load_workbook
+from openpyxl.worksheet.datavalidation import DataValidation
+from openpyxl.worksheet.datavalidation import DataValidationList
+from openpyxl.utils import quote_sheetname
 import os
+import configWarnings
 
 baseDir = os.path.dirname(__file__)
 
@@ -16,7 +20,7 @@ HEADER_COLUMN_MAP = {
 
 # ********************************************************* Application functions ********************************************************#
 
-def handleMappingData(xlsxFile, referenceMap):
+def handleMappingData(xlsxFile, referenceMap, functionLibaryMap):
     # Load excel file with openpyxl load_workbook
     workbook = load_workbook(filename=xlsxFile)
     sheet = workbook['mapping']
@@ -28,23 +32,26 @@ def handleMappingData(xlsxFile, referenceMap):
     keywordMap = {}
     duplicateDescriptionkeys = {
         'title': 'Duplicate description keys',
-        'description': 'There were duplicate classic teststep descriptions found in your config file, \
-only the DD2.0 translations from the first occurence of the descripton will be used, the rest will be ignored',
-        'worksheet': 'mappings',
+        'warning': configWarnings.DUP_DESCRIPTION_KEYS_WARNING,
+        'worksheet': 'mapping',
         'data': {}
     }
     duplicateKeywords = {
         'title': 'Duplicate keyword set',
-        'description': 'There were duplicate keyword sets found in your config file, \
-only the DD2.0 translations from the first occurence of the keyword set will be used, the rest will be ignored',
-        'worksheet': 'mappings',
+        'warning': configWarnings.DUP_KEYWORD_SETS_WARNING,
+        'worksheet': 'mapping',
         'data': {}
     }
     invalidReferenceKeys = {
         'title': 'Invalid reference key',
-        'description': 'There were invalid reference keys used which did not match any reference defined in the paramter reference sheet \
-Do double check if all reference keys has been entered correctly.',
-        'worksheet': 'mappings',
+        'warning': configWarnings.INVALID_REFERENCE_KEYS_WARNING,
+        'worksheet': 'mapping',
+        'data': {}
+    }
+    invalidTranslations = {
+        'title': 'Invalid DD2.0 tranlsations',
+        'warning': configWarnings.INVALID_DD2_TRANSLATIONS,
+        'worksheet': 'mapping',
         'data': {}
     }
 
@@ -84,7 +91,6 @@ Do double check if all reference keys has been entered correctly.',
         ]
 
         # * Iterate through list of function parameters and split name to text by '='
-        
         for param in funcParams:
             param_data = [item.strip() for item in param.split("=")]
 
@@ -148,6 +154,23 @@ Do double check if all reference keys has been entered correctly.',
             else:
                 duplicateKeywords['data'][str(keywords)] = 'A' + str(rowCount + 2)
 
+        # * There are any invalid DD2.0 function translation used
+        # * Add it to invalidTranslations data 
+        function_library_data = functionLibaryMap.get(new_function_library)
+        if function_library_data is None:
+            invalidTranslations['data'][new_function_library] = 'D' + str(rowCount + 2)
+            continue
+        
+        function_name_data = function_library_data.get(new_function_name)
+        if function_name_data is None:
+            invalidTranslations['data'][new_function_name] = 'E' + str(rowCount + 2)
+            continue
+
+        function_parameter_data = function_name_data['function_parameters']
+        for param in new_function_parameters:
+            if param['name'] not in function_parameter_data:
+                invalidTranslations['data'][param['name']] = 'F' + str(rowCount + 2)
+
     emptyFields = getEmptyFieldData(conversionMap)
 
     return (
@@ -157,7 +180,8 @@ Do double check if all reference keys has been entered correctly.',
             emptyFields,
             duplicateDescriptionkeys,
             duplicateKeywords, 
-            invalidReferenceKeys
+            invalidReferenceKeys,
+            invalidTranslations
         ]
     )
 
@@ -173,8 +197,7 @@ def handleReferenceData(xlsxFile):
     referenceMap = {}
     duplicateReferences = {
         'title': 'Duplicate reference keys',
-        'description': 'There were duplicate reference keys found in your config file, \
-only the reference values from the first occurence of the reference key will be used, the rest will be ignored.',
+        'warning': configWarnings.DUP_REFERENCE_KEYS_WARNINGS,
         'worksheet': 'parameter references',
         'data': {}
     }
@@ -201,11 +224,41 @@ only the reference values from the first occurence of the reference key will be 
 
     return referenceMap, duplicateReferences
 
+def handleFunctionLibaryData(xlsxFile):
+    # Load excel file with openpyxl load_workbook
+    workbook = load_workbook(filename=xlsxFile)
+    sheet = workbook['function library']
+
+    # Convert excel sheet into a list of dictionary with header:value pairs
+    reader = ExcelDictReader(sheet)
+    functionLibraryMap = collections.defaultdict(lambda: {})
+    duplicateFunctionNames = {
+        'title': 'Duplicate function name',
+        'warning': configWarnings.DUP_FUNCTION_NAMES_WARNINGS,
+        'worksheet': 'function library',
+        'data': {}
+    }
+
+    for rowCount, row in enumerate(reader):
+        function_library = row['function_library']
+        function_name = row['function_name']
+        function_parameters = [name.strip() for name in row['function_parameters'].split('\n') if name]
+
+        if function_name not in functionLibraryMap[function_library]:
+            functionLibraryMap[function_library][function_name] = {
+                'rowCount': rowCount + 2,
+                'function_parameters': function_parameters
+            }
+        else:
+            duplicateFunctionNames['data'][function_name] = 'B' + str(rowCount + 2)
+
+    return functionLibraryMap, duplicateFunctionNames 
+
 def getEmptyFieldData(conversion_map):
     emptyFieldData = {
         'title': 'Empty fields',
-        'description': 'There are some empty DD2.0 translation fields in your config file, do double check if it is intentional.',
-        'worksheet': 'mappings',
+        'warning': configWarnings.EMPTY_MAPPING_FIELDS_WARNINGS,
+        'worksheet': 'mapping',
         'data': {}
     }
 
@@ -374,13 +427,46 @@ def handleXlsxUpdate(configData, xlsxInFile, xlsxOutFile):
 
     # * Load excel file with openpyxl load_workbook
     workbook = load_workbook(filename=xlsxInFile)
-    sheet = workbook.active
+    sheet = workbook['mapping']
+
+    print(sheet.data_validations)
+
+    # * Clear all exisitng data validations in mapping sheet
+    sheet.data_validations = DataValidationList()
+
+    library_dv = DataValidation(
+        type='list', 
+        formula1=f"{quote_sheetname('library definition')}!$1:$1", 
+        allow_blank=False,
+        showInputMessage=False,
+        showErrorMessage=True
+    )
+    sheet.add_data_validation(library_dv)
+
+    name_dv = DataValidation(
+        type='list',
+        formula1=f"=INDIRECT(D2)", 
+        allow_blank=False,
+        showInputMessage=False,
+        showErrorMessage=True
+    )
+    sheet.add_data_validation(name_dv)
+
+    param_dv = DataValidation(
+        type='list', 
+        formula1=f"=INDIRECT(E2)", 
+        allow_blank=True,
+        showInputMessage=False,
+        showErrorMessage=False,
+    )
+    sheet.add_data_validation(param_dv)
 
     # * Update config excel with the new mapping data generated from the application UI
     for configRowCount, mapping in configData.items():
 
         # * Update config excel mapping translation with new data
         for header, column in HEADER_COLUMN_MAP.items():
+
             cell = sheet[column + str(configRowCount)]
 
             if header == 'function_parameters':
@@ -388,6 +474,11 @@ def handleXlsxUpdate(configData, xlsxInFile, xlsxOutFile):
             else:
                 cell.value = mapping[header]
 
+            if header == 'function_library': library_dv.add(f"{column}2:{column}1048576")
+            elif header == 'function_name': name_dv.add(f"{column}2:{column}1048576"),
+            elif header == 'function_parameters': param_dv.add(f"{column}2:{column}1048576")
+
+    print(sheet.data_validations)
     workbook.save(xlsxOutFile)
 
 # ********************************************************* Helper functions ********************************************************#
@@ -504,5 +595,22 @@ def testHandleReferenceData():
     xlsxFile = os.path.join(baseDir, "samples/configTest_v2.xlsx")
     handleReferenceData(xlsxFile)
 
+def testHandleFunctionlibraryData():
+    xlsxFile = os.path.join(baseDir, "samples/configTest_v2.xlsx")
+    functionLibraryMap, duplicateFunctionName = handleFunctionLibaryData(xlsxFile)
+
+    for i, (lib, names) in enumerate(functionLibraryMap.items()):
+        print(i+1, lib)
+        print('---------------------------------')
+
+        for j, (name, params) in enumerate(names.items()):
+            print(j+1, name)
+            print(params)
+        
+        print()
+
+    for i, (name, location) in enumerate(duplicateFunctionName['data'].items()):
+        print(i+1, name, location)
+
 if __name__ == "__main__":
-    testHandleReferenceData()
+    testHandleFunctionlibraryData()

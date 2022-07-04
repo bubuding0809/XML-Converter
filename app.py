@@ -155,8 +155,11 @@ class MainWindow(qtw.QMainWindow):
         try:
             # parse config excel and generate mappings
             self.referenceMap, duplicateReferences = xmlParser.handleReferenceData(self.xlsxInFile)
-            self.conversionMap, self.keywordMap, self.warningData = xmlParser.handleMappingData(self.xlsxInFile, self.referenceMap)
+            self.functionLibaryMap, duplicateFunctionNames = xmlParser.handleFunctionLibaryData(self.xlsxInFile)
+            self.conversionMap, self.keywordMap, self.warningData = xmlParser.handleMappingData(self.xlsxInFile, self.referenceMap, self.functionLibaryMap)
+            
             self.warningData.append(duplicateReferences)
+            self.warningData.append(duplicateFunctionNames)
         
         except Exception as ex:
             # Catch exceptions and handle them
@@ -204,12 +207,12 @@ class MainWindow(qtw.QMainWindow):
         
         else:
             # * if config data is successfully parsed, proceed with config mapping validity checks
-            self.handleConfigChecks()
+            self.handleConfigWarnings()
 
             # * Parse xml data with conversion map then display in UI
             if self.xmlInFile: self.handleDataLoad()
 
-    def handleConfigChecks(self):
+    def handleConfigWarnings(self):
         # * If there are any warning data generated from checking the config file
         # * Create and show a warning dialog widget to display the warning information
         for warning in self.warningData:
@@ -789,9 +792,8 @@ class MainWindow(qtw.QMainWindow):
 
                 # New table data
                 description = teststep.newDataTableWidget.item(0, 0).text()
-                function_name = teststep.newDataTableWidget.item(0, 1).text()
-                function_library = teststep.newDataTableWidget.item(
-                    0, 2).text()
+                function_library = teststep.newDataTableWidget.item(0, 1).text()
+                function_name = teststep.newDataTableWidget.item(0, 2).text()
 
                 # New List data
                 function_parameters = []

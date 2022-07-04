@@ -324,7 +324,7 @@ class TeststepGroupBoxWidget(qtw.QGroupBox):
         
         # Set table header 2
         item = qtw.QTableWidgetItem()
-        item.setText("Function Name")
+        item.setText("Function library")
         font = qtg.QFont()
         font.setBold(True)
         font.setWeight(75)
@@ -333,7 +333,7 @@ class TeststepGroupBoxWidget(qtw.QGroupBox):
         
         # Set table header 3
         item = qtw.QTableWidgetItem()
-        item.setText("Function library")
+        item.setText("Function name")
         font = qtg.QFont()
         font.setBold(True)
         font.setWeight(75)

@@ -239,18 +239,20 @@ def handleFunctionDefinitionData(xlsxFile):
         'worksheet': 'function library',
         'data': {}
     }
+    functionNames = set()
 
     for rowCount, row in enumerate(reader):
         function_library = row['function_library']
         function_name = row['function_name']
         function_parameters = [name.strip() for name in row['function_parameters'].split('\n') if name]
 
-        if function_name not in functionLibraryMap[function_library]:
+        if function_library and function_name not in functionNames :
             functionLibraryMap[function_library][function_name] = {
                 'rowCount': rowCount + 2,
                 'function_parameters': function_parameters
             }
-        else:
+            functionNames.add(function_name)
+        elif function_library and function_name:
             duplicateFunctionNames['data'][function_name] = 'B' + str(rowCount + 2)
 
     return functionLibraryMap, duplicateFunctionNames 
@@ -435,7 +437,7 @@ def handleXlsxUpdate(configData, functionDefinitionMap, xlsxInFile, xlsxOutFile)
 
     library_dv = DataValidation(
         type='list', 
-        formula1=f"{quote_sheetname('library definition')}!$1:$1", 
+        formula1=f"{quote_sheetname('function library')}!$E$2:$E${len(functionDefinitionMap)+1}", 
         allow_blank=False,
         showInputMessage=False,
         showErrorMessage=True
@@ -486,25 +488,45 @@ def handleXlsxUpdate(configData, functionDefinitionMap, xlsxInFile, xlsxOutFile)
             cell.value = None
 
     # * Clear function library sheet of old data
-    for row in functionLibrarySheet['A2:C1000']:
+    for row in functionLibrarySheet['A2:E1000']:
         for cell in row:
             cell.value = None
 
     # * Write new data to library definition and function library sheet
     row = 2
-    for col, (functionLibrary, functionNames) in enumerate(functionDefinitionMap.items()):
-        libraryDefinitionSheet.cell(1, col+1).value = functionLibrary
-
-        for index, (functionName, data) in enumerate(functionNames.items()):
-            libraryDefinitionSheet.cell(index + 2, col+1).value = functionName
+    for i, (functionLibrary, functionNames) in enumerate(functionDefinitionMap.items()):
+        libraryDefinitionSheet.cell(1, i+1).value = functionLibrary
+        functionLibrarySheet.cell(i+2, 5).value = functionLibrary
+        
+        count = 0
+        for j, (functionName, data) in enumerate(functionNames.items()):
+            libraryDefinitionSheet.cell(j+2, i+1).value = functionName
 
             functionLibrarySheet.cell(row, 1).value = functionLibrary
             functionLibrarySheet.cell(row, 2).value = functionName
             functionLibrarySheet.cell(row, 3).value = '\n'.join(data['function_parameters'])
 
-            print(row, functionLibrary, functionName, data['function_parameters'], sep=' | ')
+            try:
+                del workbook.defined_names[functionName]
+            except Exception as ex:
+                print(ex)
+            finally:
+                new_range = openpyxl.workbook.defined_name.DefinedName(functionName, attr_text=f"'function library'!$C${row}")
+                workbook.defined_names.append(new_range)
+                print(workbook.defined_names[functionName])
 
+            print(row, functionLibrary, functionName, data['function_parameters'], sep=' | ')
             row += 1
+            count += 1
+
+        try:
+            del workbook.defined_names[functionLibrary]
+        except Exception as ex:
+            print(ex)
+        finally:
+            new_range = openpyxl.workbook.defined_name.DefinedName(functionLibrary, attr_text=f"'function library'!$B${row-count}:$B${row}")
+            workbook.defined_names.append(new_range)
+            print(workbook.defined_names[functionLibrary])
 
     workbook.save(xlsxOutFile)
 
@@ -627,8 +649,8 @@ def testHandleFunctionDefinitionData():
     functionLibraryMap, duplicateFunctionName = handleFunctionDefinitionData(xlsxFile)
 
     for i, (lib, names) in enumerate(functionLibraryMap.items()):
-        print(i+1, lib)
-        print('---------------------------------')
+        print(i+1, lib, sep='.')
+        print('-------------------------------------------------------------')
 
         for j, (name, params) in enumerate(names.items()):
             print(j+1, name)
@@ -636,8 +658,11 @@ def testHandleFunctionDefinitionData():
         
         print()
 
-    for i, (name, location) in enumerate(duplicateFunctionName['data'].items()):
-        print(i+1, name, location)
+    if duplicateFunctionName['data']:
+        print('Duplicates')
+        print('-------------------------------------------------------------')
+        for i, (name, location) in enumerate(duplicateFunctionName['data'].items()):
+            print(i+1, name, location)
 
 if __name__ == "__main__":
     # xlsxFile = os.path.join(baseDir, "samples/configTest_v2.xlsx")

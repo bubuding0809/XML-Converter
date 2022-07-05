@@ -7,13 +7,12 @@ from PyQt5 import (
 
 class ListWidget(qtw.QListWidget):
 
-    def __init__(self, atpType, targetListWidget=None, parent=None):
+    def __init__(self, atpType=None, targetListWidget=None, parent=None):
         super(ListWidget,self).__init__(parent)
         self.TYPE = atpType
         self.targetListWidget = targetListWidget
         self.installEventFilter(self)
         
-
 
     def keyPressEvent(self, event):
         if event == qtg.QKeySequence.Copy:
@@ -26,7 +25,6 @@ class ListWidget(qtw.QListWidget):
             clipboard.setText('\n'.join(copiedValues), mode=clipboard.Clipboard)
             
 
-    
     def eventFilter(self, source, event) -> bool:
         #* If the source is not from a ListWidget Object, return
         if source is not self:
@@ -84,7 +82,6 @@ class ListWidget(qtw.QListWidget):
         return super(ListWidget, self).eventFilter(source, event)
             
     
-
     def handleClassicParamActions(self, action):
         #* Clear new list widget if action is mirror
         if action == 'MIRROR':
@@ -106,7 +103,6 @@ class ListWidget(qtw.QListWidget):
             self.targetListWidget.addItem(newItem)
 
 
-
     def handleDD2ParamActions(self, action):
             if action == 'DELETE':
                 #* Get the selected item modelIndexes and use it to delete the selected items
@@ -125,7 +121,6 @@ class ListWidget(qtw.QListWidget):
                 self.editItem(item)
     
 
-
 class TableWidget(qtw.QTableWidget):
     def __init__(self, parent=None):
         super(TableWidget,self).__init__(parent)
@@ -141,7 +136,6 @@ class TableWidget(qtw.QTableWidget):
             # Join the values and set it to the global clipboard
             clipboard = qtw.QApplication.clipboard()
             clipboard.setText(', '.join(copiedValues), mode=clipboard.Clipboard)
-
 
 
 class TeststepGroupBoxWidget(qtw.QGroupBox):
@@ -333,7 +327,7 @@ class TeststepGroupBoxWidget(qtw.QGroupBox):
         
         # Set table header 3
         item = qtw.QTableWidgetItem()
-        item.setText("Function name")
+        item.setText("Function name ")
         font = qtg.QFont()
         font.setBold(True)
         font.setWeight(75)

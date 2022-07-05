@@ -85,10 +85,8 @@ class SummaryDialog(qtw.QDialog):
                 if teststep.id in self.filteredTeststepIds:
                     teststepItem = qtw.QTreeWidgetItem(testcaseItem)
                     teststepItem.setText(2, str(teststep.id))
-                    teststepItem.setText(
-                        3, teststep.data['old']['description'])
-                    teststepItem.setText(
-                        4, teststep.newDataTableWidget.item(0, 0).text())
+                    teststepItem.setText(3, teststep.data['old']['description'])
+                    teststepItem.setText(4, teststep.newDataTableWidget.item(0, 0).text())
                     testcaseItem.addChild(teststepItem)
 
             # * Create counter for number of teststeps selected per testcase

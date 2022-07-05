@@ -334,7 +334,7 @@ class Ui_MainWindow(object):
         self.scrollArea.setAlignment(QtCore.Qt.AlignLeading|QtCore.Qt.AlignLeft|QtCore.Qt.AlignTop)
         self.scrollArea.setObjectName("scrollArea")
         self.scrollAreaWidgetContents = QtWidgets.QWidget()
-        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 1089, 540))
+        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 1093, 540))
         self.scrollAreaWidgetContents.setObjectName("scrollAreaWidgetContents")
         self.verticalLayout_3 = QtWidgets.QVBoxLayout(self.scrollAreaWidgetContents)
         self.verticalLayout_3.setSizeConstraint(QtWidgets.QLayout.SetDefaultConstraint)
@@ -389,10 +389,11 @@ class Ui_MainWindow(object):
         icon3.addPixmap(QtGui.QPixmap(":/icons/bootstrap-icons-1.8.3/file-excel-fill.svg"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.actionExit_3.setIcon(icon3)
         self.actionExit_3.setObjectName("actionExit_3")
-        self.menuConverter.addAction(self.actionOpen)
-        self.menuConverter.addAction(self.actionSave)
+        self.actionFunction_definitions = QtWidgets.QAction(MainWindow)
+        self.actionFunction_definitions.setEnabled(False)
+        self.actionFunction_definitions.setObjectName("actionFunction_definitions")
         self.menuConverter.addSeparator()
-        self.menuConverter.addAction(self.actionExit_3)
+        self.menuConverter.addAction(self.actionFunction_definitions)
         self.menubar.addAction(self.menuConverter.menuAction())
 
         self.retranslateUi(MainWindow)
@@ -449,6 +450,7 @@ class Ui_MainWindow(object):
         self.actionExit_2.setText(_translate("MainWindow", "Exit"))
         self.actionSomething.setText(_translate("MainWindow", "Exit"))
         self.actionExit_3.setText(_translate("MainWindow", "Close"))
+        self.actionFunction_definitions.setText(_translate("MainWindow", "Function definitions"))
 
 from .resources import bootstrap_rc
 

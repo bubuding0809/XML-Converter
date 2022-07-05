@@ -1,5 +1,6 @@
 import logging
 from components.UiMainWindow import Ui_MainWindow
+from components.FunctionDefinitionDialogWidget import FunctionDefinitionDialog
 from components.WarningDialogWidget import WarningDialog
 from components.SummaryDialogWidget import SummaryDialog
 from components.TeststepGroupBoxWidget import TeststepGroupBoxWidget
@@ -16,6 +17,7 @@ import sys
 import os
 import subprocess
 import xmlParser
+import copy
 from components.resources import bootstrap_rc
 from samples import testFilePaths as testfiles
 
@@ -80,6 +82,7 @@ class MainWindow(qtw.QMainWindow):
         self.ui.mainSearchBar_lineEdit.textChanged.connect(
             self.handleSearchBar)
         self.ui.quitSc.activated.connect(self.handleExitApp)
+        self.ui.actionFunction_definitions.triggered.connect(self.handleConfigFunctionDefinitions)
         self.ui.xml_summary_btn.clicked.connect(self.handleXMLSummary)
         self.ui.configFileUpdate_btn.clicked.connect(self.handleConfigUpdate)
         self.filterButtonGroup.buttonClicked.connect(
@@ -105,6 +108,7 @@ class MainWindow(qtw.QMainWindow):
         self.referenceMap = {}
         self.conversionMap = {}
         self.keywordMap = {}
+        self.functionDefinitionMap = {}
 
     # ************************* Signal Handler methods **************************** #
 
@@ -155,8 +159,8 @@ class MainWindow(qtw.QMainWindow):
         try:
             # parse config excel and generate mappings
             self.referenceMap, duplicateReferences = xmlParser.handleReferenceData(self.xlsxInFile)
-            self.functionLibaryMap, duplicateFunctionNames = xmlParser.handleFunctionLibaryData(self.xlsxInFile)
-            self.conversionMap, self.keywordMap, self.warningData = xmlParser.handleMappingData(self.xlsxInFile, self.referenceMap, self.functionLibaryMap)
+            self.functionDefinitionMap, duplicateFunctionNames = xmlParser.handleFunctionDefinitionData(self.xlsxInFile)
+            self.conversionMap, self.keywordMap, self.warningData = xmlParser.handleMappingData(self.xlsxInFile, self.referenceMap, self.functionDefinitionMap)
             
             self.warningData.append(duplicateReferences)
             self.warningData.append(duplicateFunctionNames)
@@ -202,12 +206,18 @@ class MainWindow(qtw.QMainWindow):
                 # Windows
                 elif sys.platform == 'win32':
                     os.startfile(self.xlsxInFile)
+            
+            # Disable function definitions
+            self.ui.actionFunction_definitions.setEnabled(False)
 
             self.resetAllXmlData()
         
         else:
             # * if config data is successfully parsed, proceed with config mapping validity checks
             self.handleConfigWarnings()
+
+            # * Allow user to view and edit function definitions 
+            self.ui.actionFunction_definitions.setEnabled(True)
 
             # * Parse xml data with conversion map then display in UI
             if self.xmlInFile: self.handleDataLoad()
@@ -224,7 +234,7 @@ class MainWindow(qtw.QMainWindow):
 
         # * Create warning dialog widget and show
         warningDialog = WarningDialog(self, self.xlsxInFile, self.warningData)
-        warningDialog.show()
+        warningDialog.open()
 
     def handleDataLoad(self):
         # * Reset all xml data
@@ -546,7 +556,7 @@ class MainWindow(qtw.QMainWindow):
             data=self.testCaseBoxList,
             filteredIds=self.filteredTeststepIds
         )
-        summaryDialog.show()
+        summaryDialog.open()
 
     def handleXMLConvert(self):
         # * Open file dialog and get save file path
@@ -821,7 +831,7 @@ class MainWindow(qtw.QMainWindow):
 
         try:
             xmlParser.handleXlsxUpdate(
-                configData, self.xlsxInFile, xlsxOutFile
+                configData, self.functionDefinitionMap, self.xlsxInFile, xlsxOutFile
             )
 
             # * Create success message box
@@ -842,9 +852,7 @@ class MainWindow(qtw.QMainWindow):
 
                 elif sys.platform == 'darwin':
                     subprocess.call(['open', '-R', xlsxOutFile])
-
         except Exception as ex:
-
             # If exception caught is Permission Error set specific exception text
             if type(ex) == PermissionError:
                 exception = f"The action can't be completed because the file is open in Excel.\
@@ -884,6 +892,16 @@ class MainWindow(qtw.QMainWindow):
             self.handleDataProcessing()
 
             self.ui.xml_refreshData_btn.setEnabled(True)
+
+    def handleConfigFunctionDefinitions(self):
+
+        def updateFunctionDefinitons():
+            del self.functionDefinitionMap
+            self.functionDefinitionMap = functionDefinitionDialog.functionDefinitionData
+
+        functionDefinitionDialog = FunctionDefinitionDialog(self, copy.deepcopy(self.functionDefinitionMap))
+        functionDefinitionDialog.accepted.connect(updateFunctionDefinitons)
+        functionDefinitionDialog.open()
 
     #*************************** Utility functions ******************************* #
 

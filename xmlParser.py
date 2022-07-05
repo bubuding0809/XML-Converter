@@ -1,6 +1,7 @@
 import xml.etree.ElementTree as ET
 import re
 import collections
+import openpyxl
 from utils import removeWhiteSpace, ExcelDictReader
 from openpyxl import load_workbook
 from openpyxl.worksheet.datavalidation import DataValidation
@@ -224,7 +225,7 @@ def handleReferenceData(xlsxFile):
 
     return referenceMap, duplicateReferences
 
-def handleFunctionLibaryData(xlsxFile):
+def handleFunctionDefinitionData(xlsxFile):
     # Load excel file with openpyxl load_workbook
     workbook = load_workbook(filename=xlsxFile)
     sheet = workbook['function library']
@@ -423,16 +424,14 @@ id: {teststep['id']}
     # Write modified xml file to specificed file location
     tree.write(xmlOutFile)
 
-def handleXlsxUpdate(configData, xlsxInFile, xlsxOutFile):
+def handleXlsxUpdate(configData, functionDefinitionMap, xlsxInFile, xlsxOutFile):
 
     # * Load excel file with openpyxl load_workbook
     workbook = load_workbook(filename=xlsxInFile)
-    sheet = workbook['mapping']
-
-    print(sheet.data_validations)
+    mappingSheet = workbook['mapping']
 
     # * Clear all exisitng data validations in mapping sheet
-    sheet.data_validations = DataValidationList()
+    mappingSheet.data_validations = DataValidationList()
 
     library_dv = DataValidation(
         type='list', 
@@ -441,7 +440,7 @@ def handleXlsxUpdate(configData, xlsxInFile, xlsxOutFile):
         showInputMessage=False,
         showErrorMessage=True
     )
-    sheet.add_data_validation(library_dv)
+    mappingSheet.add_data_validation(library_dv)
 
     name_dv = DataValidation(
         type='list',
@@ -450,7 +449,7 @@ def handleXlsxUpdate(configData, xlsxInFile, xlsxOutFile):
         showInputMessage=False,
         showErrorMessage=True
     )
-    sheet.add_data_validation(name_dv)
+    mappingSheet.add_data_validation(name_dv)
 
     param_dv = DataValidation(
         type='list', 
@@ -459,7 +458,7 @@ def handleXlsxUpdate(configData, xlsxInFile, xlsxOutFile):
         showInputMessage=False,
         showErrorMessage=False,
     )
-    sheet.add_data_validation(param_dv)
+    mappingSheet.add_data_validation(param_dv)
 
     # * Update config excel with the new mapping data generated from the application UI
     for configRowCount, mapping in configData.items():
@@ -467,7 +466,7 @@ def handleXlsxUpdate(configData, xlsxInFile, xlsxOutFile):
         # * Update config excel mapping translation with new data
         for header, column in HEADER_COLUMN_MAP.items():
 
-            cell = sheet[column + str(configRowCount)]
+            cell = mappingSheet[column + str(configRowCount)]
 
             if header == 'function_parameters':
                 cell.value = '\n'.join(mapping[header])
@@ -478,7 +477,35 @@ def handleXlsxUpdate(configData, xlsxInFile, xlsxOutFile):
             elif header == 'function_name': name_dv.add(f"{column}2:{column}1048576"),
             elif header == 'function_parameters': param_dv.add(f"{column}2:{column}1048576")
 
-    print(sheet.data_validations)
+    libraryDefinitionSheet = workbook['library definition']
+    functionLibrarySheet = workbook['function library']
+
+    # * Clear library definition sheet of old data
+    for row in libraryDefinitionSheet['A1:Z100']:
+        for cell in row:
+            cell.value = None
+
+    # * Clear function library sheet of old data
+    for row in functionLibrarySheet['A2:C1000']:
+        for cell in row:
+            cell.value = None
+
+    # * Write new data to library definition and function library sheet
+    row = 2
+    for col, (functionLibrary, functionNames) in enumerate(functionDefinitionMap.items()):
+        libraryDefinitionSheet.cell(1, col+1).value = functionLibrary
+
+        for index, (functionName, data) in enumerate(functionNames.items()):
+            libraryDefinitionSheet.cell(index + 2, col+1).value = functionName
+
+            functionLibrarySheet.cell(row, 1).value = functionLibrary
+            functionLibrarySheet.cell(row, 2).value = functionName
+            functionLibrarySheet.cell(row, 3).value = '\n'.join(data['function_parameters'])
+
+            print(row, functionLibrary, functionName, data['function_parameters'], sep=' | ')
+
+            row += 1
+
     workbook.save(xlsxOutFile)
 
 # ********************************************************* Helper functions ********************************************************#
@@ -595,9 +622,9 @@ def testHandleReferenceData():
     xlsxFile = os.path.join(baseDir, "samples/configTest_v2.xlsx")
     handleReferenceData(xlsxFile)
 
-def testHandleFunctionlibraryData():
-    xlsxFile = os.path.join(baseDir, "samples/configTest_v2.xlsx")
-    functionLibraryMap, duplicateFunctionName = handleFunctionLibaryData(xlsxFile)
+def testHandleFunctionDefinitionData():
+    xlsxFile = os.path.join(baseDir, "samples/configUpdated_v2.xlsx")
+    functionLibraryMap, duplicateFunctionName = handleFunctionDefinitionData(xlsxFile)
 
     for i, (lib, names) in enumerate(functionLibraryMap.items()):
         print(i+1, lib)
@@ -613,4 +640,14 @@ def testHandleFunctionlibraryData():
         print(i+1, name, location)
 
 if __name__ == "__main__":
-    testHandleFunctionlibraryData()
+    # xlsxFile = os.path.join(baseDir, "samples/configTest_v2.xlsx")
+    # workbook = load_workbook(filename=xlsxFile)
+    # del workbook.defined_names['Something.dll']
+    # new_range = openpyxl.workbook.defined_name.DefinedName('Something.dll', attr_text="'library definition'!$D$2:$D$1048576")
+    # workbook.defined_names.append(new_range)
+
+    # print(workbook.defined_names)
+    
+    # workbook.save(os.path.join(baseDir, "samples/configUpdated_v2.xlsx"))
+    testHandleFunctionDefinitionData()
+

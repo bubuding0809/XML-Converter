@@ -21,7 +21,7 @@ HEADER_COLUMN_MAP = {
 
 # ********************************************************* Application functions ********************************************************#
 
-def handleMappingData(xlsxFile, referenceMap, functionLibaryMap):
+def handleMappingData(xlsxFile, referenceMap, functionDefinitionMap):
     # Load excel file with openpyxl load_workbook
     workbook = load_workbook(filename=xlsxFile)
     sheet = workbook['mapping']
@@ -98,8 +98,8 @@ def handleMappingData(xlsxFile, referenceMap, functionLibaryMap):
             # * If name and text is unpacked, create function parameter obj and append to new function parameter list
             if len(param_data) == 2:
                 new_function_parameters.append({
-                    "name": param_data[0],
-                    "text": param_data[1]
+                    "name": removeWhiteSpace(param_data[0]),
+                    "text": removeWhiteSpace(param_data[1])
                 })
             # * If only 1 value is unpacked, check if value is a reference which startswith and endswith '##'
             elif re.match(r'^#{2}.+#{2}$', param_data[0]):
@@ -155,22 +155,23 @@ def handleMappingData(xlsxFile, referenceMap, functionLibaryMap):
             else:
                 duplicateKeywords['data'][str(keywords)] = 'A' + str(rowCount + 2)
 
-        # * There are any invalid DD2.0 function translation used
-        # * Add it to invalidTranslations data 
-        function_library_data = functionLibaryMap.get(new_function_library)
-        if function_library_data is None:
-            invalidTranslations['data'][new_function_library] = 'D' + str(rowCount + 2)
-            continue
-        
-        function_name_data = function_library_data.get(new_function_name)
-        if function_name_data is None:
-            invalidTranslations['data'][new_function_name] = 'E' + str(rowCount + 2)
-            continue
+        # * If there are any invalid DD2.0 function translation used
+        # * Add it to invalidTranslations data
+        if functionDefinitionMap:
+            function_library_data = functionDefinitionMap.get(new_function_library)
+            if function_library_data is None:
+                invalidTranslations['data'][new_function_library] = 'D' + str(rowCount + 2)
+                continue
+            
+            function_name_data = function_library_data.get(new_function_name)
+            if function_name_data is None:
+                invalidTranslations['data'][new_function_name] = 'E' + str(rowCount + 2)
+                continue
 
-        function_parameter_data = function_name_data['function_parameters']
-        for param in new_function_parameters:
-            if param['name'] not in function_parameter_data:
-                invalidTranslations['data'][param['name']] = 'F' + str(rowCount + 2)
+            function_parameter_data = function_name_data['function_parameters']
+            for param in new_function_parameters:
+                if param['name'] not in function_parameter_data:
+                    invalidTranslations['data'][param['name']] = 'F' + str(rowCount + 2)
 
     emptyFields = getEmptyFieldData(conversionMap)
 
@@ -228,15 +229,18 @@ def handleReferenceData(xlsxFile):
 def handleFunctionDefinitionData(xlsxFile):
     # Load excel file with openpyxl load_workbook
     workbook = load_workbook(filename=xlsxFile)
-    sheet = workbook['function library']
+    try:
+        sheet = workbook['function definitions']
+    except KeyError:
+        return {}, {}
 
     # Convert excel sheet into a list of dictionary with header:value pairs
     reader = ExcelDictReader(sheet)
-    functionLibraryMap = collections.defaultdict(lambda: {})
+    functionDefinitionMap = collections.defaultdict(lambda: {})
     duplicateFunctionNames = {
         'title': 'Duplicate function name',
         'warning': configWarnings.DUP_FUNCTION_NAMES_WARNINGS,
-        'worksheet': 'function library',
+        'worksheet': 'function definitions',
         'data': {}
     }
     functionNames = set()
@@ -247,7 +251,7 @@ def handleFunctionDefinitionData(xlsxFile):
         function_parameters = [name.strip() for name in row['function_parameters'].split('\n') if name]
 
         if function_library and function_name not in functionNames :
-            functionLibraryMap[function_library][function_name] = {
+            functionDefinitionMap[function_library][function_name] = {
                 'rowCount': rowCount + 2,
                 'function_parameters': function_parameters
             }
@@ -255,7 +259,7 @@ def handleFunctionDefinitionData(xlsxFile):
         elif function_library and function_name:
             duplicateFunctionNames['data'][function_name] = 'B' + str(rowCount + 2)
 
-    return functionLibraryMap, duplicateFunctionNames 
+    return functionDefinitionMap, duplicateFunctionNames 
 
 def getEmptyFieldData(conversion_map):
     emptyFieldData = {
@@ -426,109 +430,154 @@ id: {teststep['id']}
     # Write modified xml file to specificed file location
     tree.write(xmlOutFile)
 
-def handleXlsxUpdate(configData, functionDefinitionMap, xlsxInFile, xlsxOutFile):
+def handleConfigFileUpdate(functionDefinitionMap, xlsxInFile, xlsxOutFile, configData):
 
     # * Load excel file with openpyxl load_workbook
     workbook = load_workbook(filename=xlsxInFile)
     mappingSheet = workbook['mapping']
 
+    # * If config data is generated by application
+    # * Update config excel with the new mapping data generated from the application UI
+    if configData:
+        for configRowCount, mapping in configData.items():
+            # * Update config excel mapping translation with new data
+            for header, column in HEADER_COLUMN_MAP.items():
+                cell = mappingSheet[column + str(configRowCount)]
+
+                if header == 'function_parameters':
+                    cell.value = '\n'.join(mapping[header])
+                else:
+                    cell.value = mapping[header]
+
     # * Clear all exisitng data validations in mapping sheet
     mappingSheet.data_validations = DataValidationList()
-
+    
+    # * Data validation for DD2.0 function library
     library_dv = DataValidation(
         type='list', 
-        formula1=f"{quote_sheetname('function library')}!$E$2:$E${len(functionDefinitionMap)+1}", 
+        formula1=f"{quote_sheetname('function definitions')}!$E$2:$E${len(functionDefinitionMap)+1 if functionDefinitionMap else '1048576'}",
         allow_blank=False,
         showInputMessage=False,
-        showErrorMessage=True
+        showErrorMessage=True,
+        errorStyle='warning',
+        errorTitle='Invalid function library',
+        error='Function library entered is not specifed in ATP function definitions.'
     )
     mappingSheet.add_data_validation(library_dv)
+    library_dv.add(f"D2:D1048576")
 
+    # * Data validation for DD2.0 function name
     name_dv = DataValidation(
         type='list',
         formula1=f"=INDIRECT(D2)", 
         allow_blank=False,
         showInputMessage=False,
-        showErrorMessage=True
+        showErrorMessage=True,
+        errorStyle='warning',
+        errorTitle='Invalid function name',
+        error='Function name entered is not defined under selected function library.'
     )
     mappingSheet.add_data_validation(name_dv)
+    name_dv.add(f"E2:E1048576")
 
+    # * Data validation for DD2.0 function parameters
     param_dv = DataValidation(
         type='list', 
         formula1=f"=INDIRECT(E2)", 
         allow_blank=True,
-        showInputMessage=False,
+        showInputMessage=True,
         showErrorMessage=False,
+        promptTitle='Function parameters',
+        prompt='name1=value\nname2=value\nname3=value1,value2'
     )
     mappingSheet.add_data_validation(param_dv)
+    param_dv.add(f"F2:F1048576")
 
-    # * Update config excel with the new mapping data generated from the application UI
-    for configRowCount, mapping in configData.items():
+    # * Get function definitions sheet from workbook
+    try:
+        functionLibrarySheet = workbook['function definitions']
+    except KeyError:
+        # * If workbook does not contain function definitions sheet
+        # * Create function definitions sheet
+        functionLibrarySheet = workbook.create_sheet('function definitions')
+        functionLibrarySheet.sheet_state = 'hidden'
+        functionLibrarySheet.protection.sheet = True
+        functionLibrarySheet.protection.enable()
+        functionLibrarySheet.protection.password = '123'
+        functionLibrarySheet.cell(1, 1).value = 'function_library'
+        functionLibrarySheet.cell(1, 2).value = 'function_name'
+        functionLibrarySheet.cell(1, 3).value = 'function_parameters'
+        functionLibrarySheet.cell(1, 5).value = 'function library references'
 
-        # * Update config excel mapping translation with new data
-        for header, column in HEADER_COLUMN_MAP.items():
-
-            cell = mappingSheet[column + str(configRowCount)]
-
-            if header == 'function_parameters':
-                cell.value = '\n'.join(mapping[header])
-            else:
-                cell.value = mapping[header]
-
-            if header == 'function_library': library_dv.add(f"{column}2:{column}1048576")
-            elif header == 'function_name': name_dv.add(f"{column}2:{column}1048576"),
-            elif header == 'function_parameters': param_dv.add(f"{column}2:{column}1048576")
-
-    libraryDefinitionSheet = workbook['library definition']
-    functionLibrarySheet = workbook['function library']
-
-    # * Clear library definition sheet of old data
-    for row in libraryDefinitionSheet['A1:Z100']:
-        for cell in row:
-            cell.value = None
-
-    # * Clear function library sheet of old data
-    for row in functionLibrarySheet['A2:E1000']:
-        for cell in row:
-            cell.value = None
-
-    # * Write new data to library definition and function library sheet
-    row = 2
-    for i, (functionLibrary, functionNames) in enumerate(functionDefinitionMap.items()):
-        libraryDefinitionSheet.cell(1, i+1).value = functionLibrary
-        functionLibrarySheet.cell(i+2, 5).value = functionLibrary
+    # * If function definition map is not empty, write new data to function definitions sheet and reapply defined names
+    if functionDefinitionMap:
         
-        count = 0
-        for j, (functionName, data) in enumerate(functionNames.items()):
-            libraryDefinitionSheet.cell(j+2, i+1).value = functionName
+        # * Clear function definitions sheet of old data
+        for row in functionLibrarySheet['A2:E1000']:
+            for cell in row:
+                cell.value = None
 
-            functionLibrarySheet.cell(row, 1).value = functionLibrary
-            functionLibrarySheet.cell(row, 2).value = functionName
-            functionLibrarySheet.cell(row, 3).value = '\n'.join(data['function_parameters'])
+        # * Write new data to function definitions sheet
+        row = 2
+        for i, (functionLibrary, functionNames) in enumerate(functionDefinitionMap.items()):
+            functionLibrarySheet.cell(i+2, 5).value = functionLibrary
+            
+            count = 0
+            for j, (functionName, data) in enumerate(functionNames.items()):
+                functionLibrarySheet.cell(row, 1).value = functionLibrary
+                functionLibrarySheet.cell(row, 2).value = functionName
+                functionLibrarySheet.cell(row, 3).value = '\n'.join(data['function_parameters'])
+
+                try:
+                    del workbook.defined_names[functionName]
+                except Exception as ex:
+                    print(ex)
+                finally:
+                    new_range = openpyxl.workbook.defined_name.DefinedName(functionName, attr_text=f"'function definitions'!$C${row}")
+                    workbook.defined_names.append(new_range)
+                    print(workbook.defined_names[functionName])
+
+                print(row, functionLibrary, functionName, data['function_parameters'], sep=' | ')
+                row += 1
+                count += 1
 
             try:
-                del workbook.defined_names[functionName]
+                del workbook.defined_names[functionLibrary]
             except Exception as ex:
                 print(ex)
             finally:
-                new_range = openpyxl.workbook.defined_name.DefinedName(functionName, attr_text=f"'function library'!$C${row}")
+                new_range = openpyxl.workbook.defined_name.DefinedName(functionLibrary, attr_text=f"'function definitions'!$B${row-count}:$B${row}")
                 workbook.defined_names.append(new_range)
-                print(workbook.defined_names[functionName])
-
-            print(row, functionLibrary, functionName, data['function_parameters'], sep=' | ')
-            row += 1
-            count += 1
-
-        try:
-            del workbook.defined_names[functionLibrary]
-        except Exception as ex:
-            print(ex)
-        finally:
-            new_range = openpyxl.workbook.defined_name.DefinedName(functionLibrary, attr_text=f"'function library'!$B${row-count}:$B${row}")
-            workbook.defined_names.append(new_range)
-            print(workbook.defined_names[functionLibrary])
+                print(workbook.defined_names[functionLibrary])
 
     workbook.save(xlsxOutFile)
+
+def handleFunctionDefinitionDataUpdate(functionDefinitionMap, functionDefinitionInFile):
+
+    # * Load excel file with openpyxl load_workbook
+    workbook = load_workbook(filename=functionDefinitionInFile)
+    sheet = workbook['function definitions']
+
+    # * Clear function definitions sheet of old data
+    for row in sheet['A2:E1000']:
+        for cell in row:
+            cell.value = None
+
+    # * Write new data to function definitions sheet
+    row = 2
+    for i, (functionLibrary, functionNames) in enumerate(functionDefinitionMap.items()):
+        # Write function libary references to column E
+        sheet.cell(i+2, 5).value = functionLibrary
+        
+        # Write function definition data to column A, B, C
+        for functionName, data in functionNames.items():
+            sheet.cell(row, 1).value = functionLibrary
+            sheet.cell(row, 2).value = functionName
+            sheet.cell(row, 3).value = '\n'.join(data['function_parameters'])
+
+            row += 1
+
+    workbook.save(functionDefinitionInFile)
 
 # ********************************************************* Helper functions ********************************************************#
 
@@ -556,11 +605,26 @@ def generateTeststepData(index, teststep, mapping, cleanedOldDescription, oldDes
     # Create new data object
     new_function_parameters = {}
     for param in mapping['function_parameters']:
-        if re.match(r'^@{2}.+@{2}$', param['text']):
-            referencedValue = old_function_parameters.get(param['text'].strip('@'), '')
-            new_function_parameters[param['name']] = referencedValue
-        else:
-            new_function_parameters[param['name']] = param['text']
+        #* If function name is already in function parameters skip the parameter name
+        if param['name'] in new_function_parameters:
+            continue
+        
+        # * Use regex to filter out all reference parameter values enclosed by '@@'
+        # * Try to access old paramter values that matches references
+        # * If matches, add values to xml data
+        # * Else, ignore it
+        # Function to process each regex match for r'@@[^,]*@@'
+        def matchOldParams(match):
+            value = old_function_parameters.get(match.group().strip('@'))
+            if value: return value
+
+        # Generate processed parameter values after regex filtering
+        parameter_values = []
+        for text in [text for text in param['text'].split(',') if text]:
+            value = re.sub(r'@@[^,]*@@', matchOldParams, text)
+            if value: parameter_values.append(value)
+
+        new_function_parameters[param['name']] = ','.join(parameter_values)
             
     newTestStepData = {
         "description": mapping["description"],
@@ -646,9 +710,9 @@ def testHandleReferenceData():
 
 def testHandleFunctionDefinitionData():
     xlsxFile = os.path.join(baseDir, "samples/configUpdated_v2.xlsx")
-    functionLibraryMap, duplicateFunctionName = handleFunctionDefinitionData(xlsxFile)
+    functionDefinitionMap, duplicateFunctionName = handleFunctionDefinitionData(xlsxFile)
 
-    for i, (lib, names) in enumerate(functionLibraryMap.items()):
+    for i, (lib, names) in enumerate(functionDefinitionMap.items()):
         print(i+1, lib, sep='.')
         print('-------------------------------------------------------------')
 
@@ -664,15 +728,25 @@ def testHandleFunctionDefinitionData():
         for i, (name, location) in enumerate(duplicateFunctionName['data'].items()):
             print(i+1, name, location)
 
-if __name__ == "__main__":
-    # xlsxFile = os.path.join(baseDir, "samples/configTest_v2.xlsx")
-    # workbook = load_workbook(filename=xlsxFile)
-    # del workbook.defined_names['Something.dll']
-    # new_range = openpyxl.workbook.defined_name.DefinedName('Something.dll', attr_text="'library definition'!$D$2:$D$1048576")
-    # workbook.defined_names.append(new_range)
+def testHandleRegex():
+    str = ',123,,,@@test@@,1,2,@@test@@,3,@@another@@,'
+    # 123,@@@@,@@test@@,3,@@anther@@
+    old_function_parameters = {
+        'test' : 'test123',
+        'another': 'another123'
+    }
 
-    # print(workbook.defined_names)
+    def matchOldParams(match):
+        value = old_function_parameters.get(match.group().strip('@'))
+        if value: return value
+
+    parameter_values = [text for text in str.split(',') if text]
+    processed_parameter_values = []
+    for text in parameter_values:
+        value = re.sub(r'@[^,]*@@', matchOldParams, text)
+        if value: processed_parameter_values.append(value)
+
+    print(processed_parameter_values)
     
-    # workbook.save(os.path.join(baseDir, "samples/configUpdated_v2.xlsx"))
-    testHandleFunctionDefinitionData()
-
+if __name__ == "__main__":
+    pass

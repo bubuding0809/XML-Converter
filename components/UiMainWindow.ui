@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1122</width>
-    <height>842</height>
+    <width>1118</width>
+    <height>833</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -837,25 +837,6 @@
               </widget>
              </item>
              <item>
-              <widget class="QPushButton" name="xml_clearTeststeps_btn">
-               <property name="enabled">
-                <bool>false</bool>
-               </property>
-               <property name="toolTip">
-                <string>Clear data grid of and loaded xml teststeps</string>
-               </property>
-               <property name="statusTip">
-                <string>Clear data grid of and loaded xml teststeps</string>
-               </property>
-               <property name="whatsThis">
-                <string>Clear data grid of and loaded xml teststeps</string>
-               </property>
-               <property name="text">
-                <string>Clear</string>
-               </property>
-              </widget>
-             </item>
-             <item>
               <widget class="QPushButton" name="showAll_btn">
                <property name="enabled">
                 <bool>false</bool>
@@ -955,8 +936,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>1093</width>
-            <height>540</height>
+            <width>1085</width>
+            <height>531</height>
            </rect>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -1043,7 +1024,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1122</width>
+     <width>1118</width>
      <height>26</height>
     </rect>
    </property>

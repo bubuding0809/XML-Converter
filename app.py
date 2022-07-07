@@ -12,6 +12,7 @@ from PyQt5 import (
     QtCore as qtc,
     QtGui as qtg
 )
+from deepdiff import DeepDiff
 import utils
 import sys
 import os
@@ -51,13 +52,11 @@ class MainWindow(qtw.QMainWindow):
         self.ui.xmlFileUpload_btn.setIconSize(qtc.QSize(25, 25))
 
         # Create Custom line edit search bar
-        self.ui.mainSearchBar_lineEdit = CustomLineEdit(
-            ':/icons/bootstrap-icons-1.8.3/search.svg', 'Search')
+        self.ui.mainSearchBar_lineEdit = CustomLineEdit(':/icons/bootstrap-icons-1.8.3/search.svg', 'Search')
         self.ui.mainSearchBar_lineEdit.setMinimumWidth(200)
         self.ui.mainSearchBar_lineEdit.setMaximumWidth(400)
         self.ui.mainSearchBar_lineEdit.setEnabled(False)
-        self.ui.scrollAreaSearchBox_widget.layout().insertWidget(
-            0, self.ui.mainSearchBar_lineEdit)
+        self.ui.scrollAreaSearchBox_widget.layout().insertWidget(0, self.ui.mainSearchBar_lineEdit)
 
         # Create radio buttons for filter box
         self.filterButtonGroup = qtw.QButtonGroup()
@@ -75,40 +74,42 @@ class MainWindow(qtw.QMainWindow):
         self.ui.xml_refreshData_btn.clicked.connect(self.handleXMLRefresh)
         self.ui.showAll_btn.pressed.connect(self.handleToggleAllDropDownBtn)
         self.ui.hideAll_btn.pressed.connect(self.handleToggleAllDropDownBtn)
-        self.ui.xml_clearTeststeps_btn.clicked.connect(
-            self.resetAllXmlData)
-        self.ui.selectAll_checkBox.stateChanged.connect(
-            self.handleSelectAllCheckBox)
-        self.ui.mainSearchBar_lineEdit.textChanged.connect(
-            self.handleSearchBar)
-        self.ui.quitSc.activated.connect(self.handleExitApp)
+        self.ui.selectAll_checkBox.stateChanged.connect(self.handleSelectAllCheckBox)
+        self.ui.mainSearchBar_lineEdit.textChanged.connect(self.handleSearchBar)
+        self.ui.quitSc.activated.connect(self.close)
         self.ui.actionFunction_definitions.triggered.connect(self.handleConfigFunctionDefinitions)
         self.ui.xml_summary_btn.clicked.connect(self.handleXMLSummary)
         self.ui.configFileUpdate_btn.clicked.connect(self.handleConfigUpdate)
-        self.filterButtonGroup.buttonClicked.connect(
-            self.handleFilterButtonClicked)
+        self.filterButtonGroup.buttonClicked.connect(self.handleFilterButtonClicked)
 
-        # * Global variables
-        # testfiles.CONFIG_PATH_WIN32 if sys.platform == 'win32' else testfiles.CONFIG_PATH_DARWIN
-        self.xlsxInFile = '' 
-        # testfiles.INPUT_PATH_WIN32 if sys.platform == 'win32' else testfiles.INPUT_PATH_DARWIN
-        self.xmlInFile = ''
+        # * Initialize config attributes
+        self.referenceMap = {}
+        self.functionDefinitionMap = {}
+        self.duplicateFunctionNames = {'data': {}}
+        self.conversionMap = {}
+        self.keywordMap = {}
+
+        # * Load function definition database and initialize function defintion data
+        self.functionDefintionInFile = os.path.join(baseDir, 'samples\__ATPFunctionDefinitions.xlsx')
+        try:
+            self.functionDefinitionMap, self.duplicateFunctionNames = xmlParser.handleFunctionDefinitionData(self.functionDefintionInFile)
+        except FileNotFoundError:
+            message = f'{self.functionDefintionInFile}\ncould not be found.\n\nFunction definitions will not be available for edit.',
+            qtw.QMessageBox.warning(self, 'Missing file', message, qtw.QMessageBox.Ok)
+        else:
+            self.ui.actionFunction_definitions.setEnabled(True)
 
         # * Global flags
+        self.xmlInFile = ''
+        self.xlsxInFile = ''
         self.testCaseBoxList = {}
         self.filteredTeststepIds = set()
-        self.filterDataMap = {
+        self.filterButtonGroupMap = {
             radioButton.text(): utils.removeWhiteSpace(radioButton.text().lower())
             for radioButton in self.filterButtonGroup.buttons()
         }
         self.ui.configFilePath_display.setText(self.xlsxInFile)
         self.ui.xmlFilePath_display.setText(self.xmlInFile)
-
-        # Initialize config attributes
-        self.referenceMap = {}
-        self.conversionMap = {}
-        self.keywordMap = {}
-        self.functionDefinitionMap = {}
 
     # ************************* Signal Handler methods **************************** #
 
@@ -159,11 +160,9 @@ class MainWindow(qtw.QMainWindow):
         try:
             # parse config excel and generate mappings
             self.referenceMap, duplicateReferences = xmlParser.handleReferenceData(self.xlsxInFile)
-            self.functionDefinitionMap, duplicateFunctionNames = xmlParser.handleFunctionDefinitionData(self.xlsxInFile)
             self.conversionMap, self.keywordMap, self.warningData = xmlParser.handleMappingData(self.xlsxInFile, self.referenceMap, self.functionDefinitionMap)
-            
             self.warningData.append(duplicateReferences)
-            self.warningData.append(duplicateFunctionNames)
+            self.warningData.append(self.duplicateFunctionNames)
         
         except Exception as ex:
             # Catch exceptions and handle them
@@ -207,8 +206,6 @@ class MainWindow(qtw.QMainWindow):
                 elif sys.platform == 'win32':
                     os.startfile(self.xlsxInFile)
             
-            # Disable function definitions
-            self.ui.actionFunction_definitions.setEnabled(False)
 
             self.resetAllXmlData()
         
@@ -216,8 +213,8 @@ class MainWindow(qtw.QMainWindow):
             # * if config data is successfully parsed, proceed with config mapping validity checks
             self.handleConfigWarnings()
 
-            # * Allow user to view and edit function definitions 
-            self.ui.actionFunction_definitions.setEnabled(True)
+            # Enable update config button
+            self.ui.configFileUpdate_btn.setEnabled(True)
 
             # * Parse xml data with conversion map then display in UI
             if self.xmlInFile: self.handleDataLoad()
@@ -423,8 +420,8 @@ class MainWindow(qtw.QMainWindow):
         self.ui.selectAll_checkBox.setEnabled(True)
         self.ui.selectAll_checkBox.setChecked(True)
 
-        # Enable clear data function
-        self.ui.xml_clearTeststeps_btn.setEnabled(True)
+        # Enable update config button
+        self.ui.configFileUpdate_btn.setEnabled(True)
 
         # Enable summary button
         self.ui.xml_summary_btn.setEnabled(True)
@@ -435,9 +432,6 @@ class MainWindow(qtw.QMainWindow):
         # Enable filter radio buttons
         self.ui.scrollAreaFilterBox_widget.setEnabled(True)
         self.ui.filterBoth_btn.setChecked(True)
-
-        # Enable update config button
-        self.ui.configFileUpdate_btn.setEnabled(True)
 
         # Enable refresh data button
         self.ui.xml_refreshData_btn.setEnabled(True)
@@ -460,7 +454,7 @@ class MainWindow(qtw.QMainWindow):
     def handleSelectAllCheckBox(self, state):
         # * Get current checked filter radio button
         checkFilterButton = self.filterButtonGroup.checkedButton()
-        filterTypeChecked = self.filterDataMap[checkFilterButton.text()]
+        filterTypeChecked = self.filterButtonGroupMap[checkFilterButton.text()]
 
         # * Get state of select all checkbox state == 0: unchecked, state == 2: checked
         isChecked = True if state else False
@@ -494,7 +488,7 @@ class MainWindow(qtw.QMainWindow):
 
     def handleSearchBar(self, text):
         checkFilterButton = self.filterButtonGroup.checkedButton()
-        filterTypeChecked = self.filterDataMap[checkFilterButton.text()]
+        filterTypeChecked = self.filterButtonGroupMap[checkFilterButton.text()]
 
         for testcase, teststepList in self.testCaseBoxList.items():
             isAnyFound = False
@@ -632,20 +626,8 @@ class MainWindow(qtw.QMainWindow):
             elif sys.platform == 'darwin':
                 subprocess.call(['open', '-R', xmlOutFile])
 
-    def handleExitApp(self):
-        msgBox = qtw.QMessageBox()
-        msgBox.setWindowTitle('Exit app')
-        msgBox.setText('Confirm with OK to exit the application now')
-        msgBox.setIcon(qtw.QMessageBox.Warning)
-        msgBox.setStandardButtons(qtw.QMessageBox.Ok | qtw.QMessageBox.Cancel)
-        msgBox.setDefaultButton(qtw.QMessageBox.Ok)
-
-        msgBox.defaultButton().clicked.connect(qtw.QApplication.instance().quit)
-
-        ret = msgBox.exec_()
-
     def handleFilterButtonClicked(self, button):
-        filterTypeChecked = self.filterDataMap[button.text()]
+        filterTypeChecked = self.filterButtonGroupMap[button.text()]
 
         for testcase, teststeps in self.testCaseBoxList.items():
 
@@ -786,7 +768,6 @@ class MainWindow(qtw.QMainWindow):
                     listWidget.model().blockSignals(False)
 
     def handleConfigUpdate(self):
-
         configData = {}
 
         # * Get updated mapping data from UI data grid
@@ -823,15 +804,15 @@ class MainWindow(qtw.QMainWindow):
             self, 'Save updated config file', './', 'Xlsx files (*.xlsx)'
         )
 
-        # * If user defines save as file, save filepath to variable
+        # * If user defines save as file, save filepath to variable, else cancel operation
         if file[0]:
             xlsxOutFile = file[0]
         else:
             return
 
         try:
-            xmlParser.handleXlsxUpdate(
-                configData, self.functionDefinitionMap, self.xlsxInFile, xlsxOutFile
+            xmlParser.handleConfigFileUpdate(
+                self.functionDefinitionMap, self.xlsxInFile, xlsxOutFile, configData
             )
 
             # * Create success message box
@@ -894,13 +875,8 @@ class MainWindow(qtw.QMainWindow):
             self.ui.xml_refreshData_btn.setEnabled(True)
 
     def handleConfigFunctionDefinitions(self):
-
-        def updateFunctionDefinitons():
-            del self.functionDefinitionMap
-            self.functionDefinitionMap = functionDefinitionDialog.functionDefinitionData
-
         functionDefinitionDialog = FunctionDefinitionDialog(self, copy.deepcopy(self.functionDefinitionMap))
-        functionDefinitionDialog.accepted.connect(updateFunctionDefinitons)
+        functionDefinitionDialog.accepted.connect(lambda: self.ui.statusbar.showMessage('Function definitions saved'))
         functionDefinitionDialog.open()
 
     #*************************** Utility functions ******************************* #
@@ -924,7 +900,6 @@ class MainWindow(qtw.QMainWindow):
 
         # * Disable scroll area tool widgets
         self.ui.xml_convert_btn.setEnabled(False)
-        self.ui.xml_clearTeststeps_btn.setEnabled(False)
         self.ui.mainSearchBar_lineEdit.setEnabled(False)
 
         # * Disable toggle dropdown button and set it to unchecked
@@ -976,8 +951,53 @@ class MainWindow(qtw.QMainWindow):
 
         return updatedConversionMap
 
+    #*************************** Virtual functions ******************************* #
 
-# * Configure windows to identify the application as a custom application
+    def closeEvent(self, event) -> None:
+        # * Create message box to confirm quitting of application
+        msgBoxButtonClicked = qtw.QMessageBox.question(
+            self, 
+            'Closing application window', 
+            'Any unsaved progress will be lost. Confirm closing of application?',
+            qtw.QMessageBox.Yes | qtw.QMessageBox.No
+        )
+    
+        # * Proceed with quitting proceedure if yes is clicked
+        if msgBoxButtonClicked == qtw.QMessageBox.Yes:
+
+            if not self.xlsxInFile:
+                return event.accept()
+
+            # * Generate function defintion map from config file
+            # * Compare function definition maps of config file and application
+            # * If there is a difference prompt user to update config file
+            try:
+                functionDefinitionMap, _ = xmlParser.handleFunctionDefinitionData(self.xlsxInFile)
+            except Exception:
+                qtw.QMessageBox.critical('Error', 'Error occurred while checking config file, config file will not be updated')
+                return event.ignore()
+
+            if DeepDiff(functionDefinitionMap, self.functionDefinitionMap):
+
+                msgBoxButtonClicked = qtw.QMessageBox.warning(
+                    self, 
+                    'Closing application window', 
+                    'Your config file is out of date. Update your config file before quitting?',
+                    qtw.QMessageBox.Yes | qtw.QMessageBox.No
+                )
+
+                # * Prompt user to save updated config file if yes is clicked
+                if msgBoxButtonClicked == qtw.QMessageBox.Yes:
+                    self.handleConfigUpdate()
+
+                return event.accept()
+
+            return event.accept()
+
+        event.ignore()
+
+    
+# * Configure windows to identify the application as a custom application to display icon
 if sys.platform == 'win32':
     try:
         from ctypes import windll  # Only exists on Windows.

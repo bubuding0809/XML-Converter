@@ -229,10 +229,7 @@ def handleReferenceData(xlsxFile):
 def handleFunctionDefinitionData(xlsxFile):
     # Load excel file with openpyxl load_workbook
     workbook = load_workbook(filename=xlsxFile)
-    try:
-        sheet = workbook['function definitions']
-    except KeyError:
-        return {}, {}
+    sheet = workbook['function definitions']
 
     # Convert excel sheet into a list of dictionary with header:value pairs
     reader = ExcelDictReader(sheet)
@@ -260,36 +257,6 @@ def handleFunctionDefinitionData(xlsxFile):
             duplicateFunctionNames['data'][function_name] = 'B' + str(rowCount + 2)
 
     return functionDefinitionMap, duplicateFunctionNames 
-
-def getEmptyFieldData(conversion_map):
-    emptyFieldData = {
-        'title': 'Empty fields',
-        'warning': configWarnings.EMPTY_MAPPING_FIELDS_WARNINGS,
-        'worksheet': 'mapping',
-        'data': {}
-    }
-
-    # * Iterate through conversion mapping
-    # * 
-    for cleanedOldDescription, mapping in conversion_map.items():
-        row_location = conversion_map[cleanedOldDescription]['configRowCount']
-        
-        # * Check if there are any empty fields in the teststep
-        emptyFields = {}
-        for tag, value in mapping.items():
-
-            if tag == "isMatched":
-                continue
-
-            if str(value).startswith('empty_description_key'):
-                emptyFields['empty_description_key'] = f"A{row_location}"
-            elif not value:
-                emptyFields['DD2.0 ' + tag] = f"{HEADER_COLUMN_MAP[tag]}{row_location}"
-            
-        if emptyFields: 
-            emptyFieldData['data'][row_location] = emptyFields
-
-    return emptyFieldData
 
 def getUnmatchedClassicDescriptions(conversion_map):
     unmatchedClassicDescriptions = []
@@ -581,6 +548,36 @@ def handleFunctionDefinitionDataUpdate(functionDefinitionMap, functionDefinition
 
 # ********************************************************* Helper functions ********************************************************#
 
+def getEmptyFieldData(conversion_map):
+    emptyFieldData = {
+        'title': 'Empty fields',
+        'warning': configWarnings.EMPTY_MAPPING_FIELDS_WARNINGS,
+        'worksheet': 'mapping',
+        'data': {}
+    }
+
+    # * Iterate through conversion mapping
+    # * 
+    for cleanedOldDescription, mapping in conversion_map.items():
+        row_location = conversion_map[cleanedOldDescription]['configRowCount']
+        
+        # * Check if there are any empty fields in the teststep
+        emptyFields = {}
+        for tag, value in mapping.items():
+
+            if tag == "isMatched":
+                continue
+
+            if str(value).startswith('empty_description_key'):
+                emptyFields['empty_description_key'] = f"A{row_location}"
+            elif not value:
+                emptyFields['DD2.0 ' + tag] = f"{HEADER_COLUMN_MAP[tag]}{row_location}"
+            
+        if emptyFields: 
+            emptyFieldData['data'][row_location] = emptyFields
+
+    return emptyFieldData
+
 def generateTeststepData(index, teststep, mapping, cleanedOldDescription, oldDescription, childParentMap):
     # Get all teststep information
     oldFunctionLibrary = teststep.find("function_library").text
@@ -749,4 +746,10 @@ def testHandleRegex():
     print(processed_parameter_values)
     
 if __name__ == "__main__":
-    pass
+    warningData = [
+        {'data': []},
+        {'data': []},
+        {'data': [1]},
+    ]
+    isData = any(True if warning['data'] else False for warning in warningData)
+    print(isData)

@@ -94,7 +94,7 @@ class MainWindow(qtw.QMainWindow):
         try:
             self.functionDefinitionMap, self.duplicateFunctionNames = xmlParser.handleFunctionDefinitionData(self.functionDefintionInFile)
         except FileNotFoundError:
-            message = f'{self.functionDefintionInFile}\ncould not be found.\n\nFunction definitions will not be available for edit.',
+            message = f'{self.functionDefintionInFile}\ncould not be found.\n\nFunction definitions will not be available for edit.'
             qtw.QMessageBox.warning(self, 'Missing file', message, qtw.QMessageBox.Ok)
         else:
             self.ui.actionFunction_definitions.setEnabled(True)
@@ -156,7 +156,7 @@ class MainWindow(qtw.QMainWindow):
         self.referenceMap.clear()
         self.conversionMap.clear()
         self.keywordMap.clear()
-
+        
         try:
             # parse config excel and generate mappings
             self.referenceMap, duplicateReferences = xmlParser.handleReferenceData(self.xlsxInFile)
@@ -208,30 +208,26 @@ class MainWindow(qtw.QMainWindow):
             
 
             self.resetAllXmlData()
-        
+    
         else:
-            # * if config data is successfully parsed, proceed with config mapping validity checks
-            self.handleConfigWarnings()
-
-            # Enable update config button
-            self.ui.configFileUpdate_btn.setEnabled(True)
-
-            # * Parse xml data with conversion map then display in UI
-            if self.xmlInFile: self.handleDataLoad()
-
-    def handleConfigWarnings(self):
-        # * If there are any warning data generated from checking the config file
-        # * Create and show a warning dialog widget to display the warning information
-        for warning in self.warningData:
-            if warning['data']:
-                break
-        # * If there are no warnings, do nothing
-        else:
-            return
-
-        # * Create warning dialog widget and show
-        warningDialog = WarningDialog(self, self.xlsxInFile, self.warningData)
-        warningDialog.open()
+            def loadData():
+                # * Enable update config button
+                self.ui.configFileUpdate_btn.setEnabled(True)
+                
+                # * If xml file is uploaded, parse xml data with conversion map then display in UI
+                if self.xmlInFile: self.handleDataLoad()
+                
+            # * If there are any warning data generated from checking the config file
+            # * Create and show a warning dialog widget to display the warning information
+            # * Once error message is closed, load data
+            if any(True if warning['data'] else False for warning in self.warningData):
+                warningDialog = WarningDialog(self, self.xlsxInFile, self.warningData)
+                warningDialog.finished.connect(loadData)
+                warningDialog.open()
+                
+            # * If there are no warnings, load data if xml file is uploaded
+            else:
+                loadData()
 
     def handleDataLoad(self):
         # * Reset all xml data
@@ -973,9 +969,9 @@ class MainWindow(qtw.QMainWindow):
             # * If there is a difference prompt user to update config file
             try:
                 functionDefinitionMap, _ = xmlParser.handleFunctionDefinitionData(self.xlsxInFile)
-            except Exception:
-                qtw.QMessageBox.critical('Error', 'Error occurred while checking config file, config file will not be updated')
-                return event.ignore()
+            except KeyError:
+                self.handleConfigUpdate()
+                return event.accept()
 
             if DeepDiff(functionDefinitionMap, self.functionDefinitionMap):
 

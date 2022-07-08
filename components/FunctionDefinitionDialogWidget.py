@@ -5,9 +5,11 @@ from PyQt5 import (
 )
 from .UiFunctionDefinitionDialog import Ui_FunctionDefinitionDialog
 from .UiNewFunctionDialog import Ui_NewFunctionDialog
+from .CustomLineEdit import CustomLineEdit
 import sys
 import os
 import xmlParser
+from deepdiff import DeepDiff
 
 
 class NewFunctionDialog(qtw.QDialog):
@@ -140,29 +142,35 @@ class NewFunctionDialog(qtw.QDialog):
 
 class FunctionDefinitionDialog(qtw.QDialog):
 
-    def __init__(self, parent=None, functionDefinitionData=None, *args, **kwargs) -> None:
+    def __init__(self, parent=None, functionDefinitionMap=None, *args, **kwargs) -> None:
         super(FunctionDefinitionDialog, self).__init__(parent, *args, **kwargs)
 
         self.ui = Ui_FunctionDefinitionDialog()
         self.ui.setupUi(self)
-        self.functionDefinitionData = functionDefinitionData
+        self.functionDefinitionMap = functionDefinitionMap
         self.handlepopulateFunctionDefinitionData()
-        self.isEdited = False
         self.parent = parent
 
         # * Additional UI setup
         header = self.ui.functionLibraryTree_widget.header()
         header.setSectionResizeMode(qtw.QHeaderView.ResizeToContents)
 
+        #  Create custom line edit for search bar
+        self.ui.functionDefinition_searchBar = CustomLineEdit(':/icons/bootstrap-icons-1.8.3/search.svg', 'Search')
+        self.ui.functionDefinition_searchBar.setMinimumWidth(300)
+        self.ui.functionDefinition_searchBar.setMaximumWidth(400)
+        self.ui.dataTreeSearchBox_widget.layout().insertWidget(0,  self.ui.functionDefinition_searchBar)
+
         # * Event Signal Connectors
         self.ui.newFunction_btn.clicked.connect(self.handleNewFunction)
         self.ui.functionLibraryTree_widget.itemClicked.connect(self.handlepopulateFunctionParameterList)
+        self.ui.functionDefinition_searchBar.textChanged.connect(self.handleSearchBar)
         self.ui.showAll_btn.clicked.connect(lambda: self.handleDropDown(True))
         self.ui.hideAll_btn.clicked.connect(lambda: self.handleDropDown(False))
         self.ui.deleteFunction_btn.clicked.connect(self.handleDeleteFuncton)
 
     def handlepopulateFunctionDefinitionData(self):
-        for functionLibrary, functionNames in self.functionDefinitionData.items():
+        for functionLibrary, functionNames in self.functionDefinitionMap.items():
             functionLibraryItem = qtw.QTreeWidgetItem()
             font = qtg.QFont('Arial', pointSize=10)
             font.setBold(True)
@@ -193,11 +201,11 @@ class FunctionDefinitionDialog(qtw.QDialog):
         # * Display function parameters in the parameter list widget
         if functionlibraryItem and functionName:
             functionLibrary = functionlibraryItem.text(0)
-            functionParameters = self.functionDefinitionData[functionLibrary][functionName]['function_parameters']
+            functionParameters = self.functionDefinitionMap[functionLibrary][functionName]['function_parameters']
             self.ui.functionParametersList_wigdet.addItems(functionParameters)
     
     def handleNewFunction(self):
-        newFunctionDialog = NewFunctionDialog(self, self.functionDefinitionData)
+        newFunctionDialog = NewFunctionDialog(self, self.functionDefinitionMap)
         newFunctionDialog.ui.dialogButton_box.accepted.connect(self.refreshFunctionDefinitionData)
         newFunctionDialog.open()
 
@@ -228,13 +236,13 @@ class FunctionDefinitionDialog(qtw.QDialog):
         if msgBox.clickedButton() == confrimBtn:
             # * Delete selected item from the function definition data
             if selectedItem.text(0): 
-                del self.functionDefinitionData[selectedItem.text(0)]
+                del self.functionDefinitionMap[selectedItem.text(0)]
             else: 
-                del self.functionDefinitionData[selectedItem.parent().text(0)][selectedItem.text(1)]
+                del self.functionDefinitionMap[selectedItem.parent().text(0)][selectedItem.text(1)]
             
             # * refresh function definition data
             selectedItem.setHidden(True)
-            self.isEdited = True
+            selectedItem.setData(1, qtc.Qt.UserRole, 'DELETED')
             self.ui.functionParametersList_wigdet.clear()
 
     def handleDropDown(self, isExpand):
@@ -247,14 +255,45 @@ class FunctionDefinitionDialog(qtw.QDialog):
         for functionLibrary in functionLibraryGenerator:
             functionLibrary.setExpanded(isExpand)
     
+    def handleSearchBar(self, text):
+        functionLibraryTree = self.ui.functionLibraryTree_widget
+        functionLibraryItems = [functionLibraryTree.topLevelItem(i) for i in range(functionLibraryTree.topLevelItemCount())]
+
+        # * Iterate through every teststep under each testcase to check if its contains search text
+        for functionLibrary in functionLibraryItems:
+
+            # Initialize bool flag to check if each testcase contains any visible teststeps
+            isAnyFound = False
+
+            # Iterate through every teststep
+            for i in range(functionLibrary.childCount()):
+                
+                functioNameItem = functionLibrary.child(i)
+                # Get old description text for each teststep
+                functionName = functioNameItem.text(1)
+
+                # if the description contains search text, show the item else hide it
+                if text.lower() in functionName.lower() and functioNameItem.data(1, qtc.Qt.UserRole) != 'DELETED':
+                    functioNameItem.setHidden(False)
+
+                    # Set bool flag to true if there is any visible teststep
+                    isAnyFound = True
+                else:
+                    functioNameItem.setHidden(True)
+
+            # Toggle visibility of testcase based on the boolflag
+            functionLibrary.setHidden(False) if isAnyFound else functionLibrary.setHidden(True)
+
     #*************************** Utility functions ******************************* #
 
     def refreshFunctionDefinitionData(self):
+        # * Reset all data fields
         self.ui.functionLibraryTree_widget.clear()
         self.ui.functionParametersList_wigdet.clear()
+        self.ui.functionDefinition_searchBar.clear()
         
+        # * Repopulate data tree with updated data
         self.handlepopulateFunctionDefinitionData()
-        self.isEdited = True
 
     #*************************** Virtual functions ******************************* #
 
@@ -269,7 +308,7 @@ class FunctionDefinitionDialog(qtw.QDialog):
             return
 
         try:
-            self.parent.functionDefinitionMap = self.functionDefinitionData
+            self.parent.functionDefinitionMap = self.functionDefinitionMap
             xmlParser.handleFunctionDefinitionDataUpdate(self.parent.functionDefinitionMap, self.parent.functionDefintionInFile)
         except PermissionError:
             msgBoxButtonClicked = qtw.QMessageBox.critical(
@@ -290,7 +329,7 @@ class FunctionDefinitionDialog(qtw.QDialog):
             super().accept()
 
     def reject(self):
-        if not self.isEdited:
+        if not DeepDiff( self.functionDefinitionMap, self.parent.functionDefinitionMap):
             return super().reject()
 
         msgBoxButtonClicked = qtw.QMessageBox.question(

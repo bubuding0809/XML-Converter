@@ -1,6 +1,6 @@
 from PyQt5 import QtGui, QtCore, QtWidgets
 from .resources import bootstrap_rc
-import sys, os, subprocess
+import sys, os
 
 
 

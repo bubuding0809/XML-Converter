@@ -7,13 +7,12 @@ from PyQt5 import (
 
 class ListWidget(qtw.QListWidget):
 
-    def __init__(self, atpType, targetListWidget=None, parent=None):
+    def __init__(self, atpType=None, targetListWidget=None, parent=None):
         super(ListWidget,self).__init__(parent)
         self.TYPE = atpType
         self.targetListWidget = targetListWidget
         self.installEventFilter(self)
         
-
 
     def keyPressEvent(self, event):
         if event == qtg.QKeySequence.Copy:
@@ -26,7 +25,6 @@ class ListWidget(qtw.QListWidget):
             clipboard.setText('\n'.join(copiedValues), mode=clipboard.Clipboard)
             
 
-    
     def eventFilter(self, source, event) -> bool:
         #* If the source is not from a ListWidget Object, return
         if source is not self:
@@ -80,11 +78,9 @@ class ListWidget(qtw.QListWidget):
 
                 return True
 
-        
         return super(ListWidget, self).eventFilter(source, event)
             
     
-
     def handleClassicParamActions(self, action):
         #* Clear new list widget if action is mirror
         if action == 'MIRROR':
@@ -106,7 +102,6 @@ class ListWidget(qtw.QListWidget):
             self.targetListWidget.addItem(newItem)
 
 
-
     def handleDD2ParamActions(self, action):
             if action == 'DELETE':
                 #* Get the selected item modelIndexes and use it to delete the selected items
@@ -125,7 +120,6 @@ class ListWidget(qtw.QListWidget):
                 self.editItem(item)
     
 
-
 class TableWidget(qtw.QTableWidget):
     def __init__(self, parent=None):
         super(TableWidget,self).__init__(parent)
@@ -141,7 +135,6 @@ class TableWidget(qtw.QTableWidget):
             # Join the values and set it to the global clipboard
             clipboard = qtw.QApplication.clipboard()
             clipboard.setText(', '.join(copiedValues), mode=clipboard.Clipboard)
-
 
 
 class TeststepGroupBoxWidget(qtw.QGroupBox):
@@ -267,9 +260,9 @@ class TeststepGroupBoxWidget(qtw.QGroupBox):
         self.oldDataListWidget.setFont(font)
         self.oldDataListWidget.setObjectName("oldDataListWidget")
         
-        for param in data['old']['function_parameters']:
+        for name, text in data['old']['function_parameters'].items():
             item = qtw.QListWidgetItem()
-            item.setText(f"{param['name']}={param['text']}")
+            item.setText(f"{name}={text}")
             self.oldDataListWidget.addItem(item)
         
         # Add Function parameter list to old data box
@@ -324,7 +317,7 @@ class TeststepGroupBoxWidget(qtw.QGroupBox):
         
         # Set table header 2
         item = qtw.QTableWidgetItem()
-        item.setText("Function Name")
+        item.setText("Function library")
         font = qtg.QFont()
         font.setBold(True)
         font.setWeight(75)
@@ -333,7 +326,7 @@ class TeststepGroupBoxWidget(qtw.QGroupBox):
         
         # Set table header 3
         item = qtw.QTableWidgetItem()
-        item.setText("Function library")
+        item.setText("Function name ")
         font = qtg.QFont()
         font.setBold(True)
         font.setWeight(75)
@@ -372,10 +365,10 @@ class TeststepGroupBoxWidget(qtw.QGroupBox):
         self.newDataListWidget.setFont(font)
         self.newDataListWidget.setObjectName("newDataListWidget")
         
-        for param in data['new']['function_parameters']:
+        for name, text in data['new']['function_parameters'].items():
             item = qtw.QListWidgetItem()
             item.setFlags(qtc.Qt.ItemIsSelectable | qtc.Qt.ItemIsEditable| qtc.Qt.ItemIsDragEnabled | qtc.Qt.ItemIsEnabled)
-            item.setText(f"{param['name']}={param['text']}")
+            item.setText(f"{name}={text}")
             self.newDataListWidget.addItem(item)
         
         # Add Function parameter list to new data box
@@ -400,15 +393,13 @@ class TeststepGroupBoxWidget(qtw.QGroupBox):
             paramStringList.append(self.newDataListWidget.item(i).text())
         
         #* Parse the parameter strings into a obj readable by xmlParser
-        function_parameters = []
+        function_parameters = {}
         
         # Loop through the parameter strings and if the string contains a = then split it into a key and value
         for param in paramStringList:
-            if len(param.split('=')) == 2:
-                function_parameters.append({
-                    'name': param.split('=')[0],
-                    'text': param.split('=')[1]
-                })
+            param_data = param.split('=')
+            if len(param_data) == 2 and param_data[0]:
+                function_parameters[param_data[0]] = param_data[1]
 
         #* Create updated teststep conversion mapping
         newTeststepMap = {

@@ -1,9 +1,10 @@
 import logging
 from components.UiMainWindow import Ui_MainWindow
+from components.FunctionDefinitionDialogWidget import FunctionDefinitionDialog
+from components.WarningDialogWidget import WarningDialog
 from components.SummaryDialogWidget import SummaryDialog
 from components.TeststepGroupBoxWidget import TeststepGroupBoxWidget
 from components.CollapsibleTestcaseWidget import CollapsibleTestcaseWidget
-from components.CustomButton import ButtonWithIcon
 from components.CustomLineEdit import CustomLineEdit
 from components.FileFilterProxyModel import FileFilterProxyModel
 from PyQt5 import (
@@ -11,14 +12,14 @@ from PyQt5 import (
     QtCore as qtc,
     QtGui as qtg
 )
+from deepdiff import DeepDiff
 import utils
 import sys
 import os
 import subprocess
 import xmlParser
-import subprocess
+import copy
 from components.resources import bootstrap_rc
-from samples import testFilePaths as testfiles
 
 
 # * Get base directory of application
@@ -50,13 +51,11 @@ class MainWindow(qtw.QMainWindow):
         self.ui.xmlFileUpload_btn.setIconSize(qtc.QSize(25, 25))
 
         # Create Custom line edit search bar
-        self.ui.mainSearchBar_lineEdit = CustomLineEdit(
-            ':/icons/bootstrap-icons-1.8.3/search.svg', 'Search')
+        self.ui.mainSearchBar_lineEdit = CustomLineEdit(':/icons/bootstrap-icons-1.8.3/search.svg', 'Search')
         self.ui.mainSearchBar_lineEdit.setMinimumWidth(200)
         self.ui.mainSearchBar_lineEdit.setMaximumWidth(400)
         self.ui.mainSearchBar_lineEdit.setEnabled(False)
-        self.ui.scrollAreaSearchBox_widget.layout().insertWidget(
-            0, self.ui.mainSearchBar_lineEdit)
+        self.ui.scrollAreaSearchBox_widget.layout().insertWidget(0, self.ui.mainSearchBar_lineEdit)
 
         # Create radio buttons for filter box
         self.filterButtonGroup = qtw.QButtonGroup()
@@ -74,37 +73,42 @@ class MainWindow(qtw.QMainWindow):
         self.ui.xml_refreshData_btn.clicked.connect(self.handleXMLRefresh)
         self.ui.showAll_btn.pressed.connect(self.handleToggleAllDropDownBtn)
         self.ui.hideAll_btn.pressed.connect(self.handleToggleAllDropDownBtn)
-        self.ui.xml_clearTeststeps_btn.clicked.connect(
-            self.clearTestStepScrollArea)
-        self.ui.selectAll_checkBox.stateChanged.connect(
-            self.handleSelectAllCheckBox)
-        self.ui.mainSearchBar_lineEdit.textChanged.connect(
-            self.handleSearchBar)
-        self.ui.quitSc.activated.connect(self.handleExitApp)
+        self.ui.selectAll_checkBox.stateChanged.connect(self.handleSelectAllCheckBox)
+        self.ui.mainSearchBar_lineEdit.textChanged.connect(self.handleSearchBar)
+        self.ui.quitSc.activated.connect(self.close)
+        self.ui.actionFunction_definitions.triggered.connect(self.handleConfigFunctionDefinitions)
         self.ui.xml_summary_btn.clicked.connect(self.handleXMLSummary)
         self.ui.configFileUpdate_btn.clicked.connect(self.handleConfigUpdate)
-        self.filterButtonGroup.buttonClicked.connect(
-            self.handleFilterButtonClicked)
+        self.filterButtonGroup.buttonClicked.connect(self.handleFilterButtonClicked)
 
-        # * Global variables
-        # testfiles.CONFIG_PATH_WIN32 if sys.platform == 'win32' else testfiles.CONFIG_PATH_DARWIN
-        self.xlsxInFile = '' 
-        # testfiles.INPUT_PATH_WIN32 if sys.platform == 'win32' else testfiles.INPUT_PATH_DARWIN
-        self.xmlInFile = ''
+        # * Initialize config attributes
+        self.referenceMap = {}
+        self.functionDefinitionMap = {}
+        self.duplicateFunctionNames = {'data': {}}
+        self.conversionMap = {}
+        self.keywordMap = {}
+
+        # * Load function definition database and initialize function defintion data
+        self.functionDefintionInFile = os.path.join(baseDir, 'samples/__ATPFunctionDefinitions.xlsx')
+        try:
+            self.functionDefinitionMap, self.duplicateFunctionNames = xmlParser.handleFunctionDefinitionData(self.functionDefintionInFile)
+        except FileNotFoundError:
+            message = f'{self.functionDefintionInFile}\ncould not be found.\n\nFunction definitions will not be available for edit.'
+            qtw.QMessageBox.warning(self, 'Missing file', message, qtw.QMessageBox.Ok)
+        else:
+            self.ui.actionFunction_definitions.setEnabled(True)
 
         # * Global flags
+        self.xmlInFile = ''
+        self.xlsxInFile = ''
         self.testCaseBoxList = {}
         self.filteredTeststepIds = set()
-        self.filterDataMap = {
+        self.filterButtonGroupMap = {
             radioButton.text(): utils.removeWhiteSpace(radioButton.text().lower())
             for radioButton in self.filterButtonGroup.buttons()
         }
         self.ui.configFilePath_display.setText(self.xlsxInFile)
         self.ui.xmlFilePath_display.setText(self.xmlInFile)
-
-        # Initialize conversionMap
-        self.conversionMap = {}
-        self.duplicateDescriptionKeys = []
 
     # ************************* Signal Handler methods **************************** #
 
@@ -125,18 +129,7 @@ class MainWindow(qtw.QMainWindow):
             return
 
         # * Try to process xlsx file and generate conversion map
-        if len(self.xlsxInFile):
-            self.handleConversionMapGenerate()
-
-        # * If conversionMap has been generated, conduct checks on config file
-        if self.conversionMap:
-            self.handleXLSXProcess()
-
-        # * if conversion map is generated and xml file has been uploaded
-        # * parse XML with conversion map
-        if self.conversionMap and self.xmlInFile:
-            self.handleDataLoad()
-            self.ui.xml_refreshData_btn.setEnabled(True)
+        self.handleDataProcessing()
 
     def handleXMLUpload(self):
         # * Retrieve atp xml file path from file dialog
@@ -156,18 +149,23 @@ class MainWindow(qtw.QMainWindow):
         # * Enable load xml data if both xlsx and xml inputs exists
         if self.conversionMap and self.xmlInFile:
             self.handleDataLoad()
-            self.ui.xml_refreshData_btn.setEnabled(True)
 
-    def handleConversionMapGenerate(self):
+    def handleDataProcessing(self):
+        # * Clear all mappings and duplicate warning data
+        self.referenceMap.clear()
         self.conversionMap.clear()
-        self.duplicateDescriptionKeys.clear()
-
+        self.keywordMap.clear()
+        
         try:
-            # Read xlsx file and generate conversion map
-            self.conversionMap, self.duplicateDescriptionKeys = xmlParser.handleXlsx(self.xlsxInFile)
+            # parse config excel and generate mappings
+            self.referenceMap, duplicateReferences = xmlParser.handleReferenceData(self.xlsxInFile)
+            self.conversionMap, self.keywordMap, self.warningData = xmlParser.handleMappingData(self.xlsxInFile, self.referenceMap, self.functionDefinitionMap)
+            self.warningData.append(duplicateReferences)
+            self.warningData.append(self.duplicateFunctionNames)
+        
         except Exception as ex:
             # Catch exceptions and handle them
-            exception = f"There is an error in the xlsx file.\
+            exception = f"There is an error with the xlsx config file.\
                 \n\nPlease try to upload a correct config file or edit the current config file."
 
             arguments = '\n'.join(
@@ -197,6 +195,7 @@ class MainWindow(qtw.QMainWindow):
             if msgBox.clickedButton() == retryBtn:
                 self.handleConfigUpload()
                 return
+
             # IF user clicks on edit config, open up config file in Excel
             if msgBox.clickedButton() == editConfig:
                 # macOS
@@ -205,74 +204,33 @@ class MainWindow(qtw.QMainWindow):
                 # Windows
                 elif sys.platform == 'win32':
                     os.startfile(self.xlsxInFile)
+            
 
-            # Clear xml data in scroll area
-            self.clearTestStepScrollArea()
-
-    def handleXLSXProcess(self):
-        emptyFieldList = xmlParser.getTeststepsWithEmptyFields(self.conversionMap)
-
-        # * If there are empty fields, display message box to warn user
-        if emptyFieldList:
-            # Create message box to display the error
-            msgBox = qtw.QMessageBox(self)
-            msgBox.setWindowTitle('Warning')
-            msgBox.setText('There are some issues with the config file.')
-
-            # * Create string list of empty fields and add to message
-            emptyFieldMessageList = []
-            for index, item in enumerate(emptyFieldList):
-                # Create string of description and empty fields
-                descriptionWithEmptyFields = f"{index+1}: {item['description']:}"
-                emptyFields = '\n'.join(
-                    [f"   - {field}" for field in item['emptyFields']])
-                emptyFieldMessageList.append(
-                    f"{descriptionWithEmptyFields}\n{emptyFields}")
-
-            # Join all empty fields into one string
-            emptyFieldMessageList = '\n\n'.join(emptyFieldMessageList)
-
-            # Add empty fields to message
-            emptyFieldMessage = (
-                f"The following teststeps were found to have empty fields in your config file at \n{self.xlsxInFile}:\
-                \n--------------------------------------------------------\
-                \n{emptyFieldMessageList}"
-            )
-
-            self.duplicateDescriptionKeys = [f"{index+1}: {item}" for index, item in enumerate(self.duplicateDescriptionKeys)]
-            duplicateKeyList = '\n'.join(self.duplicateDescriptionKeys)
-            duplicateKeyMessage = (
-                f"There were duplicates of the following classic test step description keys, only the first mapping will be used.\
-                \n--------------------------------------------------------\
-                \nDuplicates:\
-                \n{duplicateKeyList}"
-            )
-
-            # * Add message to message box detailed text
-            msgBox.setDetailedText(emptyFieldMessage + '\n\n' + duplicateKeyMessage)
-
-            # * Add buttons and icons to message box
-            msgBox.setStandardButtons(qtw.QMessageBox.Ok)
-            editConfig_btn = msgBox.addButton(
-                'Edit config', qtw.QMessageBox.AcceptRole)
-            msgBox.setIcon(qtw.QMessageBox.Warning)
-            msgBox.setWindowModality(qtc.Qt.WindowModal)
-
-            # * execute message box
-            ret = msgBox.exec()
-
-            # * If user clicks edit config button, open config file in default program
-            if msgBox.clickedButton() == editConfig_btn:
-                # macOS
-                if sys.platform == 'darwin':
-                    subprocess.call(('open', self.xlsxInFile))
-                # Windows
-                elif sys.platform == 'win32':
-                    os.startfile(self.xlsxInFile)
+            self.resetAllXmlData()
+    
+        else:
+            def loadData():
+                # * Enable update config button
+                self.ui.configFileUpdate_btn.setEnabled(True)
+                
+                # * If xml file is uploaded, parse xml data with conversion map then display in UI
+                if self.xmlInFile: self.handleDataLoad()
+                
+            # * If there are any warning data generated from checking the config file
+            # * Create and show a warning dialog widget to display the warning information
+            # * Once error message is closed, load data
+            if any(True if warning['data'] else False for warning in self.warningData):
+                warningDialog = WarningDialog(self, self.xlsxInFile, self.warningData)
+                warningDialog.finished.connect(loadData)
+                warningDialog.open()
+                
+            # * If there are no warnings, load data if xml file is uploaded
+            else:
+                loadData()
 
     def handleDataLoad(self):
-        # * Clear data grid of and old data
-        self.clearTestStepScrollArea()
+        # * Reset all xml data
+        self.resetAllXmlData()
 
         # * Reset all isMatch flags in conversion map to False
         for mapping in self.conversionMap.values():
@@ -281,9 +239,8 @@ class MainWindow(qtw.QMainWindow):
         # * Get parsed xml data and updated conversion map
         try:
             # Catch errors thrown from xml processing
-            xmlData, self.conversionMap = xmlParser.getTestStepData(
-                self.xmlInFile, self.conversionMap)
-
+            testcaseSortedXmlData, self.conversionMap = xmlParser.getXmlData(
+                self.xmlInFile, self.conversionMap, self.keywordMap)
         except Exception as ex:
             # Catch exceptions and handle them
             exception = f"An exception of type {type(ex)} occurred."
@@ -302,33 +259,11 @@ class MainWindow(qtw.QMainWindow):
             msgBox.setIcon(qtw.QMessageBox.Critical)
             ret = msgBox.exec()
 
-            return
-
-        # * Filter teststeps into their respective testcases
-        testCaseList = {}
-        if xmlData:
-            # Filter each teststep into their respect testcases
-            for teststep in xmlData:
-                if teststep['parentId'] not in testCaseList:
-                    testCaseList[teststep['parentId']] = [{
-                        'id': teststep['id'],
-                        'parentType': teststep['parentType'],
-                        'parentName': teststep['parentName'],
-                        'old': teststep['old'],
-                        'new': teststep['new']
-                    }]
-                else:
-                    testCaseList[teststep['parentId']].append({
-                        'id': teststep['id'],
-                        'parentType': teststep['parentType'],
-                        'parentName': teststep['parentName'],
-                        'old': teststep['old'],
-                        'new': teststep['new']
-                    })
+            return  
 
         # * Create mapped data boxes and insert into the vertical scroll layout area
-        if testCaseList:
-            for index, (testcase, teststeps) in enumerate(testCaseList.items()):
+        if testcaseSortedXmlData:
+            for index, (testcase, teststeps) in enumerate(testcaseSortedXmlData.items()):
 
                 # Create testcase data obj to be passed into the CollapsibleBox widget
                 testcaseData = {
@@ -386,24 +321,19 @@ class MainWindow(qtw.QMainWindow):
 
                 vlayout.addStretch()
                 box.setContentLayout(vlayout)
+                box.setVisible(True)
                 self.testCaseBoxList[box] = teststepBoxList
         else:
-
             emptyLabel = qtw.QLabel('No test steps matched in XML file')
             self.ui.verticalLayout_3.addWidget(emptyLabel)
-
         self.ui.verticalLayout_3.addStretch()
 
         # * Alert user if there are unmatched teststeps
-        # Create list of unmatched teststeps
-        unmatchedTeststeps = []
-        for index, mapping in enumerate(self.conversionMap.values()):
-            if mapping['isMatched'] == False:
-                unmatchedTeststeps.append(
-                    f"{mapping['oldDescription']} - [row: {index+2}]")
+        # get list of unmatched classic description keys
+        unmatchedClassicDescriptions = xmlParser.getUnmatchedClassicDescriptions(self.conversionMap)
 
         # If there are unmatched teststeps, alert user with a message box with the list of unmatched teststeps
-        if unmatchedTeststeps:
+        if unmatchedClassicDescriptions:
 
             # Create message box to display the warning
             msgBox = qtw.QMessageBox(self)
@@ -412,14 +342,14 @@ class MainWindow(qtw.QMainWindow):
                 f"There are unmatched teststeps descriptions in your config file.")
 
             # Create string list of unmatched teststeps and to message
-            unmatchedTeststeps = '\n'.join(
+            unmatchedClassicDescriptions = '\n'.join(
                 [f"{index+1}: {teststep}" for index,
-                    teststep in enumerate(unmatchedTeststeps)]
+                    teststep in enumerate(unmatchedClassicDescriptions)]
             )
             noMatchMessage = (
                 f"The following teststeps descriptions at {self.xlsxInFile} had no match in the xml file:\
                 \n--------------------------------------------------------\
-                \n\n{unmatchedTeststeps}"
+                \n\n{unmatchedClassicDescriptions}"
             )
 
             # Merge message and set message box detailed text
@@ -485,8 +415,8 @@ class MainWindow(qtw.QMainWindow):
         self.ui.selectAll_checkBox.setEnabled(True)
         self.ui.selectAll_checkBox.setChecked(True)
 
-        # Enable clear data function
-        self.ui.xml_clearTeststeps_btn.setEnabled(True)
+        # Enable update config button
+        self.ui.configFileUpdate_btn.setEnabled(True)
 
         # Enable summary button
         self.ui.xml_summary_btn.setEnabled(True)
@@ -498,8 +428,8 @@ class MainWindow(qtw.QMainWindow):
         self.ui.scrollAreaFilterBox_widget.setEnabled(True)
         self.ui.filterBoth_btn.setChecked(True)
 
-        # Enable update config button
-        self.ui.configFileUpdate_btn.setEnabled(True)
+        # Enable refresh data button
+        self.ui.xml_refreshData_btn.setEnabled(True)
 
     def handleToggleAllDropDownBtn(self):
         eventSender = self.sender()
@@ -519,7 +449,7 @@ class MainWindow(qtw.QMainWindow):
     def handleSelectAllCheckBox(self, state):
         # * Get current checked filter radio button
         checkFilterButton = self.filterButtonGroup.checkedButton()
-        filterTypeChecked = self.filterDataMap[checkFilterButton.text()]
+        filterTypeChecked = self.filterButtonGroupMap[checkFilterButton.text()]
 
         # * Get state of select all checkbox state == 0: unchecked, state == 2: checked
         isChecked = True if state else False
@@ -553,7 +483,7 @@ class MainWindow(qtw.QMainWindow):
 
     def handleSearchBar(self, text):
         checkFilterButton = self.filterButtonGroup.checkedButton()
-        filterTypeChecked = self.filterDataMap[checkFilterButton.text()]
+        filterTypeChecked = self.filterButtonGroupMap[checkFilterButton.text()]
 
         for testcase, teststepList in self.testCaseBoxList.items():
             isAnyFound = False
@@ -615,7 +545,7 @@ class MainWindow(qtw.QMainWindow):
             data=self.testCaseBoxList,
             filteredIds=self.filteredTeststepIds
         )
-        summaryDialog.show()
+        summaryDialog.open()
 
     def handleXMLConvert(self):
         # * Open file dialog and get save file path
@@ -632,29 +562,10 @@ class MainWindow(qtw.QMainWindow):
 
         # * Try to execute Execute XML conversion
         try:
-            xmlParser.convertXml(
+            xmlParser.handleConvertXml(
                 self.filteredTeststepIds, self.xmlInFile,
                 xmlOutFile, conversionMap
             )
-
-            # * Create success message box
-            msgBox = qtw.QMessageBox()
-            msgBox.setWindowTitle("Success")
-            msgBox.setText("Successfully converted ATP XML file")
-            msgBox.setIcon(qtw.QMessageBox.Information)
-            checkbox = qtw.QCheckBox('Show file in explorer', msgBox)
-            checkbox.setChecked(True)
-            msgBox.setCheckBox(checkbox)
-            ret = msgBox.exec_()
-
-            # * Open file in explorer/finder if option is checked
-            if checkbox.isChecked():
-                if sys.platform == 'win32':
-                    xmlOutFile = xmlOutFile.replace('/', '\\')
-                    subprocess.Popen(f'explorer /select,{xmlOutFile}')
-
-                elif sys.platform == 'darwin':
-                    subprocess.call(['open', '-R', xmlOutFile])
 
         except Exception as ex:
             # If exception caught is Permission Error set specific exception text
@@ -689,21 +600,29 @@ class MainWindow(qtw.QMainWindow):
 
             if msgBox.clickedButton() == retryBtn:
                 self.handleXMLConvert()
+            return 
 
-    def handleExitApp(self):
+        # * Create success message box
         msgBox = qtw.QMessageBox()
-        msgBox.setWindowTitle('Exit app')
-        msgBox.setText('Confirm with OK to exit the application now')
-        msgBox.setIcon(qtw.QMessageBox.Warning)
-        msgBox.setStandardButtons(qtw.QMessageBox.Ok | qtw.QMessageBox.Cancel)
-        msgBox.setDefaultButton(qtw.QMessageBox.Ok)
-
-        msgBox.defaultButton().clicked.connect(qtw.QApplication.instance().quit)
-
+        msgBox.setWindowTitle("Success")
+        msgBox.setText("Successfully converted ATP XML file")
+        msgBox.setIcon(qtw.QMessageBox.Information)
+        checkbox = qtw.QCheckBox('Show file in explorer', msgBox)
+        checkbox.setChecked(True)
+        msgBox.setCheckBox(checkbox)
         ret = msgBox.exec_()
 
+        # * Open file in explorer/finder if option is checked
+        if checkbox.isChecked():
+            if sys.platform == 'win32':
+                xmlOutFile = xmlOutFile.replace('/', '\\')
+                subprocess.Popen(f'explorer /select,{xmlOutFile}')
+
+            elif sys.platform == 'darwin':
+                subprocess.call(['open', '-R', xmlOutFile])
+
     def handleFilterButtonClicked(self, button):
-        filterTypeChecked = self.filterDataMap[button.text()]
+        filterTypeChecked = self.filterButtonGroupMap[button.text()]
 
         for testcase, teststeps in self.testCaseBoxList.items():
 
@@ -751,7 +670,7 @@ class MainWindow(qtw.QMainWindow):
         changedText = item.text()
         widget = item.tableWidget() if isTableWidget else item.listWidget()
         position = widget.column(item) if isTableWidget else widget.row(item)
-        sourceCleanedDescription = teststepBox.data['old']['cleanedDescription']
+        sourceConfigRowCount = teststepBox.data['configRowCount']
 
         # * Iterate through all teststeps with the same classic description and propagate the changed text
         for teststeps in self.testCaseBoxList.values():
@@ -759,10 +678,10 @@ class MainWindow(qtw.QMainWindow):
             for teststep in teststeps:
 
                 # Get the target cleaned description for matching purpose
-                targetCleanedDescription = teststep.data['old']['cleanedDescription']
+                targetConfigRowCount = teststep.data['configRowCount']
 
                 # If matched, propagate changes to target
-                if sourceCleanedDescription == targetCleanedDescription:
+                if sourceConfigRowCount == targetConfigRowCount:
                     # Get target table widget
                     widget = teststep.newDataTableWidget if isTableWidget else teststep.newDataListWidget
 
@@ -781,7 +700,7 @@ class MainWindow(qtw.QMainWindow):
 
     def handleRowsInserted(self, modelIndex, first, last, teststepBox, listWidget):
         item = listWidget.item(first)
-        sourceCleanedDescription = teststepBox.data['old']['cleanedDescription']
+        sourceConfigRowCount = teststepBox.data['configRowCount']
         sourceId = teststepBox.id
 
         for teststeps in self.testCaseBoxList.values():
@@ -789,11 +708,11 @@ class MainWindow(qtw.QMainWindow):
             for teststep in teststeps:
 
                 # Get the target cleaned description for matching purpose
-                targetCleanedDescription = teststep.data['old']['cleanedDescription']
+                targetConfigRowCount = teststep.data['configRowCount']
                 targetId = teststep.id
 
                 # If matched, propagate changes to target
-                if sourceCleanedDescription == targetCleanedDescription and sourceId != targetId:
+                if sourceConfigRowCount == targetConfigRowCount and sourceId != targetId:
                     # Get target list widget
                     listWidget = teststep.newDataListWidget
 
@@ -815,7 +734,7 @@ class MainWindow(qtw.QMainWindow):
                     listWidget.blockSignals(False)
 
     def handleRowsRemoved(self, modelIndex, first, last, teststepBox, listWidget):
-        sourceCleanedDescription = teststepBox.data['old']['cleanedDescription']
+        sourceConfigRowCount = teststepBox.data['configRowCount']
         sourceId = teststepBox.id
 
         for teststeps in self.testCaseBoxList.values():
@@ -823,11 +742,11 @@ class MainWindow(qtw.QMainWindow):
             for teststep in teststeps:
 
                 # Get the target cleaned description for matching purpose
-                targetCleanedDescription = teststep.data['old']['cleanedDescription']
+                targetConfigRowCount = teststep.data['configRowCount']
                 targetId = teststep.id
 
                 # If matched, propagate changes to target
-                if sourceCleanedDescription == targetCleanedDescription and sourceId != targetId:
+                if sourceConfigRowCount == targetConfigRowCount and sourceId != targetId:
                     # Get target list widget
                     listWidget = teststep.newDataListWidget
 
@@ -844,7 +763,6 @@ class MainWindow(qtw.QMainWindow):
                     listWidget.model().blockSignals(False)
 
     def handleConfigUpdate(self):
-
         configData = {}
 
         # * Get updated mapping data from UI data grid
@@ -853,17 +771,15 @@ class MainWindow(qtw.QMainWindow):
             for teststep in teststeps:
 
                 # Get cleaned teststep description
-                cleanedDescription = utils.removeWhiteSpace(
-                    teststep.searchKey.lower())
+                configRowCount = teststep.data['configRowCount']
 
-                if cleanedDescription in configData:
+                if configRowCount in configData:
                     continue
 
                 # New table data
                 description = teststep.newDataTableWidget.item(0, 0).text()
-                function_name = teststep.newDataTableWidget.item(0, 1).text()
-                function_library = teststep.newDataTableWidget.item(
-                    0, 2).text()
+                function_library = teststep.newDataTableWidget.item(0, 1).text()
+                function_name = teststep.newDataTableWidget.item(0, 2).text()
 
                 # New List data
                 function_parameters = []
@@ -871,11 +787,11 @@ class MainWindow(qtw.QMainWindow):
                     param = teststep.newDataListWidget.item(i).text()
                     function_parameters.append(param)
 
-                configData[cleanedDescription] = {
+                configData[configRowCount] = {
                     'description': description,
                     'function_name': function_name,
                     'function_library': function_library,
-                    'function_params': function_parameters
+                    'function_parameters': function_parameters
                 }
 
         # * Open file dialog box for user to save new config file
@@ -883,15 +799,15 @@ class MainWindow(qtw.QMainWindow):
             self, 'Save updated config file', './', 'Xlsx files (*.xlsx)'
         )
 
-        # * If user defines save as file, save filepath to variable
+        # * If user defines save as file, save filepath to variable, else cancel operation
         if file[0]:
             xlsxOutFile = file[0]
         else:
             return
 
         try:
-            xmlParser.handleXlsxUpdate(
-                configData, self.xlsxInFile, xlsxOutFile
+            xmlParser.handleConfigFileUpdate(
+                self.functionDefinitionMap, self.xlsxInFile, xlsxOutFile, configData
             )
 
             # * Create success message box
@@ -912,9 +828,7 @@ class MainWindow(qtw.QMainWindow):
 
                 elif sys.platform == 'darwin':
                     subprocess.call(['open', '-R', xlsxOutFile])
-
         except Exception as ex:
-
             # If exception caught is Permission Error set specific exception text
             if type(ex) == PermissionError:
                 exception = f"The action can't be completed because the file is open in Excel.\
@@ -950,20 +864,23 @@ class MainWindow(qtw.QMainWindow):
 
     def handleXMLRefresh(self):
         if self.xlsxInFile and self.xmlInFile:
-            # Regenerate conversion mapping
-            self.handleConversionMapGenerate()
-
-            # Reprocess config excel and parse xml data
-            if self.conversionMap:
-                self.handleXLSXProcess()
-                self.handleDataLoad()
+            # Reprocess config and xml data
+            self.handleDataProcessing()
 
             self.ui.xml_refreshData_btn.setEnabled(True)
 
+    def handleConfigFunctionDefinitions(self):
+        functionDefinitionDialog = FunctionDefinitionDialog(self, copy.deepcopy(self.functionDefinitionMap))
+        functionDefinitionDialog.accepted.connect(lambda: self.ui.statusbar.showMessage('Function definitions saved'))
+        functionDefinitionDialog.open()
+
     #*************************** Utility functions ******************************* #
 
-    def clearTestStepScrollArea(self):
-        # Empty global list of testcaseBoxes
+    def resetAllXmlData(self):
+        # clear set of filtered Ids
+        self.filteredTeststepIds.clear()
+
+        # Empty list of testcaseBoxes
         self.testCaseBoxList.clear()
 
         # Remove all widgets inside scroll area
@@ -978,7 +895,6 @@ class MainWindow(qtw.QMainWindow):
 
         # * Disable scroll area tool widgets
         self.ui.xml_convert_btn.setEnabled(False)
-        self.ui.xml_clearTeststeps_btn.setEnabled(False)
         self.ui.mainSearchBar_lineEdit.setEnabled(False)
 
         # * Disable toggle dropdown button and set it to unchecked
@@ -994,6 +910,9 @@ class MainWindow(qtw.QMainWindow):
 
         # * Disable update config button
         self.ui.configFileUpdate_btn.setEnabled(False)
+
+        # * Disable filter group box
+        self.ui.scrollAreaFilterBox_widget.setEnabled(False)
 
     def centerWindowOnScreen(self):
         screenGeo = qtw.QDesktopWidget().screenGeometry()
@@ -1027,8 +946,68 @@ class MainWindow(qtw.QMainWindow):
 
         return updatedConversionMap
 
+    #*************************** Virtual functions ******************************* #
 
-# * Configure windows to identify the application as a custom application
+    def closeEvent(self, event) -> None:
+        # * Create message box to confirm quitting of application
+        msgBoxButtonClicked = qtw.QMessageBox.question(
+            self, 
+            'Closing application window', 
+            'Any unsaved progress will be lost. Confirm closing of application?',
+            qtw.QMessageBox.Yes | qtw.QMessageBox.No
+        )
+    
+        # * Proceed with quitting proceedure if yes is clicked
+        if msgBoxButtonClicked == qtw.QMessageBox.Yes:
+
+            if not self.xlsxInFile:
+                return event.accept()
+
+            # * Generate function defintion map from config file
+            # * Compare function definition maps of config file and application
+            # * If there is a difference prompt user to update config file
+            try:
+                functionDefinitionMap, _ = xmlParser.handleFunctionDefinitionData(self.xlsxInFile)
+            except KeyError:
+
+                msgBoxButtonClicked = qtw.QMessageBox.warning(
+                    self, 
+                    'Closing application window', 
+                    'Your config file is out of date. Update your config file before quitting?',
+                    qtw.QMessageBox.Yes | qtw.QMessageBox.No
+                )
+
+                # * Prompt user to save updated config file if yes is clicked
+                if msgBoxButtonClicked == qtw.QMessageBox.Yes:
+                    self.handleConfigUpdate()
+
+                return event.accept()
+
+            # * If functio definition map is loaded without issues
+            # * Use it to check against the application function definitions to see if an update is needed
+            # * Create message box to prompt user to save updated config file if needed.
+            if DeepDiff(functionDefinitionMap, self.functionDefinitionMap):
+
+                msgBoxButtonClicked = qtw.QMessageBox.warning(
+                    self, 
+                    'Closing application window', 
+                    'Your config file is out of date. Update your config file before quitting?',
+                    qtw.QMessageBox.Yes | qtw.QMessageBox.No
+                )
+
+                # * Prompt user to save updated config file if yes is clicked
+                if msgBoxButtonClicked == qtw.QMessageBox.Yes:
+                    self.handleConfigUpdate()
+
+                return event.accept()
+
+            return event.accept()
+
+        # * Prevent application from closing if no is clicked
+        event.ignore()
+
+    
+# * Configure windows to identify the application as a custom application to display icon
 if sys.platform == 'win32':
     try:
         from ctypes import windll  # Only exists on Windows.

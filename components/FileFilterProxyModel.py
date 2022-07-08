@@ -11,7 +11,7 @@ from PyQt5 import (
 class FileFilterProxyModel(qtc.QSortFilterProxyModel):
     def __init__(self, parent=None):
         super(FileFilterProxyModel, self).__init__(parent)
-        self.xlsxFilePattern = re.compile(r'^\w+')
+        self.xlsxFilePattern = re.compile(r'^(?!~\$).+')
 
     
     def filterAcceptsRow(self, source_row, source_parent) -> bool:

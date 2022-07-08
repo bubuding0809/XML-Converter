@@ -1,44 +1,35 @@
-import xml.etree.ElementTree as ET
 import re
 
-#******************************************** xmlParser helper functions ********************************************
+# ******************************************** xmlParser helper functions ********************************************
 
-#* Parse the excel file and return a list of dictionaries
+# * Parse the excel file and return a list of dictionaries
 def ExcelDictReader(sheet):
-    reader = []
-
     for values in sheet.iter_rows(min_row=2, values_only=True):
-        dictReader = {}
-        headers = list(sheet.iter_rows(min_row=1, max_row=1, values_only=True))
+        row = {}
+        headers = list(sheet.iter_rows(min_row=1, max_row=1, values_only=True))[0]
 
-        for header, value in zip(headers[0], values):
-            dictReader[header] = value if value else ''
+        for header, value in zip(headers, values):
+            row[header] = value if value else ""
 
-        reader.append(dictReader)
-
-    return reader
-
-
+        yield row
 
 def removeWhiteSpace(string):
-    pattern = re.compile(r'\s+')
-    
-    return re.sub(pattern, '', string)
+    pattern = re.compile(r"\s+")
+
+    return re.sub(pattern, "", string)
 
 
-#*********************************************** PyQt helper functions ***********************************************
+# *********************************************** PyQt helper functions ***********************************************
 
-def iterLayout(layout): #Unsued
+
+def iterLayout(layout):  # Unsued
     return [layout.itemAt(i) for i in range(layout.count())]
 
 
-
-def getLayoutWidgets(layout): #Unsued
+def getLayoutWidgets(layout):  # Unsued
     items = iterLayout(layout)
     return [item.widget() for item in items if item.widget()]
 
 
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     pass
-    

@@ -35,25 +35,25 @@ def handleMappingData(xlsxFile, referenceMap, functionDefinitionMap):
         'title': 'Duplicate description keys',
         'warning': configWarnings.DUP_DESCRIPTION_KEYS_WARNING,
         'worksheet': 'mapping',
-        'data': {}
+        'data': []
     }
     duplicateKeywords = {
         'title': 'Duplicate keyword set',
         'warning': configWarnings.DUP_KEYWORD_SETS_WARNING,
         'worksheet': 'mapping',
-        'data': {}
+        'data': []
     }
     invalidReferenceKeys = {
         'title': 'Invalid reference key',
         'warning': configWarnings.INVALID_REFERENCE_KEYS_WARNING,
         'worksheet': 'mapping',
-        'data': {}
+        'data': []
     }
     invalidTranslations = {
         'title': 'Invalid DD2.0 tranlsations',
         'warning': configWarnings.INVALID_DD2_TRANSLATIONS,
         'worksheet': 'mapping',
-        'data': {}
+        'data': []
     }
 
     # * Create mapping based on each row
@@ -110,7 +110,9 @@ def handleMappingData(xlsxFile, referenceMap, functionDefinitionMap):
                     for data in referenceData:
                         new_function_parameters.append(data)
                 else:
-                    invalidReferenceKeys['data'][f"##{referenceKey}##"] = 'F' + str(rowCount + 2)
+                    invalidReferenceKeys['data'].append({
+                        f"##{referenceKey}##": 'F' + str(rowCount + 2)
+                    })
 
         # * Generate conversionMap and duplicate description key data
         # * If classic description field is empty, append a empty_description_key
@@ -135,7 +137,9 @@ def handleMappingData(xlsxFile, referenceMap, functionDefinitionMap):
                 }
             # * Else add duplicate classic key to duplicateDescriptionKeys for alert
             else:
-                duplicateDescriptionkeys['data'][oldDescription] = 'A' + str(rowCount + 2)
+                duplicateDescriptionkeys['data'].append({
+                    oldDescription: 'A' + str(rowCount + 2)
+                })
 
         # * If there are keywords specified 
         # * Generate keyword map and duplicate key word data
@@ -153,25 +157,38 @@ def handleMappingData(xlsxFile, referenceMap, functionDefinitionMap):
                     "function_parameters": new_function_parameters,
                 }
             else:
-                duplicateKeywords['data'][str(keywords)] = 'A' + str(rowCount + 2)
+                duplicateKeywords['data'].append({
+                    str(keywords): 'A' + str(rowCount + 2)
+                })
 
         # * If there are any invalid DD2.0 function translation used
         # * Add it to invalidTranslations data
         if functionDefinitionMap:
+            
+            if not new_function_library:
+                continue
             function_library_data = functionDefinitionMap.get(new_function_library)
             if function_library_data is None:
-                invalidTranslations['data'][new_function_library] = 'D' + str(rowCount + 2)
+                invalidTranslations['data'].append({
+                    new_function_library: 'D' + str(rowCount + 2)
+                })
                 continue
             
+            if not new_function_name:
+                continue
             function_name_data = function_library_data.get(new_function_name)
             if function_name_data is None:
-                invalidTranslations['data'][new_function_name] = 'E' + str(rowCount + 2)
+                invalidTranslations['data'].append({
+                    new_function_name: 'E' + str(rowCount + 2)
+                })
                 continue
 
             function_parameter_data = function_name_data['function_parameters']
             for param in new_function_parameters:
                 if param['name'] not in function_parameter_data:
-                    invalidTranslations['data'][param['name']] = 'F' + str(rowCount + 2)
+                    invalidTranslations['data'].append({
+                        param['name']: 'F' + str(rowCount + 2)
+                    })
 
     emptyFields = getEmptyFieldData(conversionMap)
 
@@ -201,7 +218,7 @@ def handleReferenceData(xlsxFile):
         'title': 'Duplicate reference keys',
         'warning': configWarnings.DUP_REFERENCE_KEYS_WARNINGS,
         'worksheet': 'parameter references',
-        'data': {}
+        'data': []
     }
 
     for rowCount, row in enumerate(reader):
@@ -222,7 +239,9 @@ def handleReferenceData(xlsxFile):
         if key not in referenceMap:
             referenceMap[key] = processedValues
         else:
-            duplicateReferences['data'][f"##{key}##"] = 'A' + str(rowCount + 2)
+            duplicateReferences['data'].append({
+                f"##{key}##": 'A' + str(rowCount + 2)
+            })
 
     return referenceMap, duplicateReferences
 

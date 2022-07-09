@@ -142,7 +142,9 @@ class Ui_FunctionDefinitionDialog(object):
         self.functionLibraryTree_widget.headerItem().setText(0, _translate("FunctionDefinitionDialog", "Function library"))
         self.functionLibraryTree_widget.headerItem().setText(1, _translate("FunctionDefinitionDialog", "Function name"))
 
-from .resources import bootstrap_rc
+from . import bootstrap_rc
+
+
 if __name__ == "__main__":
     import sys
     app = QtWidgets.QApplication(sys.argv)

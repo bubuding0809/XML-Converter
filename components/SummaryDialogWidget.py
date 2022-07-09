@@ -3,7 +3,7 @@ from PyQt5 import (
     QtCore as qtc,
     QtGui as qtg
 )
-from .UiSummaryDialog import Ui_SummaryDialog
+from .pyqtui.UiSummaryDialog import Ui_SummaryDialog
 from .CustomLineEdit import CustomLineEdit
 
 

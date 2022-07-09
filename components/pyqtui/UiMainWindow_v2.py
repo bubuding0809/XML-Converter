@@ -404,7 +404,8 @@ class Ui_MainWindow(object):
         self.actionExit_2.setText(_translate("MainWindow", "Exit"))
         self.actionSomething.setText(_translate("MainWindow", "Exit"))
         self.actionExit_3.setText(_translate("MainWindow", "Close"))
-from .resources import bootstrap_rc
+        
+from . import bootstrap_rc
 
 
 if __name__ == "__main__":

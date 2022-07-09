@@ -444,8 +444,7 @@ class Ui_MainWindow(object):
         self.actionExit_3.setText(_translate("MainWindow", "Close"))
         self.actionFunction_definitions.setText(_translate("MainWindow", "Function definitions"))
 
-from .resources import bootstrap_rc
-
+from . import bootstrap_rc
 
 if __name__ == "__main__":
     import sys

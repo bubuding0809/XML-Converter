@@ -3,10 +3,11 @@ from PyQt5 import (
     QtCore as qtc,
     QtGui as qtg
 )
-from .UiWarningDialog import Ui_WarningDialog
-from .UiWarningTab import Ui_WarningTab
+from .pyqtui.UiWarningDialog import Ui_WarningDialog
+from .pyqtui.UiWarningTab import Ui_WarningTab
 import sys
 import os
+import subprocess
 
 class WarningTab(qtw.QWidget):
 

@@ -104,7 +104,7 @@ class Ui_NewFunctionDialog(object):
         self.newFunctionName_box.setTitle(_translate("NewFunctionDialog", "Function Name"))
         self.newFunctionParameter_box.setTitle(_translate("NewFunctionDialog", "Function parameters"))
 
-from. resources import bootstrap_rc
+from . import bootstrap_rc
 
 
 if __name__ == "__main__":

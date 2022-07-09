@@ -1,5 +1,6 @@
+import collections
 import logging
-from components.UiMainWindow import Ui_MainWindow
+from components.pyqtui.UiMainWindow import Ui_MainWindow
 from components.FunctionDefinitionDialogWidget import FunctionDefinitionDialog
 from components.WarningDialogWidget import WarningDialog
 from components.SummaryDialogWidget import SummaryDialog
@@ -17,9 +18,9 @@ import utils
 import sys
 import os
 import subprocess
-import xmlParser
+import parser
 import copy
-from components.resources import bootstrap_rc
+from components.pyqtui import bootstrap_rc
 from samples import testFilePaths as testfiles
 
 
@@ -84,7 +85,7 @@ class MainWindow(qtw.QMainWindow):
 
         # * Initialize config attributes
         self.referenceMap = {}
-        self.functionDefinitionMap = {}
+        self.functionDefinitionMap = collections.defaultdict(lambda: {})
         self.duplicateFunctionNames = {'data': {}}
         self.conversionMap = {}
         self.keywordMap = {}
@@ -92,7 +93,7 @@ class MainWindow(qtw.QMainWindow):
         # * Load function definition database and initialize function defintion data
         self.functionDefintionInFile = os.path.join(baseDir, 'samples\__ATPFunctionDefinitions.xlsx')
         try:
-            self.functionDefinitionMap, self.duplicateFunctionNames = xmlParser.handleFunctionDefinitionData(self.functionDefintionInFile)
+            self.functionDefinitionMap, self.duplicateFunctionNames = parser.handleFunctionDefinitionData(self.functionDefintionInFile)
         except FileNotFoundError:
             message = f'{self.functionDefintionInFile}\ncould not be found.\n\nFunction definitions will not be available for edit.'
             qtw.QMessageBox.warning(self, 'Missing file', message, qtw.QMessageBox.Ok)
@@ -159,8 +160,8 @@ class MainWindow(qtw.QMainWindow):
         
         try:
             # parse config excel and generate mappings
-            self.referenceMap, duplicateReferences = xmlParser.handleReferenceData(self.xlsxInFile)
-            self.conversionMap, self.keywordMap, self.warningData = xmlParser.handleMappingData(self.xlsxInFile, self.referenceMap, self.functionDefinitionMap)
+            self.referenceMap, duplicateReferences = parser.handleReferenceData(self.xlsxInFile)
+            self.conversionMap, self.keywordMap, self.warningData = parser.handleMappingData(self.xlsxInFile, self.referenceMap, self.functionDefinitionMap)
             self.warningData.append(duplicateReferences)
             self.warningData.append(self.duplicateFunctionNames)
         
@@ -240,7 +241,7 @@ class MainWindow(qtw.QMainWindow):
         # * Get parsed xml data and updated conversion map
         try:
             # Catch errors thrown from xml processing
-            testcaseSortedXmlData, self.conversionMap = xmlParser.getXmlData(
+            testcaseSortedXmlData, self.conversionMap = parser.getXmlData(
                 self.xmlInFile, self.conversionMap, self.keywordMap)
         except Exception as ex:
             # Catch exceptions and handle them
@@ -331,7 +332,7 @@ class MainWindow(qtw.QMainWindow):
 
         # * Alert user if there are unmatched teststeps
         # get list of unmatched classic description keys
-        unmatchedClassicDescriptions = xmlParser.getUnmatchedClassicDescriptions(self.conversionMap)
+        unmatchedClassicDescriptions = parser.getUnmatchedClassicDescriptions(self.conversionMap)
 
         # If there are unmatched teststeps, alert user with a message box with the list of unmatched teststeps
         if unmatchedClassicDescriptions:
@@ -563,7 +564,7 @@ class MainWindow(qtw.QMainWindow):
 
         # * Try to execute Execute XML conversion
         try:
-            xmlParser.handleConvertXml(
+            parser.handleConvertXml(
                 self.filteredTeststepIds, self.xmlInFile,
                 xmlOutFile, conversionMap
             )
@@ -807,7 +808,7 @@ class MainWindow(qtw.QMainWindow):
             return
 
         try:
-            xmlParser.handleConfigFileUpdate(
+            parser.handleConfigFileUpdate(
                 self.functionDefinitionMap, self.xlsxInFile, xlsxOutFile, configData
             )
 
@@ -968,13 +969,12 @@ class MainWindow(qtw.QMainWindow):
             # * Compare function definition maps of config file and application
             # * If there is a difference prompt user to update config file
             try:
-                functionDefinitionMap, _ = xmlParser.handleFunctionDefinitionData(self.xlsxInFile)
+                functionDefinitionMap, _ = parser.handleFunctionDefinitionData(self.xlsxInFile)
             except KeyError:
                 self.handleConfigUpdate()
                 return event.accept()
 
             if DeepDiff(functionDefinitionMap, self.functionDefinitionMap):
-
                 msgBoxButtonClicked = qtw.QMessageBox.warning(
                     self, 
                     'Closing application window', 

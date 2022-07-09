@@ -3,11 +3,12 @@ from PyQt5 import (
     QtCore as qtc,
     QtGui as qtg
 )
-from .UiFunctionDefinitionDialog import Ui_FunctionDefinitionDialog
-from .UiNewFunctionDialog import Ui_NewFunctionDialog
+from .pyqtui.UiFunctionDefinitionDialog import Ui_FunctionDefinitionDialog
+from .pyqtui.UiNewFunctionDialog import Ui_NewFunctionDialog
 import sys
 import os
-import xmlParser
+import subprocess
+import parser
 
 
 class NewFunctionDialog(qtw.QDialog):
@@ -270,7 +271,7 @@ class FunctionDefinitionDialog(qtw.QDialog):
 
         try:
             self.parent.functionDefinitionMap = self.functionDefinitionData
-            xmlParser.handleFunctionDefinitionDataUpdate(self.parent.functionDefinitionMap, self.parent.functionDefintionInFile)
+            parser.handleFunctionDefinitionDataUpdate(self.parent.functionDefinitionMap, self.parent.functionDefintionInFile)
         except PermissionError:
             msgBoxButtonClicked = qtw.QMessageBox.critical(
                 self,

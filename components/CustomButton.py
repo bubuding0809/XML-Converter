@@ -1,8 +1,8 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 
-class ButtonWithIcon(QtWidgets.QPushButton):
+class CustomButton(QtWidgets.QPushButton):
     def __init__(self, pixmap, text='', parent=None):
-        super(ButtonWithIcon, self).__init__(parent)
+        super(CustomButton, self).__init__(parent)
         self.setPixmap(pixmap)
         self.setText(text)
         self.setObjectName('CustomButton')

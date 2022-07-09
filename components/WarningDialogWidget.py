@@ -62,26 +62,27 @@ class WarningTab(qtw.QWidget):
     def handlePopulateOtherWarning(self):
 
         # * Iterate through data
-        for field, source in self.data['data'].items():
-            warningItem = qtw.QTreeWidgetItem()
+        for warning in self.data['data']:
+            for field, source in warning.items():
+                warningItem = qtw.QTreeWidgetItem()
 
-            font = qtg.QFont('Arial', pointSize=10)
-            font.setBold(True)
+                font = qtg.QFont('Arial', pointSize=10)
+                font.setBold(True)
 
-            warningItem.setFont(0, font)
-            warningItem.setText(0, self.data['worksheet'])
+                warningItem.setFont(0, font)
+                warningItem.setText(0, self.data['worksheet'])
 
-            warningItem.setFont(1, font)
-            warningItem.setText(1, source)
+                warningItem.setFont(1, font)
+                warningItem.setText(1, source)
 
-            warningItem.setFont(2, font)
-            warningItem.setText(2, field)
+                warningItem.setFont(2, font)
+                warningItem.setText(2, field)
 
-            for i in range(3):
-                warningItem.setForeground(i, qtg.QColor('white'))
-                warningItem.setBackground(i, qtg.QColor('darkGrey'))
-            
-            self.ui.dataTree_Widget.addTopLevelItem(warningItem)
+                for i in range(3):
+                    warningItem.setForeground(i, qtg.QColor('white'))
+                    warningItem.setBackground(i, qtg.QColor('darkGrey'))
+                
+                self.ui.dataTree_Widget.addTopLevelItem(warningItem)
 
 
 class WarningDialog(qtw.QDialog):

@@ -14,7 +14,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_FunctionDefinitionDialog(object):
     def setupUi(self, FunctionDefinitionDialog):
         FunctionDefinitionDialog.setObjectName("FunctionDefinitionDialog")
-        FunctionDefinitionDialog.resize(689, 670)
+        FunctionDefinitionDialog.resize(689, 661)
         self.verticalLayout = QtWidgets.QVBoxLayout(FunctionDefinitionDialog)
         self.verticalLayout.setObjectName("verticalLayout")
         self.header_widget = QtWidgets.QWidget(FunctionDefinitionDialog)
@@ -54,7 +54,7 @@ class Ui_FunctionDefinitionDialog(object):
         self.dataTreeSearchBox_widget = QtWidgets.QWidget(self.dataTreeTools_widget)
         self.dataTreeSearchBox_widget.setObjectName("dataTreeSearchBox_widget")
         self.horizontalLayout_4 = QtWidgets.QHBoxLayout(self.dataTreeSearchBox_widget)
-        self.horizontalLayout_4.setContentsMargins(5, 0, 0, 0)
+        self.horizontalLayout_4.setContentsMargins(0, 0, 0, 0)
         self.horizontalLayout_4.setObjectName("horizontalLayout_4")
         spacerItem1 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.horizontalLayout_4.addItem(spacerItem1)
@@ -91,6 +91,7 @@ class Ui_FunctionDefinitionDialog(object):
         self.functionLibraryTree_widget.setSizePolicy(sizePolicy)
         self.functionLibraryTree_widget.setMinimumSize(QtCore.QSize(500, 0))
         self.functionLibraryTree_widget.setAlternatingRowColors(True)
+        self.functionLibraryTree_widget.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
         self.functionLibraryTree_widget.setUniformRowHeights(False)
         self.functionLibraryTree_widget.setAllColumnsShowFocus(False)
         self.functionLibraryTree_widget.setHeaderHidden(False)

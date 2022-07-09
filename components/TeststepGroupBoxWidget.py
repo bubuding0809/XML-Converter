@@ -78,7 +78,6 @@ class ListWidget(qtw.QListWidget):
 
                 return True
 
-        
         return super(ListWidget, self).eventFilter(source, event)
             
     

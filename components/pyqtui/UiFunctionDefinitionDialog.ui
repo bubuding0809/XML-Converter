@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>689</width>
-    <height>670</height>
+    <height>661</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -123,7 +123,7 @@
           <widget class="QWidget" name="dataTreeSearchBox_widget" native="true">
            <layout class="QHBoxLayout" name="horizontalLayout_4">
             <property name="leftMargin">
-             <number>5</number>
+             <number>0</number>
             </property>
             <property name="topMargin">
              <number>0</number>
@@ -248,6 +248,9 @@
            </property>
            <property name="alternatingRowColors">
             <bool>true</bool>
+           </property>
+           <property name="selectionMode">
+            <enum>QAbstractItemView::SingleSelection</enum>
            </property>
            <property name="uniformRowHeights">
             <bool>false</bool>

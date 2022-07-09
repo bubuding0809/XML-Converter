@@ -20,8 +20,6 @@ import os
 import subprocess
 import parser
 import copy
-from components.pyqtui import bootstrap_rc
-from samples import testFilePaths as testfiles
 
 
 # * Get base directory of application
@@ -91,7 +89,7 @@ class MainWindow(qtw.QMainWindow):
         self.keywordMap = {}
 
         # * Load function definition database and initialize function defintion data
-        self.functionDefintionInFile = os.path.join(baseDir, 'samples\__ATPFunctionDefinitions.xlsx')
+        self.functionDefintionInFile = os.path.join(baseDir, '__ATPFunctionDefinitions.xlsx')
         try:
             self.functionDefinitionMap, self.duplicateFunctionNames = parser.handleFunctionDefinitionData(self.functionDefintionInFile)
         except FileNotFoundError:
@@ -971,9 +969,23 @@ class MainWindow(qtw.QMainWindow):
             try:
                 functionDefinitionMap, _ = parser.handleFunctionDefinitionData(self.xlsxInFile)
             except KeyError:
-                self.handleConfigUpdate()
+
+                msgBoxButtonClicked = qtw.QMessageBox.warning(
+                    self, 
+                    'Closing application window', 
+                    'Your config file is out of date. Update your config file before quitting?',
+                    qtw.QMessageBox.Yes | qtw.QMessageBox.No
+                )
+
+                # * Prompt user to save updated config file if yes is clicked
+                if msgBoxButtonClicked == qtw.QMessageBox.Yes:
+                    self.handleConfigUpdate()
+
                 return event.accept()
 
+            # * If functio definition map is loaded without issues
+            # * Use it to check against the application function definitions to see if an update is needed
+            # * Create message box to prompt user to save updated config file if needed.
             if DeepDiff(functionDefinitionMap, self.functionDefinitionMap):
                 msgBoxButtonClicked = qtw.QMessageBox.warning(
                     self, 
@@ -990,6 +1002,7 @@ class MainWindow(qtw.QMainWindow):
 
             return event.accept()
 
+        # * Prevent application from closing if no is clicked
         event.ignore()
 
     

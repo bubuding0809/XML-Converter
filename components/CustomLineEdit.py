@@ -1,5 +1,4 @@
 from PyQt5 import QtGui, QtCore, QtWidgets
-from .pyqtui import bootstrap_rc
 import sys, os
 
 

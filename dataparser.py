@@ -12,6 +12,7 @@ import configWarnings
 
 baseDir = os.path.dirname(__file__)
 
+# * Define DD2.0 config excel columns
 HEADER_COLUMN_MAP = {
     'description': 'C',
     'function_library': 'D',
@@ -276,15 +277,6 @@ def handleFunctionDefinitionData(xlsxFile):
             duplicateFunctionNames['data'][function_name] = 'B' + str(rowCount + 2)
 
     return functionDefinitionMap, duplicateFunctionNames 
-
-def getUnmatchedClassicDescriptions(conversion_map):
-    unmatchedClassicDescriptions = []
-
-    for index, (key, mapping) in enumerate(conversion_map.items()):
-        if mapping['isMatched'] == False and not key.startswith('empty_description_key'):
-            unmatchedClassicDescriptions.append(f"{mapping['oldDescription']} - [row: {index+2}]")
-    
-    return unmatchedClassicDescriptions
 
 def getXmlData(xmlInFile, conversionMap, keywordMap):
     tree = ET.parse(xmlInFile)
@@ -591,11 +583,22 @@ def getEmptyFieldData(conversion_map):
                 emptyFields['empty_description_key'] = f"A{row_location}"
             elif not value:
                 emptyFields['DD2.0 ' + tag] = f"{HEADER_COLUMN_MAP[tag]}{row_location}"
-            
-        if emptyFields: 
+        
+        # * If there are empty fields and the whole config row is not fully empty
+        # * Assign empty field data values to config role location key
+        if emptyFields and len(emptyFields) < 5: 
             emptyFieldData['data'][row_location] = emptyFields
 
     return emptyFieldData
+
+def getUnmatchedClassicDescriptions(conversion_map):
+    unmatchedClassicDescriptions = []
+
+    for index, (key, mapping) in enumerate(conversion_map.items()):
+        if mapping['isMatched'] == False and not key.startswith('empty_description_key'):
+            unmatchedClassicDescriptions.append(f"{mapping['oldDescription']} - [row: {index+2}]")
+    
+    return unmatchedClassicDescriptions
 
 def generateTeststepData(index, teststep, mapping, cleanedOldDescription, oldDescription, childParentMap):
     # Get all teststep information

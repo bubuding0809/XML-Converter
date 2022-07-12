@@ -24,9 +24,17 @@ class NewFunctionDialog(qtw.QDialog):
         self.data = data
 
         # * Additional UI setup
+        # Set dialog title
+        self.setWindowTitle('Function definitions')
+
+        # Set object name for buttons to receive custom styling
         self.ui.addParam_btn.setObjectName('IconOnlyButton')
         self.ui.removeParam_btn.setObjectName('IconOnlyButton')
+
+        # Install event filter for function parameter list to add addtional functionality
         self.ui.functionParameterlist_widget.installEventFilter(self)
+
+        # Get save button from dialog button box and set it to disabled 
         self.saveBtn = self.ui.dialogButton_box.button(qtw.QDialogButtonBox.Save)
         self.saveBtn.setEnabled(False)
 
@@ -59,13 +67,16 @@ class NewFunctionDialog(qtw.QDialog):
 
     def handleFormInputChange(self):
         newFunctionLibrary = self.ui.functionLibrary_edit.text()
-        newFunctionName = self.ui.functionName_edit.text()
+        newFunctionName = dataparser.removeWhiteSpace(self.ui.functionName_edit.text().lower())
 
         #* Check if new function name is unique
-        isUniqueName = not any(
-            newFunctionName and newFunctionName in functionNames.keys() 
-            for functionNames in self.data.values()
+        exisitingFunctionNames = (
+            dataparser.removeWhiteSpace(functionName.lower()) 
+            for functionNames in self.data.values() 
+            for functionName in functionNames.keys()
         )
+
+        isUniqueName = not (newFunctionName and newFunctionName in exisitingFunctionNames)
 
         #* if function name is unique and both libray and name fields are not empty, enable saveBtn
         if isUniqueName and newFunctionLibrary and newFunctionName:
@@ -138,7 +149,7 @@ class NewFunctionDialog(qtw.QDialog):
         newFunctionParameters = [paramList.item(i).text() for i in range(paramList.count()) if paramList.item(i).text()]
 
         if len(newFunctionParameters) != len(set(newFunctionParameters)):
-            qtw.QMessageBox.critical(self, 'Error', 'There are duplicate function parameter, please ensure that all parameters are unique')
+            qtw.QMessageBox.critical(self, 'Error', 'There are duplicate function parameter, please ensure that all parameters are unique.')
         else:
             super().accept()
 
@@ -147,11 +158,11 @@ class FunctionDefinitionDialog(qtw.QDialog):
     def __init__(self, parent=None, functionDefinitionMap=None, *args, **kwargs) -> None:
         super(FunctionDefinitionDialog, self).__init__(parent, *args, **kwargs)
 
+        self.parent = parent
+        self.functionDefinitionMap = functionDefinitionMap
         self.ui = Ui_FunctionDefinitionDialog()
         self.ui.setupUi(self)
-        self.functionDefinitionMap = functionDefinitionMap
         self.handlepopulateFunctionDefinitionData()
-        self.parent = parent
 
         # * Additional UI setup
         header = self.ui.functionLibraryTree_widget.header()
@@ -165,6 +176,9 @@ class FunctionDefinitionDialog(qtw.QDialog):
 
         # Setup autocompleter for function names in search bar
         self.setSearchBarAutoCompleter()
+
+        # Set dialog title
+        self.setWindowTitle('Function definitions')
 
         # * Event Signal Connectors
         self.ui.newFunction_btn.clicked.connect(self.handleNewFunction)
@@ -211,7 +225,7 @@ class FunctionDefinitionDialog(qtw.QDialog):
     
     def handleNewFunction(self):
         newFunctionDialog = NewFunctionDialog(self, self.functionDefinitionMap)
-        newFunctionDialog.ui.dialogButton_box.accepted.connect(self.refreshFunctionDefinitionData)
+        newFunctionDialog.accepted.connect(self.refreshFunctionDefinitionData)
         newFunctionDialog.open()
 
     def handleDeleteFuncton(self):
@@ -333,8 +347,9 @@ class FunctionDefinitionDialog(qtw.QDialog):
         if msgBoxButtonClicked == qtw.QMessageBox.No:
             return
 
+        # * Try to update the function definition data base with the new data
         try:
-            self.parent.functionDefinitionMap = self.functionDefinitionData
+            self.parent.functionDefinitionMap = self.functionDefinitionMap
             dataparser.handleFunctionDefinitionDataUpdate(self.parent.functionDefinitionMap, self.parent.functionDefintionInFile)
         except PermissionError:
             msgBoxButtonClicked = qtw.QMessageBox.critical(
@@ -344,6 +359,7 @@ class FunctionDefinitionDialog(qtw.QDialog):
                 qtw.QMessageBox.Ok | qtw.QMessageBox.Cancel
             )
 
+            # * if Ok is clicked, automatically switch to opened function definiiton database for user to close
             if msgBoxButtonClicked == qtw.QMessageBox.Ok:
                 # macOS
                 if sys.platform == 'darwin':

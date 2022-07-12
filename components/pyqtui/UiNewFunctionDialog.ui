@@ -135,7 +135,7 @@
                <string/>
               </property>
               <property name="icon">
-               <iconset resource="../media/bootstrap.qrc">
+               <iconset resource="../../media/bootstrap.qrc">
                 <normaloff>:/icons/bootstrap-icons-1.8.3/plus-square.svg</normaloff>:/icons/bootstrap-icons-1.8.3/plus-square.svg</iconset>
               </property>
               <property name="autoDefault">
@@ -155,7 +155,7 @@
                <string/>
               </property>
               <property name="icon">
-               <iconset resource="../media/bootstrap.qrc">
+               <iconset resource="../../media/bootstrap.qrc">
                 <normaloff>:/icons/bootstrap-icons-1.8.3/dash-square.svg</normaloff>:/icons/bootstrap-icons-1.8.3/dash-square.svg</iconset>
               </property>
               <property name="iconSize">
@@ -180,6 +180,9 @@
    </item>
    <item>
     <widget class="QDialogButtonBox" name="dialogButton_box">
+     <property name="enabled">
+      <bool>true</bool>
+     </property>
      <property name="orientation">
       <enum>Qt::Horizontal</enum>
      </property>
@@ -191,7 +194,7 @@
   </layout>
  </widget>
  <resources>
-  <include location="../media/bootstrap.qrc"/>
+  <include location="../../media/bootstrap.qrc"/>
  </resources>
  <connections>
   <connection>

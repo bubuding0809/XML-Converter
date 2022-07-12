@@ -89,7 +89,7 @@ class MainWindow(qtw.QMainWindow):
         self.keywordMap = {}
 
         # * Load function definition database and initialize function defintion data
-        self.functionDefintionInFile = os.path.join(baseDir, 'samples/__ATPFunctionDefinitions.xlsx')
+        self.functionDefintionInFile = os.path.join(baseDir, '__ATPFunctionDefinitions.xlsx')
         try:
             self.functionDefinitionMap, self.duplicateFunctionNames = dataparser.handleFunctionDefinitionData(self.functionDefintionInFile)
         except FileNotFoundError:

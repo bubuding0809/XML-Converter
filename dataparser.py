@@ -513,9 +513,7 @@ def handleConfigFileUpdate(functionDefinitionMap, xlsxInFile, xlsxOutFile, confi
                 finally:
                     new_range = openpyxl.workbook.defined_name.DefinedName(functionName, attr_text=f"'function definitions'!$C${row}")
                     workbook.defined_names.append(new_range)
-                    print(workbook.defined_names[functionName])
 
-                print(row, functionLibrary, functionName, data['function_parameters'], sep=' | ')
                 row += 1
                 count += 1
 
@@ -526,7 +524,6 @@ def handleConfigFileUpdate(functionDefinitionMap, xlsxInFile, xlsxOutFile, confi
             finally:
                 new_range = openpyxl.workbook.defined_name.DefinedName(functionLibrary, attr_text=f"'function definitions'!$B${row-count}:$B${row}")
                 workbook.defined_names.append(new_range)
-                print(workbook.defined_names[functionLibrary])
 
     workbook.save(xlsxOutFile)
 

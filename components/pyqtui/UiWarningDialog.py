@@ -99,7 +99,7 @@ class Ui_WarningDialog(object):
         self.closeWarning_btn.setText(_translate("WarningDialog", "Close"))
         self.closeWarning_btn.setShortcut(_translate("WarningDialog", "Ctrl+W, Meta+W"))
 
-from .resources import bootstrap_rc
+from . import bootstrap_rc
 
 
 if __name__ == "__main__":

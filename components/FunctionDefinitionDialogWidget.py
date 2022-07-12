@@ -1,14 +1,16 @@
+from enum import auto
 from PyQt5 import (
     QtWidgets as qtw,
     QtCore as qtc,
     QtGui as qtg
 )
-from .UiFunctionDefinitionDialog import Ui_FunctionDefinitionDialog
-from .UiNewFunctionDialog import Ui_NewFunctionDialog
+from .pyqtui.UiFunctionDefinitionDialog import Ui_FunctionDefinitionDialog
+from .pyqtui.UiNewFunctionDialog import Ui_NewFunctionDialog
 from .CustomLineEdit import CustomLineEdit
 import sys
 import os
-import xmlParser
+import subprocess
+import dataparser
 from deepdiff import DeepDiff
 
 
@@ -22,9 +24,17 @@ class NewFunctionDialog(qtw.QDialog):
         self.data = data
 
         # * Additional UI setup
+        # Set dialog title
+        self.setWindowTitle('Function definitions')
+
+        # Set object name for buttons to receive custom styling
         self.ui.addParam_btn.setObjectName('IconOnlyButton')
         self.ui.removeParam_btn.setObjectName('IconOnlyButton')
+
+        # Install event filter for function parameter list to add addtional functionality
         self.ui.functionParameterlist_widget.installEventFilter(self)
+
+        # Get save button from dialog button box and set it to disabled 
         self.saveBtn = self.ui.dialogButton_box.button(qtw.QDialogButtonBox.Save)
         self.saveBtn.setEnabled(False)
 
@@ -57,13 +67,16 @@ class NewFunctionDialog(qtw.QDialog):
 
     def handleFormInputChange(self):
         newFunctionLibrary = self.ui.functionLibrary_edit.text()
-        newFunctionName = self.ui.functionName_edit.text()
+        newFunctionName = dataparser.removeWhiteSpace(self.ui.functionName_edit.text().lower())
 
         #* Check if new function name is unique
-        isUniqueName = not any(
-            newFunctionName and newFunctionName in functionNames.keys() 
-            for functionNames in self.data.values()
+        exisitingFunctionNames = (
+            dataparser.removeWhiteSpace(functionName.lower()) 
+            for functionNames in self.data.values() 
+            for functionName in functionNames.keys()
         )
+
+        isUniqueName = not (newFunctionName and newFunctionName in exisitingFunctionNames)
 
         #* if function name is unique and both libray and name fields are not empty, enable saveBtn
         if isUniqueName and newFunctionLibrary and newFunctionName:
@@ -136,7 +149,7 @@ class NewFunctionDialog(qtw.QDialog):
         newFunctionParameters = [paramList.item(i).text() for i in range(paramList.count()) if paramList.item(i).text()]
 
         if len(newFunctionParameters) != len(set(newFunctionParameters)):
-            qtw.QMessageBox.critical(self, 'Error', 'There are duplicate function parameter, please ensure that all parameters are unique')
+            qtw.QMessageBox.critical(self, 'Error', 'There are duplicate function parameter, please ensure that all parameters are unique.')
         else:
             super().accept()
 
@@ -145,11 +158,11 @@ class FunctionDefinitionDialog(qtw.QDialog):
     def __init__(self, parent=None, functionDefinitionMap=None, *args, **kwargs) -> None:
         super(FunctionDefinitionDialog, self).__init__(parent, *args, **kwargs)
 
+        self.parent = parent
+        self.functionDefinitionMap = functionDefinitionMap
         self.ui = Ui_FunctionDefinitionDialog()
         self.ui.setupUi(self)
-        self.functionDefinitionMap = functionDefinitionMap
         self.handlepopulateFunctionDefinitionData()
-        self.parent = parent
 
         # * Additional UI setup
         header = self.ui.functionLibraryTree_widget.header()
@@ -160,6 +173,12 @@ class FunctionDefinitionDialog(qtw.QDialog):
         self.ui.functionDefinition_searchBar.setMinimumWidth(300)
         self.ui.functionDefinition_searchBar.setMaximumWidth(400)
         self.ui.dataTreeSearchBox_widget.layout().insertWidget(0,  self.ui.functionDefinition_searchBar)
+
+        # Setup autocompleter for function names in search bar
+        self.setSearchBarAutoCompleter()
+
+        # Set dialog title
+        self.setWindowTitle('Function definitions')
 
         # * Event Signal Connectors
         self.ui.newFunction_btn.clicked.connect(self.handleNewFunction)
@@ -206,7 +225,7 @@ class FunctionDefinitionDialog(qtw.QDialog):
     
     def handleNewFunction(self):
         newFunctionDialog = NewFunctionDialog(self, self.functionDefinitionMap)
-        newFunctionDialog.ui.dialogButton_box.accepted.connect(self.refreshFunctionDefinitionData)
+        newFunctionDialog.accepted.connect(self.refreshFunctionDefinitionData)
         newFunctionDialog.open()
 
     def handleDeleteFuncton(self):
@@ -235,15 +254,27 @@ class FunctionDefinitionDialog(qtw.QDialog):
 
         if msgBox.clickedButton() == confrimBtn:
             # * Delete selected item from the function definition data
+            # If selected item is a function library, delete entire function library and set all its children user role data to DELETED
             if selectedItem.text(0): 
                 del self.functionDefinitionMap[selectedItem.text(0)]
+                selectedItem.setHidden(True)
+
+                for i in range(selectedItem.childCount()):
+                    selectedItem.child(i).setHidden(True)
+                    selectedItem.child(i).setData(1, qtc.Qt.UserRole, 'DELETED')
+
+            # Else delete selected function name and set its children user role data to DELETED
             else: 
                 del self.functionDefinitionMap[selectedItem.parent().text(0)][selectedItem.text(1)]
+
+                selectedItem.setHidden(True)
+                selectedItem.setData(1, qtc.Qt.UserRole, 'DELETED')
             
             # * refresh function definition data
-            selectedItem.setHidden(True)
-            selectedItem.setData(1, qtc.Qt.UserRole, 'DELETED')
             self.ui.functionParametersList_wigdet.clear()
+
+            # * Refresh search bar autocompleter with updated data
+            self.setSearchBarAutoCompleter()
 
     def handleDropDown(self, isExpand):
         functionLibraryTree = self.ui.functionLibraryTree_widget
@@ -295,6 +326,15 @@ class FunctionDefinitionDialog(qtw.QDialog):
         # * Repopulate data tree with updated data
         self.handlepopulateFunctionDefinitionData()
 
+        # * Refresh search bar autocompleter with updated data
+        self.setSearchBarAutoCompleter()
+
+    def setSearchBarAutoCompleter(self):
+        autoCompleter = qtw.QCompleter([function_name for function_names in self.functionDefinitionMap.values() for function_name in function_names])
+        autoCompleter.setFilterMode(qtc.Qt.MatchFlag.MatchContains)
+        autoCompleter.setCaseSensitivity(qtc.Qt.CaseInsensitive)
+        self.ui.functionDefinition_searchBar.setCompleter(autoCompleter)
+
     #*************************** Virtual functions ******************************* #
 
     def accept(self):
@@ -307,9 +347,10 @@ class FunctionDefinitionDialog(qtw.QDialog):
         if msgBoxButtonClicked == qtw.QMessageBox.No:
             return
 
+        # * Try to update the function definition data base with the new data
         try:
             self.parent.functionDefinitionMap = self.functionDefinitionMap
-            xmlParser.handleFunctionDefinitionDataUpdate(self.parent.functionDefinitionMap, self.parent.functionDefintionInFile)
+            dataparser.handleFunctionDefinitionDataUpdate(self.parent.functionDefinitionMap, self.parent.functionDefintionInFile)
         except PermissionError:
             msgBoxButtonClicked = qtw.QMessageBox.critical(
                 self,
@@ -318,6 +359,7 @@ class FunctionDefinitionDialog(qtw.QDialog):
                 qtw.QMessageBox.Ok | qtw.QMessageBox.Cancel
             )
 
+            # * if Ok is clicked, automatically switch to opened function definiiton database for user to close
             if msgBoxButtonClicked == qtw.QMessageBox.Ok:
                 # macOS
                 if sys.platform == 'darwin':

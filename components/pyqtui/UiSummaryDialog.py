@@ -145,7 +145,7 @@ class Ui_SummaryDialog(object):
         self.closeSummary_btn.setText(_translate("SummaryDialog", "Close"))
         self.closeSummary_btn.setShortcut(_translate("SummaryDialog", "Ctrl+W, Meta+W"))
 
-from .resources import bootstrap_rc
+from . import bootstrap_rc
 
 
 if __name__ == "__main__":

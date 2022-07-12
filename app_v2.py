@@ -1,5 +1,5 @@
 import logging
-from components.UiMainWindow_v2 import Ui_MainWindow
+from components.pyqtui.UiMainWindow_v2 import Ui_MainWindow
 from components.SummaryDialogWidget import SummaryDialog
 from components.TeststepGroupBoxWidget import TeststepGroupBoxWidget
 from components.CollapsibleTestcaseWidget import CollapsibleTestcaseWidget
@@ -11,10 +11,10 @@ from PyQt5 import (
 )
 import sys, os, subprocess
 import random
-import xmlParser
+import parser
 import subprocess
 import utils as u
-from components.resources import bootstrap_rc
+from components.pyqtui import bootstrap_rc
 from samples import testFilePaths as testfiles
 
 #* Set up logging
@@ -87,7 +87,7 @@ class MainWindow(qtw.QMainWindow):
         self.ui.saveLocationFilepath_label.setText(self.xmlOutFileLocation)
         
         # Initialize conversionMap for testing
-        self.conversionMap = xmlParser.handleXlsx(self.xlsxInFile)
+        self.conversionMap = parser.handleXlsx(self.xlsxInFile)
         
         
         
@@ -108,7 +108,7 @@ class MainWindow(qtw.QMainWindow):
         if len(self.xlsxInFile):
             try:
                 # Read xlsx file and generate conversion map
-                self.conversionMap = xmlParser.handleXlsx(self.xlsxInFile)
+                self.conversionMap = parser.handleXlsx(self.xlsxInFile)
 
             except Exception as ex:
                 # Catch exceptions and handle them 
@@ -268,7 +268,7 @@ class MainWindow(qtw.QMainWindow):
             dataScrollArea.setWidget(dataScrollAreaContent_widget)
 
             #* Get parsed xml data based on config file and update conversion map
-            xmlData, conversionMap = xmlParser.getTestStepData(file, self.conversionMap)
+            xmlData, conversionMap = parser.getTestStepData(file, self.conversionMap)
 
             #* Filter teststeps into their respective testcases
             testCaseList = {}

@@ -10,7 +10,7 @@ from .CustomLineEdit import CustomLineEdit
 import sys
 import os
 import subprocess
-import dataparser
+import data_processor
 from deepdiff import DeepDiff
 
 
@@ -67,11 +67,11 @@ class NewFunctionDialog(qtw.QDialog):
 
     def handleFormInputChange(self):
         newFunctionLibrary = self.ui.functionLibrary_edit.text()
-        newFunctionName = dataparser.removeWhiteSpace(self.ui.functionName_edit.text().lower())
+        newFunctionName = data_processor.removeWhiteSpace(self.ui.functionName_edit.text().lower())
 
         #* Check if new function name is unique
         exisitingFunctionNames = (
-            dataparser.removeWhiteSpace(functionName.lower()) 
+            data_processor.removeWhiteSpace(functionName.lower()) 
             for functionNames in self.data.values() 
             for functionName in functionNames.keys()
         )
@@ -350,7 +350,7 @@ class FunctionDefinitionDialog(qtw.QDialog):
         # * Try to update the function definition data base with the new data
         try:
             self.parent.functionDefinitionMap = self.functionDefinitionMap
-            dataparser.handleFunctionDefinitionDataUpdate(self.parent.functionDefinitionMap, self.parent.functionDefintionInFile)
+            data_processor.handleFunctionDefinitionDataUpdate(self.parent.functionDefinitionMap, self.parent.functionDefintionInFile)
         except PermissionError:
             msgBoxButtonClicked = qtw.QMessageBox.critical(
                 self,

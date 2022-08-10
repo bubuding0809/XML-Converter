@@ -8,7 +8,7 @@ from openpyxl.worksheet.datavalidation import DataValidation
 from openpyxl.worksheet.datavalidation import DataValidationList
 from openpyxl.utils import quote_sheetname
 import os
-import configWarnings
+import config_warnings
 
 baseDir = os.path.dirname(__file__)
 
@@ -34,25 +34,25 @@ def handleMappingData(xlsxFile, referenceMap, functionDefinitionMap):
     keywordMap = {}
     duplicateDescriptionkeys = {
         'title': 'Duplicate description keys',
-        'warning': configWarnings.DUP_DESCRIPTION_KEYS_WARNING,
+        'warning': config_warnings.DUP_DESCRIPTION_KEYS_WARNING,
         'worksheet': 'mapping',
         'data': []
     }
     duplicateKeywords = {
         'title': 'Duplicate keyword set',
-        'warning': configWarnings.DUP_KEYWORD_SETS_WARNING,
+        'warning': config_warnings.DUP_KEYWORD_SETS_WARNING,
         'worksheet': 'mapping',
         'data': []
     }
     invalidReferenceKeys = {
         'title': 'Invalid reference key',
-        'warning': configWarnings.INVALID_REFERENCE_KEYS_WARNING,
+        'warning': config_warnings.INVALID_REFERENCE_KEYS_WARNING,
         'worksheet': 'mapping',
         'data': []
     }
     invalidTranslations = {
         'title': 'Invalid DD2.0 tranlsations',
-        'warning': configWarnings.INVALID_DD2_TRANSLATIONS,
+        'warning': config_warnings.INVALID_DD2_TRANSLATIONS,
         'worksheet': 'mapping',
         'data': []
     }
@@ -217,7 +217,7 @@ def handleReferenceData(xlsxFile):
     referenceMap = {}
     duplicateReferences = {
         'title': 'Duplicate reference keys',
-        'warning': configWarnings.DUP_REFERENCE_KEYS_WARNINGS,
+        'warning': config_warnings.DUP_REFERENCE_KEYS_WARNINGS,
         'worksheet': 'parameter references',
         'data': []
     }
@@ -256,7 +256,7 @@ def handleFunctionDefinitionData(xlsxFile):
     functionDefinitionMap = collections.defaultdict(lambda: {})
     duplicateFunctionNames = {
         'title': 'Duplicate function name',
-        'warning': configWarnings.DUP_FUNCTION_NAMES_WARNINGS,
+        'warning': config_warnings.DUP_FUNCTION_NAMES_WARNINGS,
         'worksheet': 'function definitions',
         'data': {}
     }
@@ -559,7 +559,7 @@ def handleFunctionDefinitionDataUpdate(functionDefinitionMap, functionDefinition
 def getEmptyFieldData(conversion_map):
     emptyFieldData = {
         'title': 'Empty fields',
-        'warning': configWarnings.EMPTY_MAPPING_FIELDS_WARNINGS,
+        'warning': config_warnings.EMPTY_MAPPING_FIELDS_WARNINGS,
         'worksheet': 'mapping',
         'data': {}
     }

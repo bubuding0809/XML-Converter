@@ -18,7 +18,7 @@ import utils
 import sys
 import os
 import subprocess
-import dataparser
+import data_processor
 import copy
 
 
@@ -91,7 +91,7 @@ class MainWindow(qtw.QMainWindow):
         # * Load function definition database and initialize function defintion data
         self.functionDefintionInFile = os.path.join(baseDir, '__ATPFunctionDefinitions.xlsx')
         try:
-            self.functionDefinitionMap, self.duplicateFunctionNames = dataparser.handleFunctionDefinitionData(self.functionDefintionInFile)
+            self.functionDefinitionMap, self.duplicateFunctionNames = data_processor.handleFunctionDefinitionData(self.functionDefintionInFile)
         except FileNotFoundError:
             message = f'{self.functionDefintionInFile}\ncould not be found.\n\nFunction definitions will not be available for edit.'
             qtw.QMessageBox.warning(self, 'Missing file', message, qtw.QMessageBox.Ok)
@@ -158,8 +158,8 @@ class MainWindow(qtw.QMainWindow):
         
         try:
             # parse config excel and generate mappings
-            self.referenceMap, duplicateReferences = dataparser.handleReferenceData(self.xlsxInFile)
-            self.conversionMap, self.keywordMap, self.warningData = dataparser.handleMappingData(self.xlsxInFile, self.referenceMap, self.functionDefinitionMap)
+            self.referenceMap, duplicateReferences = data_processor.handleReferenceData(self.xlsxInFile)
+            self.conversionMap, self.keywordMap, self.warningData = data_processor.handleMappingData(self.xlsxInFile, self.referenceMap, self.functionDefinitionMap)
             self.warningData.append(duplicateReferences)
             self.warningData.append(self.duplicateFunctionNames)
         
@@ -239,7 +239,7 @@ class MainWindow(qtw.QMainWindow):
         # * Get parsed xml data and updated conversion map
         try:
             # Catch errors thrown from xml processing
-            testcaseSortedXmlData, self.conversionMap = dataparser.getXmlData(
+            testcaseSortedXmlData, self.conversionMap = data_processor.getXmlData(
                 self.xmlInFile, self.conversionMap, self.keywordMap)
         except Exception as ex:
             # Catch exceptions and handle them
@@ -330,7 +330,7 @@ class MainWindow(qtw.QMainWindow):
 
         # * Alert user if there are unmatched teststeps
         # get list of unmatched classic description keys
-        unmatchedClassicDescriptions = dataparser.getUnmatchedClassicDescriptions(self.conversionMap)
+        unmatchedClassicDescriptions = data_processor.getUnmatchedClassicDescriptions(self.conversionMap)
 
         # If there are unmatched teststeps, alert user with a message box with the list of unmatched teststeps
         if unmatchedClassicDescriptions:
@@ -562,7 +562,7 @@ class MainWindow(qtw.QMainWindow):
 
         # * Try to execute Execute XML conversion
         try:
-            dataparser.handleConvertXml(
+            data_processor.handleConvertXml(
                 self.filteredTeststepIds, self.xmlInFile,
                 xmlOutFile, conversionMap
             )
@@ -806,7 +806,7 @@ class MainWindow(qtw.QMainWindow):
             return
 
         try:
-            dataparser.handleConfigFileUpdate(
+            data_processor.handleConfigFileUpdate(
                 self.functionDefinitionMap, self.xlsxInFile, xlsxOutFile, configData
             )
 
@@ -967,7 +967,7 @@ class MainWindow(qtw.QMainWindow):
             # * Compare function definition maps of config file and application
             # * If there is a difference prompt user to update config file
             try:
-                functionDefinitionMap, _ = dataparser.handleFunctionDefinitionData(self.xlsxInFile)
+                functionDefinitionMap, _ = data_processor.handleFunctionDefinitionData(self.xlsxInFile)
             except KeyError:
 
                 msgBoxButtonClicked = qtw.QMessageBox.warning(

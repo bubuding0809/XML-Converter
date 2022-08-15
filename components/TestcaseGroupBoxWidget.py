@@ -7,7 +7,6 @@ from PyQt5 import (
 )
 
 
-
 class CollapsibleTestcaseWidget(qtw.QWidget):
     def __init__(self, title="", data=None, parent=None):
         super(CollapsibleTestcaseWidget, self).__init__(parent)

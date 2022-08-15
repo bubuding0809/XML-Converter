@@ -5,7 +5,7 @@ from components.FunctionDefinitionDialogWidget import FunctionDefinitionDialog
 from components.WarningDialogWidget import WarningDialog
 from components.SummaryDialogWidget import SummaryDialog
 from components.TeststepGroupBoxWidget import TeststepGroupBoxWidget
-from components.CollapsibleTestcaseWidget import CollapsibleTestcaseWidget
+from components.TestcaseGroupBoxWidget import CollapsibleTestcaseWidget
 from components.CustomLineEdit import CustomLineEdit
 from components.FileFilterProxyModel import FileFilterProxyModel
 from PyQt5 import (
@@ -130,7 +130,7 @@ class MainWindow(qtw.QMainWindow):
         # * Retrieve excel config file path from file dialog
         fileDialog = qtw.QFileDialog(self)
         fileDialog.setOption(qtw.QFileDialog.DontUseNativeDialog)
-        fileDialog.setProxyModel(FileFilterProxyModel())
+        fileDialog.setProxyModel(FileFilterProxyModel(regex=r'^(?!~\$).+'))
         fileDialog.setWindowTitle('Input config xlsx file')
         fileDialog.setNameFilter('XLSX files (*.xlsx)')
         fileDialog.setDirectory('./samples')

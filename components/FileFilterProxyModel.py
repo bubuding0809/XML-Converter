@@ -7,11 +7,12 @@ from PyQt5 import (
 
 
 #* Custom filter implemented for QFileDialog, using regex to filter filenames to display
-
 class FileFilterProxyModel(qtc.QSortFilterProxyModel):
-    def __init__(self, parent=None):
+    def __init__(self, regex=r'.*', parent=None):
         super(FileFilterProxyModel, self).__init__(parent)
-        self.xlsxFilePattern = re.compile(r'^(?!~\$).+')
+        
+        # * Regex pattern to ensure that only files matching pattern are displayed in QFileDialog
+        self.xlsxFilePattern = re.compile(regex)
 
     
     def filterAcceptsRow(self, source_row, source_parent) -> bool:

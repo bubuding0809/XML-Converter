@@ -1,4 +1,3 @@
-from enum import auto
 from PyQt5 import (
     QtWidgets as qtw,
     QtCore as qtc,

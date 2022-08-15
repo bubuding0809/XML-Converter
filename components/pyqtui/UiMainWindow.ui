@@ -529,7 +529,7 @@
              <string/>
             </property>
             <property name="icon">
-             <iconset resource="../media/bootstrap.qrc">
+             <iconset resource="../../media/bootstrap.qrc">
               <normaloff>:/icons/bootstrap-icons-1.8.3/filetype-xml.svg</normaloff>:/icons/bootstrap-icons-1.8.3/filetype-xml.svg</iconset>
             </property>
             <property name="iconSize">
@@ -632,7 +632,7 @@
              <string/>
             </property>
             <property name="icon">
-             <iconset resource="../media/bootstrap.qrc">
+             <iconset resource="../../media/bootstrap.qrc">
               <normaloff>:/icons/bootstrap-icons-1.8.3/filetype-xlsx.svg</normaloff>:/icons/bootstrap-icons-1.8.3/filetype-xlsx.svg</iconset>
             </property>
             <property name="iconSize">
@@ -818,7 +818,7 @@
               <number>0</number>
              </property>
              <item>
-              <widget class="QPushButton" name="xml_refreshData_btn">
+              <widget class="QPushButton" name="refreshData_btn">
                <property name="enabled">
                 <bool>false</bool>
                </property>
@@ -936,8 +936,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>1085</width>
-            <height>531</height>
+            <width>1088</width>
+            <height>536</height>
            </rect>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -977,7 +977,7 @@
         </spacer>
        </item>
        <item row="0" column="1">
-        <widget class="QPushButton" name="xml_convert_btn">
+        <widget class="QPushButton" name="xmlConvert_btn">
          <property name="enabled">
           <bool>false</bool>
          </property>
@@ -996,7 +996,7 @@
         </widget>
        </item>
        <item row="0" column="0">
-        <widget class="QPushButton" name="xml_summary_btn">
+        <widget class="QPushButton" name="xmlSummary_btn">
          <property name="enabled">
           <bool>false</bool>
          </property>
@@ -1025,7 +1025,7 @@
      <x>0</x>
      <y>0</y>
      <width>1118</width>
-     <height>26</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuConverter">
@@ -1033,7 +1033,7 @@
      <string>File</string>
     </property>
     <addaction name="separator"/>
-    <addaction name="actionFunction_definitions"/>
+    <addaction name="functionDefinition_action"/>
    </widget>
    <addaction name="menuConverter"/>
   </widget>
@@ -1045,7 +1045,7 @@
   </action>
   <action name="actionOpen">
    <property name="icon">
-    <iconset resource="../media/bootstrap.qrc">
+    <iconset resource="../../media/bootstrap.qrc">
      <normaloff>:/icons/bootstrap-icons-1.8.3/filetype-xml.svg</normaloff>:/icons/bootstrap-icons-1.8.3/filetype-xml.svg</iconset>
    </property>
    <property name="text">
@@ -1054,7 +1054,7 @@
   </action>
   <action name="actionSave">
    <property name="icon">
-    <iconset resource="../media/bootstrap.qrc">
+    <iconset resource="../../media/bootstrap.qrc">
      <normaloff>:/icons/bootstrap-icons-1.8.3/save2-fill.svg</normaloff>:/icons/bootstrap-icons-1.8.3/save2-fill.svg</iconset>
    </property>
    <property name="text">
@@ -1078,14 +1078,14 @@
   </action>
   <action name="actionExit_3">
    <property name="icon">
-    <iconset resource="../media/bootstrap.qrc">
+    <iconset resource="../../media/bootstrap.qrc">
      <normaloff>:/icons/bootstrap-icons-1.8.3/file-excel-fill.svg</normaloff>:/icons/bootstrap-icons-1.8.3/file-excel-fill.svg</iconset>
    </property>
    <property name="text">
     <string>Close</string>
    </property>
   </action>
-  <action name="actionFunction_definitions">
+  <action name="functionDefinition_action">
    <property name="enabled">
     <bool>false</bool>
    </property>
@@ -1096,8 +1096,8 @@
  </widget>
  <resources>
   <include location="media/resource.qrc"/>
-  <include location="../media/bootstrap.qrc"/>
-  <include location="../media/bootstrap.qrc"/>
+  <include location="../../media/bootstrap.qrc"/>
+  <include location="../../media/bootstrap.qrc"/>
  </resources>
  <connections/>
 </ui>

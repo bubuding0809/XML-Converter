@@ -276,7 +276,7 @@ def handleFunctionDefinitionData(xlsxFile):
         elif function_library and function_name:
             duplicateFunctionNames['data'][function_name] = 'B' + str(rowCount + 2)
 
-    return functionDefinitionMap, duplicateFunctionNames 
+    return functionDefinitionMap, duplicateFunctionNames
 
 def getXmlData(xmlInFile, conversionMap, keywordMap):
     tree = ET.parse(xmlInFile)

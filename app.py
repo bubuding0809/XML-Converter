@@ -96,7 +96,7 @@ class MainWindow(qtw.QMainWindow):
         self.ui.selectAll_checkBox.stateChanged.connect(self.handleSelectAllCheckBox)
         self.ui.mainSearchBar_lineEdit.textChanged.connect(self.handleSearchBar)
         self.ui.configFileUpdate_btn.clicked.connect(self.handleConfigUpdate)
-        self.filterButtonGroup.buttonClicked.connect(self.handleFilterButtonClicked)
+        self.filterButtonGroup.buttonClicked.connect(self.handleFilter)
         self.ui.functionDefinition_action.triggered.connect(self.handleFunctionDefinitionView)
         self.ui.quitSc.activated.connect(self.close)
 
@@ -658,7 +658,7 @@ class MainWindow(qtw.QMainWindow):
                 subprocess.call(['open', '-R', xmlOutFile])
 
     # * handle filtering of teststeps for display based on filter type selection
-    def handleFilterButtonClicked(self, button):
+    def handleFilter(self, button):
         filterTypeChecked = self.filterButtonGroupMap[button.text()]
 
         for testcase, teststeps in self.testCaseBoxList.items():

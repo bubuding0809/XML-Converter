@@ -64,8 +64,6 @@ class CollapsibleTestcaseWidget(qtw.QWidget):
         #* Signal connector
         self.toggle_button.pressed.connect(self.HandleDropDown)
         
-
-
     def HandleDropDown(self):
         content_height = self.content_area.layout().sizeHint().height()
 
@@ -90,8 +88,6 @@ class CollapsibleTestcaseWidget(qtw.QWidget):
         #* Toggle tool button check status
         self.isChecked = not self.isChecked
         
-
-
     def setContentLayout(self, layout):
         lay = self.content_area.layout()
         del lay
@@ -106,113 +102,6 @@ class CollapsibleTestcaseWidget(qtw.QWidget):
             animation.setStartValue(26 if i < 2 else 0)
             animation.setEndValue(26 + content_height if i < 2 else content_height)
 
-
     def __str__(self):
         return self.title
         
-
-
-
-class MainWindow(qtw.QMainWindow):
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.initUi()
-       
-
-
-    def initUi(self):
-        centralWidget = qtw.QWidget(self)
-        
-        # Create vertical layout for central widget
-        self.verticalLayout = qtw.QVBoxLayout(centralWidget)
-        
-        # Set main window's central widget to central wdiget
-        self.setCentralWidget(centralWidget)
-        
-        # Create scroll area to contain data
-        scroll = qtw.QScrollArea()
-        
-        # Add scroll area to the central widget's vertical layout
-        self.verticalLayout.addWidget(scroll)
-        
-        # Create contentwidget for scroll area
-        scrollContentWidget = qtw.QWidget()
-        
-        scroll.setVerticalScrollBarPolicy(qtc.Qt.ScrollBarAlwaysOn)
-
-        scroll.setWidget(scrollContentWidget)
-        scroll.setWidgetResizable(True)
-        
-        # Create vertical layout for scroll area
-        self.vlay = qtw.QVBoxLayout(scrollContentWidget)
-        
-        boxList = []
-        # Create 10 CollapsibleBox
-        for i in range(10):
-            box = CollapsibleTestcaseWidget(f"Collapsible Box Header-{i}")
-            self.vlay.addWidget(box)
-            
-            # Create vertical layout for each collapsible box
-            lay = qtw.QVBoxLayout()
-            
-            # Create x label with random color for each collapseable box
-            for j in range(20):
-                
-                #Create lable widget and apply a random color to it
-                label = qtw.QLabel("{}".format(j))
-                color = qtg.QColor(*[random.randint(0, 255) for _ in range(3)])
-                label.setStyleSheet("background-color: {}; color : white;".format(color.name()))
-                label.setAlignment(qtc.Qt.AlignCenter)
-                lay.addWidget(label)
-
-            box.setContentLayout(lay)
-            boxList.append(box)
-            
-        self.vlay.addStretch()
-        
-        toggle_allDropDow_btn = qtw.QPushButton(parent=self, text='Show all')
-        toggle_allDropDow_btn.setCheckable(True)
-        
-        delete_btn = qtw.QPushButton(parent=self, text='Delete all boxes')
-        
-        self.verticalLayout.insertWidget(0, toggle_allDropDow_btn)
-        self.verticalLayout.insertWidget(0, delete_btn)
-        
-        #Initialize event connectors
-        toggle_allDropDow_btn.pressed.connect(lambda: self.HandleToggleAllDropDownBtn(boxList))
-        delete_btn.clicked.connect(self.handleDeleteAllBoxes)
-        
-
-
-    def HandleToggleAllDropDownBtn(self, boxList):
-        eventSender = self.sender()
-        isChecked = eventSender.isChecked()
-        
-        eventSender.setText('Hide all' if not isChecked else 'Show all')
-        for box in boxList:
-            box.toggle_button.setChecked(isChecked)
-            box.on_pressed()
-            box.toggle_button.setChecked(not isChecked)
-    
-
-
-    def handleDeleteAllBoxes(self):
-        while self.vlay.count():
-            item = self.vlay.takeAt(0)
-            print(item.widget())
-            if item.widget():
-                item.widget().deleteLater()
-        
-
-        
-if __name__ == "__main__":
-
-    app = qtw.QApplication(sys.argv)
-
-    # Create main window and show
-    mainWindow = MainWindow()
-    mainWindow.resize(1980, 1080)
-    mainWindow.show()
-    
-    sys.exit(app.exec_())

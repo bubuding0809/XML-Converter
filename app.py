@@ -266,7 +266,7 @@ class MainWindow(qtw.QMainWindow):
         # * Get parsed xml data and updated conversion map
         try:
             # Catch errors thrown from xml processing
-            testcaseSortedXmlData, self.conversionMap = data_processor.getXmlData(
+            testcaseSortedXmlData, self.conversionMap = data_processor.handleTranslateXmlData(
                 self.xmlInFile, self.conversionMap, self.keywordMap)
         except Exception as ex:
             # Catch exceptions and handle them

@@ -1,3 +1,4 @@
+from typing import Set
 import xml.etree.ElementTree as ET
 import re
 import collections
@@ -22,6 +23,17 @@ HEADER_COLUMN_MAP = {
 
 # ********************************************************* Application functions ********************************************************#
 
+''' 
+Handles processing of the ATP conversion mapping by reading the mapping sheet of the excel config.
+
+The function receives the config excel file path string set by the user through the GUI,
+referenceMap object returned by handleReferenceData method,
+functionDefinitionMap object returned by handleFunctionDefintionData method.
+
+Returns a conversionMap object containing the teststep translation,
+Returns a keywordMap object containing the keyword mapping of the teststeps
+Returns a list of warning objects raised by the config excel.
+'''
 def handleMappingData(xlsxFile, referenceMap, functionDefinitionMap):
     # Load excel file with openpyxl load_workbook
     workbook = load_workbook(filename=xlsxFile)
@@ -205,6 +217,14 @@ def handleMappingData(xlsxFile, referenceMap, functionDefinitionMap):
         ]
     )
 
+'''
+Handles the processing of the reference mapping by reading the parameter reference sheet of the excel config.
+
+The function receives the config excel file path string set by the user through the GUI.
+
+Returns a referenceMap object to be used by the handleMappingData function,
+Returns a duplicateReferences object containing warnings raised by duplicate reference keys.
+'''
 def handleReferenceData(xlsxFile):
     # Load excel file with openpyxl load_workbook
     workbook = load_workbook(filename=xlsxFile)
@@ -246,6 +266,14 @@ def handleReferenceData(xlsxFile):
 
     return referenceMap, duplicateReferences
 
+'''
+Handles the processing of the function definition database by reading the __ATPFunctionDefinitions.xlsx.
+
+The function receives the hardcoded path string to the function definition database.
+
+Returns a functionDefinitionMap object to be used by the handleMappingData function,
+Returns a duplicateFunctionNames object containing warnings raised by duplicate functions.
+'''
 def handleFunctionDefinitionData(xlsxFile):
     # Load excel file with openpyxl load_workbook
     workbook = load_workbook(filename=xlsxFile)
@@ -278,7 +306,17 @@ def handleFunctionDefinitionData(xlsxFile):
 
     return functionDefinitionMap, duplicateFunctionNames
 
-def getXmlData(xmlInFile, conversionMap, keywordMap):
+'''
+Handles the parsing and translation of the classical ATP teststeps to the DD2.0 capable version.
+
+The function recieves the ATP XML file path set by the user through the GUI,
+conversionMap object returned by the handleMappingData function,
+keywordMap object returned by the handleMappinData function.
+
+Returns a testcaseSortedXmlData object which contains the teststep translation data sorted by its testcase
+Returns a updated conversionMap object which includes information on which teststeps were matched in the provided xml file
+'''
+def handleTranslateXmlData(xmlInFile, conversionMap, keywordMap):
     tree = ET.parse(xmlInFile)
     root = tree.getroot()
     childParentMap = {child: parent for parent in root.iter()
@@ -301,7 +339,7 @@ def getXmlData(xmlInFile, conversionMap, keywordMap):
             mapping["isMatched"] = True
 
             xmlData.append(
-                generateTeststepData(
+                getTeststepData(
                     index, teststep, mapping, 
                     cleanedOldDescription, oldDescription, 
                     childParentMap
@@ -326,7 +364,7 @@ def getXmlData(xmlInFile, conversionMap, keywordMap):
                 continue
 
             xmlData.append(
-                generateTeststepData(
+                getTeststepData(
                     index, teststep, mapping, 
                     cleanedOldDescription, oldDescription, 
                     childParentMap
@@ -342,6 +380,33 @@ def getXmlData(xmlInFile, conversionMap, keywordMap):
 
     return testcaseSortedXmlData, conversionMap
 
+'''
+Handles the parsing of unmatched classic teststep description keys found in the config excel file.
+
+The function recevies a convsersionMap object returned by the handleTranslateXmlData function which includes information
+on which classical teststep description key was matched
+
+Returns a list of unmatched teststep description keys
+'''
+def getUnmatchedClassicDescriptions(conversionMap):
+    unmatchedClassicDescriptions = []
+
+    for index, (key, mapping) in enumerate(conversionMap.items()):
+        if mapping['isMatched'] == False and not key.startswith('empty_description_key'):
+            unmatchedClassicDescriptions.append(f"{mapping['oldDescription']} - [row: {index+2}]")
+    
+    return unmatchedClassicDescriptions
+
+'''
+Handles the conversion of the selected classical teststeps to their DD2.0 saves a converted copy of the ATP xml file at a user specifed file path.
+
+The function receives a set of filteredIds to indicate which teststeps are selected for conversion,
+xmlinFile string specifying the file path of the input xml file
+xmlOutFile string specifying the file path of the converted xml file
+conversionMap object which specifies the updated DD2.0 translation mappings for the teststeps
+
+No return value, writes new xml file to xmlOutfile path
+'''
 def handleConvertXml(filteredIds, xmlInFile, xmlOutFile, conversionMap):
     tree = ET.parse(xmlInFile)
     root = tree.getroot()
@@ -408,6 +473,17 @@ id: {teststep['id']}
     # Write modified xml file to specificed file location
     tree.write(xmlOutFile)
 
+'''
+Handles the updating of the config excel file to the mapping sheet with the changes made in the GUI,
+this includes the updating of DD2.0 translations and the data validation for the function information columns.
+
+The function receives the updated functionDefinitionMap that is configured through the GUI,
+xlsxInfile string specifying the config excel file path to be updated,
+xlsxOutFile string specifying the config excel file path to be written to,
+configData object which contains the latest config mapping updated through the GUI.
+
+No return value, writes new config excel file to xlsxOutFile
+'''
 def handleConfigFileUpdate(functionDefinitionMap, xlsxInFile, xlsxOutFile, configData):
 
     # * Load excel file with openpyxl load_workbook
@@ -418,6 +494,7 @@ def handleConfigFileUpdate(functionDefinitionMap, xlsxInFile, xlsxOutFile, confi
     # * Update config excel with the new mapping data generated from the application UI
     if configData:
         for configRowCount, mapping in configData.items():
+
             # * Update config excel mapping translation with new data
             for header, column in HEADER_COLUMN_MAP.items():
                 cell = mappingSheet[column + str(configRowCount)]
@@ -527,6 +604,15 @@ def handleConfigFileUpdate(functionDefinitionMap, xlsxInFile, xlsxOutFile, confi
 
     workbook.save(xlsxOutFile)
 
+'''
+Handles the writing of updated function definitions data to the function definitions database,
+these changes are made through the GUI.
+
+The function recieves a functionDefinitionMap object containing the updated information for function definitions,
+functionDefinitionInFile string which specifies the file path for the function defintion database.
+
+No return Value, writes updated function defintion data to the existing database
+'''
 def handleFunctionDefinitionDataUpdate(functionDefinitionMap, functionDefinitionInFile):
 
     # * Load excel file with openpyxl load_workbook
@@ -556,7 +642,9 @@ def handleFunctionDefinitionDataUpdate(functionDefinitionMap, functionDefinition
 
 # ********************************************************* Helper functions ********************************************************#
 
-def getEmptyFieldData(conversion_map):
+# * Helper function which helps to parse the config excel file mapping sheet for any empty fields in the translations
+# * Used by the handleMappingData function
+def getEmptyFieldData(conversionMap):
     emptyFieldData = {
         'title': 'Empty fields',
         'warning': config_warnings.EMPTY_MAPPING_FIELDS_WARNINGS,
@@ -566,8 +654,8 @@ def getEmptyFieldData(conversion_map):
 
     # * Iterate through conversion mapping
     # * 
-    for cleanedOldDescription, mapping in conversion_map.items():
-        row_location = conversion_map[cleanedOldDescription]['configRowCount']
+    for cleanedOldDescription, mapping in conversionMap.items():
+        row_location = conversionMap[cleanedOldDescription]['configRowCount']
         
         # * Check if there are any empty fields in the teststep
         emptyFields = {}
@@ -588,16 +676,9 @@ def getEmptyFieldData(conversion_map):
 
     return emptyFieldData
 
-def getUnmatchedClassicDescriptions(conversion_map):
-    unmatchedClassicDescriptions = []
-
-    for index, (key, mapping) in enumerate(conversion_map.items()):
-        if mapping['isMatched'] == False and not key.startswith('empty_description_key'):
-            unmatchedClassicDescriptions.append(f"{mapping['oldDescription']} - [row: {index+2}]")
-    
-    return unmatchedClassicDescriptions
-
-def generateTeststepData(index, teststep, mapping, cleanedOldDescription, oldDescription, childParentMap):
+# * Helper function which helps to generate the classic teststep to DD2.0 teststep mapping pair for use to display in the GUI data grid.
+# * Used by the handleTranslateXmlData function
+def getTeststepData(index, teststep, mapping, cleanedOldDescription, oldDescription, childParentMap):
     # Get all teststep information
     oldFunctionLibrary = teststep.find("function_library").text
     oldFunctionName = teststep.find("function_name").text
@@ -661,114 +742,3 @@ def generateTeststepData(index, teststep, mapping, cleanedOldDescription, oldDes
     }
     
     return teststepData
-
-# ********************************************************* Test functions ********************************************************#
-
-def testHandleXlsx():
-    xlsxFile = os.path.join(baseDir, "samples/configTest_v2.xlsx")
-
-    conversionMap, duplicateKeys, keywordMap, duplicateKeywords = handleMappingData(
-        xlsxFile)
-
-    print('_____________________Conversion map____________________')
-    for index, (key, value) in enumerate(conversionMap.items()):
-        print(f"{index+1}: Classic key: {key}")
-        print("------------------------------")
-        for key, value in value.items():
-            print(f"{key}: {value}")
-        print()
-    print()
-
-    print('_____________________Duplicate keys____________________')
-    for item in duplicateKeys:
-        print(item)
-        print()
-    print()
-
-    print('_____________________Keyword map____________________')
-    for index, (key, value) in enumerate(keywordMap.items()):
-        print(f"{index+1}: Classic key: {key}")
-        print("------------------------------")
-        for key, value in value.items():
-            print(f"{key}: {value}")
-        print()
-    print()
-
-    print('_____________________Duplicate keywords____________________')
-    for item in duplicateKeywords:
-        print(item)
-    print()
-
-def testHandleConvertXML():
-    xlsxFile = "./testdata/config.xlsx"
-    xmlFile = "./testdata/input.xml"
-
-    conversionMap = handleMappingData(xlsxFile)
-    handleConvertXml(xmlFile, "./testdata/output.xml", conversionMap)
-
-def testHandleGetTestStepData():
-    xlsxFile = "./samples/config.xlsx"
-    xmlFile = "./samples/input.xml"
-
-    conversionMap = handleMappingData(xlsxFile)
-
-    for item in getXmlData(xmlFile, conversionMap):
-        for key, value in item.items():
-            print(f"{key}: {value}")
-            print()
-        print(
-            "___________________________________________________________________________________________"
-        )
-
-def testHandleReferenceData():
-    xlsxFile = os.path.join(baseDir, "samples/configTest_v2.xlsx")
-    handleReferenceData(xlsxFile)
-
-def testHandleFunctionDefinitionData():
-    xlsxFile = os.path.join(baseDir, "samples/configUpdated_v2.xlsx")
-    functionDefinitionMap, duplicateFunctionName = handleFunctionDefinitionData(xlsxFile)
-
-    for i, (lib, names) in enumerate(functionDefinitionMap.items()):
-        print(i+1, lib, sep='.')
-        print('-------------------------------------------------------------')
-
-        for j, (name, params) in enumerate(names.items()):
-            print(j+1, name)
-            print(params)
-        
-        print()
-
-    if duplicateFunctionName['data']:
-        print('Duplicates')
-        print('-------------------------------------------------------------')
-        for i, (name, location) in enumerate(duplicateFunctionName['data'].items()):
-            print(i+1, name, location)
-
-def testHandleRegex():
-    str = ',123,,,@@test@@,1,2,@@test@@,3,@@another@@,'
-    # 123,@@@@,@@test@@,3,@@anther@@
-    old_function_parameters = {
-        'test' : 'test123',
-        'another': 'another123'
-    }
-
-    def matchOldParams(match):
-        value = old_function_parameters.get(match.group().strip('@'))
-        if value: return value
-
-    parameter_values = [text for text in str.split(',') if text]
-    processed_parameter_values = []
-    for text in parameter_values:
-        value = re.sub(r'@[^,]*@@', matchOldParams, text)
-        if value: processed_parameter_values.append(value)
-
-    print(processed_parameter_values)
-    
-if __name__ == "__main__":
-    warningData = [
-        {'data': []},
-        {'data': []},
-        {'data': [1]},
-    ]
-    isData = any(True if warning['data'] else False for warning in warningData)
-    print(isData)

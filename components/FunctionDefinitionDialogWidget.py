@@ -12,7 +12,6 @@ import subprocess
 import data_processor
 from deepdiff import DeepDiff
 
-
 class NewFunctionDialog(qtw.QDialog):
 
     def __init__(self, parent=None, data=None, *args, **kwargs) -> None:

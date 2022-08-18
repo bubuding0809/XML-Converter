@@ -8,8 +8,6 @@
 
 ## Get started:
 
----
-
 **Git**
 
 To install and run your own copy of this first navigate to your desired directory clone the repository:
@@ -54,8 +52,6 @@ python app.py
 ```
 
 ## Software stack used:
-
----
 
 - Python Programming language
 - PyQT GUI framework

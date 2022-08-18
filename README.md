@@ -45,6 +45,30 @@ Install dependencies via requirement.txt
 pip install -r requirements.txt
 ```
 
+**requirements.txt**
+
+```
+altgraph==0.17.2
+click==7.1.2
+deepdiff==5.8.1
+et-xmlfile==1.1.0
+future==0.18.2
+openpyxl==3.0.10
+ordered-set==4.1.0
+pefile==2022.5.30
+pyinstaller==5.1
+pyinstaller-hooks-contrib==2022.7
+PyQt5==5.15.4
+pyqt5-plugins==5.15.4.2.2
+PyQt5-Qt5==5.15.2
+PyQt5-sip==12.10.1
+pyqt5-tools==5.15.4.3.2
+python-dotenv==0.20.0
+pywin32-ctypes==0.2.0
+qt5-applications==5.15.2.2.2
+qt5-tools==5.15.2.1.2
+```
+
 Run application:
 
 ```

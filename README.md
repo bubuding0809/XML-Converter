@@ -77,7 +77,7 @@ python app.py
 
 ## Project architecture:
 
-<iframe style="border: 1px solid rgba(0, 0, 0, 0.1);" width="800" height="450" src="https://www.figma.com/embed?embed_host=share&url=https%3A%2F%2Fwww.figma.com%2Ffile%2FHLLt2wOncSbf3p58NNIHlv%2FATPXML-converter-flow-chart%3Fnode-id%3D0%253A1" allowfullscreen></iframe>
+The project structural diagram can be viewed at the this [link](https://www.figma.com/file/HLLt2wOncSbf3p58NNIHlv/ATPXML-converter-flow-chart?node-id=0%3A1).
 
 ## Deployment:
 

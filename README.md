@@ -75,7 +75,38 @@ Run application:
 python app.py
 ```
 
-## Software stack used:
+## Project architecture:
 
-- Python Programming language
-- PyQT GUI framework
+<iframe style="border: 1px solid rgba(0, 0, 0, 0.1);" width="800" height="450" src="https://www.figma.com/embed?embed_host=share&url=https%3A%2F%2Fwww.figma.com%2Ffile%2FHLLt2wOncSbf3p58NNIHlv%2FATPXML-converter-flow-chart%3Fnode-id%3D0%253A1" allowfullscreen></iframe>
+
+## Deployment:
+
+The application can be deployed with the help of [Pyinstaller](https://pyinstaller.org/en/stable/). A detailed guide on how to deploy a PyQt5 application can be found [here](https://www.pythonguis.com/tutorials/packaging-pyqt5-pyside2-applications-windows-pyinstaller/).
+
+Quickly deploy existing application:
+
+```
+//Activate your virtual enviroment and navigate to the project root
+
+$ pip install PyInstaller
+$ pyinstaller app.py
+```
+
+If you look in your folder you'll notice you now have two new folders `dist` and `build`, and a `app.spec` file.
+
+Tweak your build by editing the generated `app.spec` file and rebuild the application with:
+
+```
+$ pyinstaller app.spec
+```
+
+If you look in your folder you'll notice you now have two new folders dist and build.
+
+The `dist` (for "distribution") folder contains the files to be distributed. This includes your application, bundled as an executable file, together with any associated libraries (for example PyQt5) and binary .dll files.
+
+## Technologies:
+
+- Python 3
+- Cross platform GUI framework [PyQt 5](https://doc.qt.io/qtforpython-5/#documentation)
+- Python library for .xlsx/.xlsm files [openpyxel](https://openpyxl.readthedocs.io/en/stable/)
+- Python library for .xml files [ElementTree XML API](https://docs.python.org/3/library/xml.etree.elementtree.html)

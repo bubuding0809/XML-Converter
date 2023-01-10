@@ -2,7 +2,7 @@
    ATPxml converter app
 </h1>
 <p align="center">
-  Continental internal tool for converting Automated test platform (ATP) XML files.
+   Tool for converting Automated test platform (ATP) XML files.
 </p>
 <img src="./media/images/teststeptranlsation.png"/>
 
